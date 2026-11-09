@@ -229,14 +229,16 @@ body { border-top: 0; }
   z-index: 1;
   background: transparent;
   border-bottom-color: transparent;
+  padding-inline: max(4vw, calc((100vw - min(83vw, 1320px)) / 2));
 }
+.guild-home { --home-width: min(78vw, 1240px); --home-gold: #d8a65c; }
 .guild-home + footer {
   background: transparent;
   border-top-color: transparent;
 }
 .site-header:has(+ .guild-home) .discord {
   background: color-mix(in srgb, var(--surface) 55%, transparent);
-  border-color: color-mix(in srgb, var(--ink) 38%, transparent);
+  border-color: color-mix(in srgb, #d8a65c 65%, transparent);
 }
 .site-header, footer { background: var(--container); }
 .button, .news-card, .empty, .editor-grid > * { border-radius: 12px; }
@@ -245,17 +247,28 @@ body { border-top: 0; }
 .home-banner {
   display: grid;
   align-items: end;
-  min-height: clamp(390px, 51vw, 630px);
+  min-height: clamp(460px, 40vw, 640px);
   background: linear-gradient(180deg, color-mix(in srgb, var(--night) 80%, transparent), transparent 27%),
     linear-gradient(90deg,var(--night) 0%,color-mix(in srgb, var(--night) 68%, transparent) 41%,transparent 90%),
     linear-gradient(0deg,var(--night) 0%,transparent 62%),
     url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, var(--container);
 }
-.home-banner-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,360px); align-items: end; gap: clamp(20px,4vw,56px); width: min(100% - 9vw, 1240px); margin-inline: auto; padding: 112px 0 clamp(45px,7vw,95px); }
-.home-banner h1 { font: 650 clamp(70px,12vw,140px)/.95 Georgia,serif; letter-spacing: -.065em; margin: 14px 0 20px; }
+.home-banner-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,29%); align-items: end; gap: clamp(20px,4vw,56px); width: var(--home-width); margin-inline: auto; padding: 112px 0 clamp(48px,5.5vw,88px); }
+.home-banner h1 { font: 650 clamp(66px,9.5vw,144px)/.95 Georgia,serif; letter-spacing: -.065em; margin: 14px 0 20px; }
 .home-intro { max-width: 32ch; font-size: clamp(18px,2vw,24px); color: var(--ink); margin-bottom: 24px; }
-.home-journal { padding: 28px 0 72px; }
-.home-about { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--container) 92%, transparent); }
+.home-journal { width: var(--home-width); padding: 23px 0 58px; }
+.home-journal .news-grid { margin-top: 18px; }
+.home-journal :is(.empty,.news-card) { border-color: color-mix(in srgb, var(--home-gold) 36%, transparent); }
+.home-banner .home-chronicle-link { background: var(--home-gold); color: #24170b; border-color: var(--home-gold); }
+.home-banner .home-chronicle-link:hover { background: #efc483; }
+.home-about {
+  padding: clamp(16px,1.6vw,24px);
+  border: 1px solid color-mix(in srgb, var(--home-gold) 80%, transparent);
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 105%, #b5773438, transparent 34%), #211912f2;
+  box-shadow: 0 12px 34px #0005;
+  font-size: 14px;
+}
 .home-about svg { width: 34px; float: right; }
 .home-about h2 { margin: 4px 0 8px; font: 650 27px/1.2 Georgia,serif; }
 .home-about > p:not(.eyebrow), .home-about dt { color: var(--muted); }
@@ -346,6 +359,7 @@ body { border-top: 0; }
 .prep-handoff textarea { display: block; width: 100%; margin: 10px 0; color: inherit; border: 1px solid var(--line); padding: 10px; }
 .prep-handoff > :is(button,small) { margin-top: 10px; display: block; }
 @media (max-width: 760px) {
+  .guild-home { --home-width: 91vw; }
   .home-banner-content { grid-template-columns: 1fr; }
   .home-banner { background-position: center, center, center, 62% center; }
   .guild-topbar { flex-wrap: wrap; }

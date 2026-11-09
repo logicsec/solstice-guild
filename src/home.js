@@ -13,7 +13,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=36edd7963f5e"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=8744e89b8852"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="/?tool=raid">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -41,7 +41,7 @@ export async function publicHome(env, url, session) {
     <h1 id="home-title">Solstice</h1>
     <p class="home-intro">An Alliance guild for the people you want beside you in Azeroth.</p>
     ${notice ? '<p class="notice" role="status">' + escape(notice) + '</p>' : ''}
-    <a class="button outline" href="#chronicle">Read the Chronicle <span aria-hidden="true">↓</span></a>
+    <a class="button outline home-chronicle-link" href="#chronicle">Read the Chronicle <span aria-hidden="true">↓</span></a>
     </div>
     <aside class="home-about" aria-labelledby="about-title">
       ${solsticeMark}
