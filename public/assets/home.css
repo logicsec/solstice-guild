@@ -230,6 +230,10 @@ body { border-top: 0; }
   background: transparent;
   border-bottom-color: transparent;
 }
+.guild-home + footer {
+  background: transparent;
+  border-top-color: transparent;
+}
 .site-header:has(+ .guild-home) .discord {
   background: color-mix(in srgb, var(--surface) 55%, transparent);
   border-color: color-mix(in srgb, var(--ink) 38%, transparent);
