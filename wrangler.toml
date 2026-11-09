@@ -1,0 +1,19 @@
+name = "solstice-guild"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = false
+preview_urls = false
+
+[[routes]]
+pattern = "solsticeguild.net"
+custom_domain = true
+
+[[d1_databases]]
+binding = "DB"
+database_name = "solstice-guild"
+database_id = "REPLACE_WITH_YOUR_D1_DATABASE_ID"
+migrations_dir = "migrations"
+
+[vars]
+DISCORD_CLIENT_ID = "REPLACE_WITH_YOUR_DISCORD_APPLICATION_ID"
+DISCORD_GUILD_ID = "REPLACE_WITH_YOUR_SOLSTICE_SERVER_ID"
