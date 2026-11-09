@@ -168,3 +168,17 @@ body { border-top: 3px solid var(--gold); }
   .hero-copy { padding-top:0; }
   .guild-panel { max-width:none; }
 }
+
+.brand .solstice-shield { width: 37px; height: 43px; }
+.solstice-wordmark { display: inline-grid; justify-items: stretch; gap: 4px; }
+.brand .solstice-wordmark strong { color: #f0dfbf; font: 800 25px/.92 Georgia, serif; letter-spacing: .055em; }
+.brand .solstice-wordmark small { display: flex; align-items: center; gap: 6px; margin: 0; color: #d4a85d; white-space: nowrap; font: 700 9px/1 Georgia, serif; letter-spacing: .19em; }
+.solstice-wordmark small::before, .solstice-wordmark small::after { content: ''; flex: 1; min-width: 8px; height: 1px; background: #d4a85d; }
+.guild-app .roster-filters, .guild-app .readiness-checks { display: grid; grid-template-columns: repeat(auto-fit,minmax(125px,1fr)); gap: 8px; margin: 10px 0; }
+.guild-app .roster-filters :is(input,select), .guild-app .readiness-checks select { display:block; width:100%; margin-top:4px; }
+.guild-app .readiness-caption { font-size: 12px; }
+.guild-app .readiness-details { width: 100%; padding: 7px 10px; border: 1px solid var(--line); background: #151711; }
+.guild-app .readiness-details summary { color: var(--gold); }
+.guild-app .readiness-checks strong { display: block; }
+.readiness-badge { display: inline-block; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; margin-top: 3px; font-size: 11px; }
+.readiness-badge.ready { color: #a6ce99; } .readiness-badge.blocked { color: #efa58c; }

@@ -5,19 +5,20 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
 })[char]);
 const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
-const mark = '<svg aria-hidden="true" viewBox="0 0 48 48" width="35" height="35" fill="none" stroke="currentColor" stroke-width="2"><circle cx="24" cy="24" r="8"/><path d="M24 2v12m0 20v12M2 24h12m20 0h12M8 8l9 9m14 14 9 9M8 40l9-9m14-14 9-9"/><circle cx="24" cy="24" r="19" opacity=".35"/></svg>';
+export const solsticeMark = '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70"><path d="M30 3C23 9 13 12 5 12c-1 23 3 38 25 54 22-16 26-31 25-54-8 0-18-3-25-9Z" fill="#0c1b31" stroke="#d4a85d" stroke-width="3.5"/><g fill="#edbb65"><path d="m30 13 3 19h-6Zm-14 8 10 13-5 3Zm28 0-5 16-5-3ZM8 30l13 8-2 4Zm44 0-11 12-2-4Z"/><path d="M20 44a10 10 0 0 1 20 0Zm-7 4c10-5 24-5 34 0l-2 3c-11-4-19-4-30 0Z"/></g></svg>';
+export const solsticeLockup = solsticeMark + '<span class="solstice-wordmark"><strong>Solstice</strong><small>Alliance Guild</small></span>';
 
 export function canEditArticles(env, session) {
   return Boolean(session && (env.CMS_ADMIN_DISCORD_IDS ?? '').split(',').map(id => id.trim()).includes(session.discord_id));
 }
 
 function shell(title, body, { session, editor, next = '/?tool=auction' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=085eefe7812f"></head><body>
-  <header class="site-header"><a class="brand" href="/">${mark}<span>Solstice<small>Alliance Guild</small></span></a>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=3a7eda1a288c"></head><body>
+  <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="/?tool=auction">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord <span aria-hidden="true">↗</span></a>'}</nav></header>
   ${body}
-  <footer><a class="brand" href="/">${mark}<span>Solstice</span></a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
+  <footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
   </body></html>`;
 }
 function html(body, status = 200) {

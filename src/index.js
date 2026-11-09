@@ -1,4 +1,4 @@
-import { articlePage, cmsPage, publicHome } from './home.js';
+import { articlePage, cmsPage, publicHome, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
@@ -31,6 +31,8 @@ const professionTiles = [
 
 const raidClasses = ['Druid', 'Hunter', 'Mage', 'Paladin', 'Priest', 'Rogue', 'Warlock', 'Warrior'];
 const raidRoles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
+const readinessChecks = [['access','Raid access'],['gear','Gear'],['enchants','Enchants'],['supplies','Supplies']];
+const readinessValues = ['Unreviewed', 'Ready', 'Blocked', 'Not applicable'];
 const raidStatuses = ['Going', 'Tentative', 'Bench', 'Declined'];
 
 async function raidApi(request, db, url, user) {
@@ -103,9 +105,11 @@ async function raidApi(request, db, url, user) {
   const organizer = raid.owner === user;
   const settings = JSON.parse(raid.settings || '{}');
   if (!post) {
-    const signups = await db.prepare('SELECT member, character, class_name, role, status, group_no, assignment FROM raid_signups WHERE raid_id = ? ORDER BY character COLLATE NOCASE').bind(id).all();
+    const signups = await db.prepare('SELECT member, character, class_name, role, status, group_no, assignment, readiness, readiness_note, reviewed_at FROM raid_signups WHERE raid_id = ? ORDER BY character COLLATE NOCASE').bind(id).all();
     const mine = signups.results.find(row => row.member === user);
-    const roster = signups.results.map(({ member, ...row }) => organizer ? { ...row, member } : row);
+    const roster = signups.results.map(({ member, readiness, ...row }) => ({
+      ...row, readiness: JSON.parse(readiness || '{}'), ...(organizer ? { member } : {}),
+    }));
     const { owner, ...event } = raid;
     return reply({ event: { ...event, settings }, organizer, roster, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
   }
@@ -120,6 +124,19 @@ async function raidApi(request, db, url, user) {
       if (!['Going', 'Bench', 'Waitlist', 'Declined'].includes(input.status)) return reply({ error: 'Invalid review status.' }, 400);
       await db.prepare("UPDATE raid_signups SET status = ?, group_no = CASE WHEN ? = 'Going' THEN group_no ELSE NULL END WHERE raid_id = ? AND member = ?").bind(input.status, input.status, id, clean(input.member, 250)).run();
     }
+    return reply({ ok: true });
+  }
+  if (input.action === 'readiness') {
+    if (!organizer) return reply({ error: 'Only the raid organizer can review readiness.' }, 403);
+    const member = clean(input.member, 250);
+    const character = clean(input.character, 30);
+    const checks = Object.fromEntries(readinessChecks.map(([key]) => [key, input.checks?.[key]]));
+    if (!member || !character || Object.values(checks).some(value => !readinessValues.includes(value))) {
+      return reply({ error: 'Select a valid status for each check.' }, 400);
+    }
+    const result = await db.prepare('UPDATE raid_signups SET readiness = ?, readiness_note = ?, reviewed_at = ? WHERE raid_id = ? AND member = ? AND character = ?')
+      .bind(JSON.stringify(checks), clean(input.note, 400), new Date().toISOString(), id, member, character).run();
+    if (!result.meta.changes) return reply({ error: 'This sign-up changed. Reopen the raid before reviewing.' }, 409);
     return reply({ ok: true });
   }
   if (input.action === 'assign') {
@@ -148,7 +165,11 @@ async function raidApi(request, db, url, user) {
       ELSE 'Going' END
     FROM raids WHERE id = ? AND state = 'Open'
     ON CONFLICT (raid_id, member) DO UPDATE SET character = excluded.character, class_name = excluded.class_name, role = excluded.role,
-    status = excluded.status, group_no = CASE WHEN excluded.status = 'Going' AND excluded.role = raid_signups.role THEN raid_signups.group_no ELSE NULL END`)
+    status = excluded.status,
+    readiness = CASE WHEN excluded.character = raid_signups.character AND excluded.class_name = raid_signups.class_name THEN raid_signups.readiness ELSE '{}' END,
+    readiness_note = CASE WHEN excluded.character = raid_signups.character AND excluded.class_name = raid_signups.class_name THEN raid_signups.readiness_note ELSE '' END,
+    reviewed_at = CASE WHEN excluded.character = raid_signups.character AND excluded.class_name = raid_signups.class_name THEN raid_signups.reviewed_at ELSE NULL END,
+    group_no = CASE WHEN excluded.status = 'Going' AND excluded.role = raid_signups.role THEN raid_signups.group_no ELSE NULL END`)
     .bind(user, character, input.className, input.role, input.status, input.status, Number(Boolean(settings.review)), Number(Boolean(settings.waitlist)),
       user, input.role, user, roleLimit, id).run();
   if (!result.meta.changes) return reply({ error: 'Sign-ups are closed for this raid.' }, 409);
@@ -223,10 +244,8 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=085eefe7812f"></head><body class="guild-app"><main>
-<header class="masthead">
-<svg class="crest" viewBox="0 0 96 96" aria-hidden="true"><rect x="2" y="2" width="92" height="92" rx="18" fill="#0c0b09" stroke="currentColor" stroke-width="2"/><circle cx="48" cy="48" r="15" fill="currentColor"/><path d="M48 17v10m0 42v10M17 48h10m42 0h10M26 26l7 7m30 30 7 7M26 70l7-7m30-30 7-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
-<div><strong>Solstice</strong><small>World of Warcraft: Forever</small></div></header>
+<link rel="stylesheet" href="/assets/home.css?v=3a7eda1a288c"></head><body class="guild-app"><main>
+<header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
@@ -295,7 +314,12 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <form id="raidSignup" class="raid-card raid-form">
 <h3>Your RSVP</h3><label>Saved character<select id="signupCharacter"><option value="">Enter manually</option></select></label>
 <label>Character<input name="character" required maxlength="30"></label><label>Class<select name="className"></select></label><label>Role<select name="role"></select></label><label>Status<select name="status"><option>Going</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><button class="raid-primary">Save RSVP</button></form>
-<div class="raid-card"><h3>Roster</h3><label>Filter sign-ups<select id="rosterFilter"><option value="">All statuses</option><option>Going</option><option>Pending</option><option>Waitlist</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><div id="raidRoster"></div></div>
+<div class="raid-card"><p class="eyebrow">Raid workspace</p><h3>Roster &amp; readiness</h3>
+<div id="readinessSummary" class="raid-stats"></div><p class="readiness-caption">Readiness is reviewed by the raid organizer. Counts cover players marked Going.</p>
+<div class="roster-filters"><label>Find a character<input id="rosterSearch" type="search" placeholder="Name or class"></label>
+<label>Role<select id="rosterRole"><option value="">All roles</option></select></label>
+<label>Readiness<select id="rosterReadiness"><option value="">All readiness</option><option>Ready</option><option>Blocked</option><option>Unreviewed</option></select></label>
+<label>Filter sign-ups<select id="rosterFilter"><option value="">All statuses</option><option>Going</option><option>Pending</option><option>Waitlist</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label></div><div id="raidRoster"></div></div>
 <div class="raid-card"><h3>Group planner</h3><div id="raidGroups" class="raid-stats"></div></div>
 </div>
 </div></section>
@@ -1004,6 +1028,59 @@ function setWizardStep(step) {
     byId('raidReview').replaceChildren(raidElement('h3',data.get('title')),raidElement('p',raidDate(data.get('startsAt'))+' · '+data.get('size')+' players'),raidElement('p',data.get('notes')));
   }
 }
+const readinessChecks = ${JSON.stringify(readinessChecks)};
+const readinessValues = ${JSON.stringify(readinessValues)};
+for (const role of raidRoles) byId('rosterRole').add(new Option(role, role));
+
+function readinessOf(player) {
+  const states = readinessChecks.map(([key]) => player.readiness?.[key] ?? 'Unreviewed');
+  if (states.includes('Blocked')) return 'Blocked';
+  if (states.includes('Unreviewed')) return 'Unreviewed';
+  return 'Ready';
+}
+
+function reviewCharacter(event, player, organizer) {
+  const details = raidElement('details', null, 'readiness-details');
+  details.append(raidElement('summary','Character checks'));
+  if (player.reviewed_at) details.append(raidElement('p','Reviewed '+raidDate(player.reviewed_at)));
+  const grid = raidElement('div',null,'readiness-checks');
+  if (!organizer) {
+    for (const [key, title] of readinessChecks) {
+      const item = raidElement('div');
+      item.append(raidElement('small',title),raidElement('strong',player.readiness?.[key] ?? 'Unreviewed'));
+      grid.append(item);
+    }
+    details.append(grid);
+    if (player.readiness_note) details.append(raidElement('p',player.readiness_note));
+    return details;
+  }
+  const form = raidElement('form');
+  const fields = readinessChecks.map(([key,title]) => {
+    const label = raidElement('label',title);
+    const select = raidElement('select');
+    for (const value of readinessValues) select.add(new Option(value,value));
+    select.value = player.readiness?.[key] ?? 'Unreviewed';
+    label.append(select); grid.append(label);
+    return [key,select];
+  });
+  const note = raidElement('input');
+  note.placeholder = 'Shared readiness note'; note.maxLength = 400; note.value = player.readiness_note ?? '';
+  note.setAttribute('aria-label','Shared readiness note for '+player.character);
+  const save = raidElement('button','Save review','raid-primary');
+  const actions = raidElement('div',null,'raid-actions');
+  actions.append(note,save);
+  form.append(grid,actions);
+  form.addEventListener('submit', async e => {
+    e.preventDefault(); save.disabled = true;
+    try {
+      await changeRaid(event.id,{action:'readiness',member:player.member,character:player.character,
+        checks:Object.fromEntries(fields.map(([key,field]) => [key,field.value])),note:note.value});
+    } finally { save.disabled = false; }
+  });
+  details.append(form);
+  return details;
+}
+
 function renderRaid({ event, organizer, roster, mine }) {
   byId('raidTitle').textContent = event.title;
   byId('raidSubtitle').textContent = raidDate(event.starts_at) + ' · ' + event.size + ' players · US Normal Alliance';
@@ -1051,15 +1128,41 @@ function renderRaid({ event, organizer, roster, mine }) {
     signupForm.elements.status.value = ['Pending','Waitlist'].includes(mine.status) ? 'Going' : mine.status;
     byId('raidMessage').textContent = [event.notes, 'Your RSVP: '+mine.status].filter(Boolean).join(' · ');
   }
+  renderRoster({ event, organizer, roster });
+  const groups = byId('raidGroups');
+  groups.replaceChildren();
+  for (let group = 1; group <= event.size/5; group++) {
+    const card = raidElement('div');
+    const assigned = going.filter(row => row.group_no === group);
+    card.append(raidElement('strong','Group '+group+' · '+assigned.length+'/5'));
+    for (const player of assigned) card.append(raidElement('p',player.character+' · '+player.role));
+    groups.append(card);
+  }
+  byId('raidDetail').hidden = false;
+  signupForm.hidden = event.state !== 'Open';
+}
+
+function renderRoster({ event, organizer, roster }) {
+  const going = roster.filter(player => player.status === 'Going');
+  raidStats(byId('readinessSummary'), ['Ready','Blocked','Unreviewed'].map(value =>
+    [value, going.filter(player => readinessOf(player) === value).length]));
   const rows = byId('raidRoster');
   rows.replaceChildren();
   const filter = byId('rosterFilter').value;
-  const visibleRoster = roster.filter(player => !filter || player.status === filter);
+  const role = byId('rosterRole').value;
+  const readiness = byId('rosterReadiness').value;
+  const search = byId('rosterSearch').value.trim().toLowerCase();
+  const visibleRoster = roster.filter(player =>
+    (!filter || player.status === filter) && (!role || player.role === role) &&
+    (!readiness || readinessOf(player) === readiness) &&
+    (!search || (player.character+' '+player.class_name).toLowerCase().includes(search)));
   if (!visibleRoster.length) rows.append(raidElement('p','No sign-ups match this view.'));
   for (const player of visibleRoster) {
     const row = raidElement('div',null,'raid-row');
     const playerInfo = raidElement('div');
     playerInfo.append(raidElement('strong',player.character),raidElement('small',player.class_name+' · '+player.role+' · '+player.status));
+    const readinessState = readinessOf(player);
+    playerInfo.append(raidElement('span', readinessState, 'readiness-badge '+readinessState.toLowerCase()));
     if (player.assignment) playerInfo.append(raidElement('p', player.assignment));
     row.append(playerInfo);
     if (organizer) {
@@ -1091,19 +1194,9 @@ function renderRaid({ event, organizer, roster, mine }) {
       });
       row.append(select);
     }
+    row.append(reviewCharacter(event, player, organizer));
     rows.append(row);
   }
-  const groups = byId('raidGroups');
-  groups.replaceChildren();
-  for (let group = 1; group <= event.size/5; group++) {
-    const card = raidElement('div');
-    const assigned = going.filter(row => row.group_no === group);
-    card.append(raidElement('strong','Group '+group+' · '+assigned.length+'/5'));
-    for (const player of assigned) card.append(raidElement('p',player.character+' · '+player.role));
-    groups.append(card);
-  }
-  byId('raidDetail').hidden = false;
-  signupForm.hidden = event.state !== 'Open';
 }
 
 async function changeRaid(id, update) {
@@ -1123,9 +1216,11 @@ function downloadRaidCalendar(event) {
   link.href = href; link.download = 'solstice-raid.ics'; link.click();
   setTimeout(() => URL.revokeObjectURL(href), 1000);
 }
-byId('rosterFilter').addEventListener('change', () => {
-  if (activeRaidData) renderRaid(activeRaidData);
-});
+for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch']) {
+  byId(id).addEventListener(id === 'rosterSearch' ? 'input' : 'change', () => {
+    if (activeRaidData) renderRoster(activeRaidData);
+  });
+}
 byId('raidTab').addEventListener('click',()=>openRaidView('signups'));
 for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });

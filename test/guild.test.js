@@ -75,6 +75,14 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const member = (await signIn('/?tool=raid&raid=' + id)).headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
   const raid = '/api/raids/' + id;
   assert.equal((await post(raid, { action: 'signup', character: 'Raider', className: 'Mage', role: 'Ranged DPS', status: 'Going' }, member)).status, 200);
+  const review = { action:'readiness', member:'31', character:'Raider', checks:{ access:'Blocked', gear:'Ready', enchants:'Not applicable', supplies:'Unreviewed' }, note:'Needs access' };
+  assert.equal((await post(raid, review, member)).status, 403);
+  assert.equal((await post(raid, {...review, character:'Former character'})).status, 409);
+  assert.equal((await post(raid, review)).status, 200);
+  const reviewed = (await (await send(raid, {headers:{Cookie:member}})).json()).roster[0];
+  assert.equal(reviewed.readiness.access, 'Blocked');
+  assert.equal(reviewed.readiness_note, 'Needs access');
+  assert.equal(reviewed.member, undefined);
   const detail = await (await send(raid, options)).json();
   assert.equal(detail.roster[0].status, 'Pending');
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' }, member)).status, 403);
