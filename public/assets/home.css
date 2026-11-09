@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&display=swap");
 
 :root {
   --site-font: "Lato", system-ui, "Segoe UI", sans-serif;
@@ -234,7 +234,8 @@ body { border-top: 0; }
   border-bottom-color: transparent;
   padding-inline: max(4vw, calc((100vw - min(83vw, 1320px)) / 2));
 }
-.guild-home { --home-width: min(78vw, 1240px); --home-gold: #d8a65c; }
+body:has(> .guild-home) { background: var(--surface); }
+.guild-home { --home-width: min(78vw, 1240px); --home-gold: color-mix(in srgb, var(--copper) 66%, var(--gold)); }
 .guild-home + footer {
   background: transparent;
   border-top-color: transparent;
@@ -254,7 +255,7 @@ body { border-top: 0; }
   background: linear-gradient(180deg, color-mix(in srgb, var(--night) 80%, transparent), transparent 27%),
     linear-gradient(90deg,var(--night) 0%,color-mix(in srgb, var(--night) 68%, transparent) 41%,transparent 90%),
     linear-gradient(0deg,var(--night) 0%,transparent 62%),
-    url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, var(--container);
+    url('/assets/solstice-twilight.webp') center 47% / cover no-repeat, var(--container);
 }
 .home-banner-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,29%); align-items: end; gap: clamp(20px,4vw,56px); width: var(--home-width); margin-inline: auto; padding: 112px 0 clamp(48px,5.5vw,88px); }
 .home-banner h1 { font: 650 clamp(66px,9.5vw,144px)/.95 var(--site-font); letter-spacing: -.065em; margin: 14px 0 20px; }
@@ -269,7 +270,7 @@ body { border-top: 0; }
   padding: clamp(16px,1.6vw,24px);
   border: 1px solid color-mix(in srgb, var(--home-gold) 80%, transparent);
   border-radius: 16px;
-  background: radial-gradient(ellipse at 50% 108%, #d28d4052, transparent 42%), #211912f2;
+  background: radial-gradient(ellipse at 50% 108%, #d28d4038, transparent 42%), var(--glass-panel);
   box-shadow: 0 12px 34px #0005;
   font-size: 14px;
 }
@@ -463,7 +464,7 @@ body { border-top: 0; }
 .armory-class-badge[data-wow-class="Shaman"] { --class-color: #0070dd; }
 .armory-class-badge[data-wow-class="Warlock"] { --class-color: #8788ee; }
 .armory-class-badge[data-wow-class="Warrior"] { --class-color: #c69b6d; }
-.guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 700; }
+.guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 300; }
 .armory-confirm-form { float: none; margin-top: 14px; }
 .armory-specs { border: 0; padding: 0; margin: 0 0 12px; }
 .armory-specs legend { margin-bottom: 6px; font-weight: 650; }
@@ -501,8 +502,8 @@ body { border-top: 0; }
 }
 .guild-app .armory-confirm { background: var(--panel); }
 
-/* Guild Hall uses neutral dark surfaces and shares the homepage accents. */
-.guild-app {
+/* Shared charcoal surfaces with copper accents. */
+.guild-app, body:has(> .guild-home) {
   --surface: #151719;
   --night: var(--surface);
   --container: #202326;
