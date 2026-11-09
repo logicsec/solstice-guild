@@ -204,14 +204,16 @@ body { border-top: 3px solid var(--gold); }
 }
 
 /* Shared Solstice surfaces and navigation. */
-/* Edit these seven swatches to try a different palette. */
+/* Autumn palette sampled from the reference swatches. */
 :root {
-  --surface: #1D191C;
+  --surface: #1D1713;
   --ink: #FFF1E7;
-  --container: #3B2128;
-  --deep-accent: #AD4837;
-  --accent: #FF9A57;
-  --gold: #FFC296;
+  --container: #3F2E26;
+  --deep-accent: #8A4D30;
+  --accent: #C09875;
+  --copper: #B4713D;
+  --sage: #8B8C64;
+  --gold: var(--accent);
   --sale: #FF8588;
   --night: var(--surface);
   --muted: color-mix(in srgb, var(--ink) 78%, var(--surface));
@@ -302,7 +304,7 @@ body { border-top: 0; }
 .guild-app .raid-shell p { color: var(--muted); }
 .guild-app .raid-shell .eyebrow { color: var(--accent); }
 .guild-app :is(.raid-card,.raid-stats>div,.board,.recipe-card) { border-radius: 13px; }
-.guild-app .raid-primary, .guild-app .search-button { background: var(--accent); border: 1px solid var(--accent); color: var(--surface); border-radius: 9px; }
+.guild-app .raid-primary, .guild-app .search-button { background: var(--copper); border: 1px solid var(--copper); color: var(--surface); border-radius: 9px; }
 .guild-app :is(.raid-primary,.search-button):hover { background: color-mix(in srgb, var(--accent) 78%, var(--ink)); }
 .guild-app .workspace-steps { grid-template-columns: repeat(3,minmax(0,1fr)); }
 .guild-app .workspace-steps button, .guild-app .workspace-player { background: var(--container); border-color: var(--line); }
@@ -335,7 +337,7 @@ body { border-top: 0; }
 .prep-player label { margin-top: 8px; }
 .prep-timeline { display: flex; min-height: 13px; gap: 2px; margin: 14px 0; overflow: hidden; border-radius: 5px; }
 .prep-task { background: var(--accent); }
-.prep-group { background: var(--gold); }
+.prep-group { background: var(--sage); }
 .prep-free { background: repeating-linear-gradient(135deg,var(--line) 0 4px,var(--surface) 4px 8px); }
 .prep-handoff textarea { display: block; width: 100%; margin: 10px 0; color: inherit; border: 1px solid var(--line); padding: 10px; }
 .prep-handoff > :is(button,small) { margin-top: 10px; display: block; }
@@ -400,7 +402,7 @@ body { border-top: 0; }
   .working-raid { width: 100%; max-width: 360px; }
 }
 
-.button.gold { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.button.gold { background: var(--copper); border-color: var(--copper); color: var(--surface); }
 .button.gold:hover { background: color-mix(in srgb, var(--accent) 78%, var(--ink)); }
 .guild-app :is(.raid-form label input,.raid-form label select,.raid-form label textarea), .editor-grid input:not([type=hidden]), .editor-grid textarea { background: var(--field); }
 .guild-app .price.is-sale { color: var(--sale); }
