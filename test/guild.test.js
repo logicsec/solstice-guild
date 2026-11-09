@@ -104,11 +104,12 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(armory.character.gear[0].enchants[0],'Intellect');
   assert.equal(armory.character.professions[0].name,'Alchemy');
   assert.match(armory.character.render,/^https:\/\/render\./);
-  const link = {action:'link',slug:'astra-mortis',role:'Ranged DPS',spec:'Frost'};
+  const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);
   const linked = await (await send('/api/armory',{headers:{Cookie:member}})).json();
   assert.equal(linked.characters[0].spec,'Frost');
+  assert.equal(linked.characters[0].role,'Ranged DPS');
   assert.equal((await post('/api/armory',link)).status,409);
   const withProfile = await (await send(raid+'?armory=1',{headers:{Cookie:member}})).json();
   assert.equal(withProfile.roster[0].armorySlug,'astra-mortis');

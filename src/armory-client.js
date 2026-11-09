@@ -105,11 +105,15 @@ export function renderArmoryConfirmation(card,character,search) {
   const portrait = raidElement('div',null,'armory-confirm-portrait');
   const initials = character.name.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase();
   portrait.textContent = initials;
-  if (character.avatar) {
+  function icon(name) {
     const image = raidElement('img');
     image.alt = '';
+    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+name+'.jpg';
+    return image;
+  }
+  if (Object.hasOwn(armorySpecs,character.className)) {
+    const image = icon('classicon_'+character.className.toLowerCase());
     image.addEventListener('load',()=>portrait.replaceChildren(image));
-    image.src = character.avatar;
   }
   const identity = raidElement('div');
   identity.append(raidElement('h3',character.name),raidElement('p',[
@@ -122,27 +126,22 @@ export function renderArmoryConfirmation(card,character,search) {
   summary.append(portrait,identity);
 
   const form = raidElement('form',null,'armory-confirm-form');
-  const roleLabel = raidElement('label','Raid role');
-  const role = raidElement('select');
-  for (const value of raidRoles) role.add(new Option(value,value));
-  role.value = 'Ranged DPS';
-  roleLabel.append(role);
   const specs = Object.hasOwn(armorySpecs,character.className) ? armorySpecs[character.className] : [];
   if (specs.length) {
     const fieldset = raidElement('fieldset',null,'armory-specs');
     const choices = raidElement('div',null,'armory-spec-grid');
     fieldset.append(raidElement('legend','Primary specialization'),choices);
-    for (const [index,[name,defaultRole]] of specs.entries()) {
+    for (const [index,[name,defaultRole,iconName]] of specs.entries()) {
       const label = raidElement('label',null,'armory-spec');
       const input = raidElement('input');
       Object.assign(input,{type:'radio',name:'spec',value:name,checked:index===0});
-      input.addEventListener('change',()=>{ role.value = defaultRole; });
       const text = raidElement('span');
       text.append(raidElement('strong',name),raidElement('small',defaultRole));
-      label.append(input,text);
+      const specIcon = icon(iconName);
+      specIcon.addEventListener('error',()=>specIcon.hidden = true);
+      label.append(input,specIcon,text);
       choices.append(label);
     }
-    role.value = specs[0][1];
     form.append(fieldset);
   }
   const feedback = raidElement('p',null,'armory-confirm-feedback');
@@ -153,19 +152,23 @@ export function renderArmoryConfirmation(card,character,search) {
   back.type = 'button';
   back.addEventListener('click',()=>dialog.close());
   actions.append(add,back);
-  form.append(roleLabel,feedback,actions);
+  form.append(feedback,actions);
+  if (!specs.length) {
+    add.disabled = true;
+    feedback.textContent = 'No specialization choices are available for this class.';
+  }
   dialog.append(header,summary,form);
   dialog.addEventListener('close',()=>{
     dialog.remove();
     if (search.isConnected) search.focus();
   });
-  dialog.addEventListener('cancel',event=>{ if (add.disabled) event.preventDefault(); });
+  dialog.addEventListener('cancel',event=>{ if (back.disabled) event.preventDefault(); });
   form.addEventListener('submit',async event=>{
     event.preventDefault();
     add.disabled = back.disabled = close.disabled = true;
     feedback.textContent = '';
     try {
-      await armoryRequest('',{action:'link',slug:character.slug,role:role.value,spec:new FormData(form).get('spec') ?? ''});
+      await armoryRequest('',{action:'link',slug:character.slug,spec:new FormData(form).get('spec') ?? ''});
       dialog.close();
       if (card.isConnected) await openRaidView('characters',null,false);
     } catch (error) { feedback.textContent = error.message; }

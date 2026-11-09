@@ -2,15 +2,15 @@ import { sameOriginWrite } from './auth.js';
 
 const roles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
 export const armorySpecs = {
-  Druid: [['Balance','Ranged DPS'],['Feral Combat','Melee DPS'],['Restoration','Healer']],
-  Hunter: [['Beast Mastery','Ranged DPS'],['Marksmanship','Ranged DPS'],['Survival','Ranged DPS']],
-  Mage: [['Arcane','Ranged DPS'],['Fire','Ranged DPS'],['Frost','Ranged DPS']],
-  Paladin: [['Holy','Healer'],['Protection','Tank'],['Retribution','Melee DPS']],
-  Priest: [['Discipline','Healer'],['Holy','Healer'],['Shadow','Ranged DPS']],
-  Rogue: [['Assassination','Melee DPS'],['Combat','Melee DPS'],['Subtlety','Melee DPS']],
-  Shaman: [['Elemental','Ranged DPS'],['Enhancement','Melee DPS'],['Restoration','Healer']],
-  Warlock: [['Affliction','Ranged DPS'],['Demonology','Ranged DPS'],['Destruction','Ranged DPS']],
-  Warrior: [['Arms','Melee DPS'],['Fury','Melee DPS'],['Protection','Tank']],
+  Druid: [['Balance','Ranged DPS','spell_nature_starfall'],['Feral Combat','Melee DPS','ability_racial_bearform'],['Restoration','Healer','spell_nature_healingtouch']],
+  Hunter: [['Beast Mastery','Ranged DPS','ability_hunter_beasttaming'],['Marksmanship','Ranged DPS','ability_marksmanship'],['Survival','Ranged DPS','ability_hunter_swiftstrike']],
+  Mage: [['Arcane','Ranged DPS','spell_holy_magicalsentry'],['Fire','Ranged DPS','spell_fire_firebolt02'],['Frost','Ranged DPS','spell_frost_frostbolt02']],
+  Paladin: [['Holy','Healer','spell_holy_holybolt'],['Protection','Tank','spell_holy_devotionaura'],['Retribution','Melee DPS','spell_holy_auraoflight']],
+  Priest: [['Discipline','Healer','spell_holy_wordfortitude'],['Holy','Healer','spell_holy_guardianspirit'],['Shadow','Ranged DPS','spell_shadow_shadowwordpain']],
+  Rogue: [['Assassination','Melee DPS','ability_rogue_eviscerate'],['Combat','Melee DPS','ability_backstab'],['Subtlety','Melee DPS','ability_stealth']],
+  Shaman: [['Elemental','Ranged DPS','spell_nature_lightning'],['Enhancement','Melee DPS','spell_nature_lightningshield'],['Restoration','Healer','spell_nature_magicimmunity']],
+  Warlock: [['Affliction','Ranged DPS','spell_shadow_deathcoil'],['Demonology','Ranged DPS','spell_shadow_metamorphosis'],['Destruction','Ranged DPS','spell_shadow_rainoffire']],
+  Warrior: [['Arms','Melee DPS','ability_warrior_savageblow'],['Fury','Melee DPS','ability_warrior_innerrage'],['Protection','Tank','ability_warrior_defensivestance']],
 };
 let tokenCache;
 
@@ -90,7 +90,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, render: mediaUrl(['main-raw','main','inset']) ?? null, avatar: mediaUrl(['avatar']) ?? null,
+    professions, gear, render: mediaUrl(['main-raw','main','inset']) ?? null,
   };
 }
 
@@ -124,13 +124,14 @@ export async function armoryApi(request, env, url, member) {
   const existing = await db.prepare('SELECT member, role FROM armory_links WHERE slug = ?').bind(slug).first();
   if (existing && existing.member !== member) return reply({ error: 'This character is already linked to another Discord account.' }, 409);
   if (input.action !== 'link') return reply({ error: 'Unknown Armory action.' }, 400);
-  const role = input.role;
-  if (!roles.includes(role)) return reply({ error: 'Select a raid role.' }, 400);
   const character = await loadCharacter(env, slug);
   if (!character) return reply({ error: 'Character not found in the Armory.' }, 404);
   const spec = input.spec ?? '';
   const specs = Object.hasOwn(armorySpecs,character.className) ? armorySpecs[character.className] : [];
-  if (spec !== '' && !specs.some(([name])=>name === spec)) return reply({ error:'Select a specialization for this class.' },400);
+  const selection = specs.find(([name])=>name === spec);
+  if (spec !== '' && !selection) return reply({ error:'Select a specialization for this class.' },400);
+  const role = selection?.[1] ?? input.role;
+  if (!roles.includes(role)) return reply({ error:'Select a specialization or raid role.' },400);
   const result = await db.prepare(`INSERT INTO armory_links (slug, member, role, name, class_name, spec) VALUES (?,?,?,?,?,?)
     ON CONFLICT(slug) DO UPDATE SET role = excluded.role, name = excluded.name, class_name = excluded.class_name, spec = excluded.spec
     WHERE armory_links.member = excluded.member`).bind(slug, member, role, character.name, character.className, spec).run();
