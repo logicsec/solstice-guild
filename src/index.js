@@ -1182,7 +1182,15 @@ function renderReadinessWorkspace(root,{event,roster}) {
   const actions = raidElement('div',null,'raid-actions');
   const details = raidElement('button','Open raid details');
   details.addEventListener('click',()=>openRaidView('detail',event.id));
-  actions.append(inspect,plan,details); intro.append(actions);
+  const copy = raidElement('button','Copy raid link');
+  const invite = raidElement('input');
+  invite.type = 'url';
+  invite.readOnly = true;
+  invite.hidden = true;
+  invite.value = raidInviteUrl(event.id);
+  invite.setAttribute('aria-label','Raid invite link');
+  copy.addEventListener('click',()=>copyRaidInvite(copy,invite));
+  actions.append(inspect,plan,details,copy,invite); intro.append(actions);
   const issue = raidElement('div');
   const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
   issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+(access === 1 ? ' raider needs raid access.' : ' raiders need raid access.') :
@@ -1469,9 +1477,8 @@ function renderRaid({ event, organizer, roster, mine }) {
     link.href = config.softReserve; link.target = '_blank'; link.rel = 'noopener noreferrer';
     requirements.append(link);
   }
-  const signupUrl = new URL('/',location.origin);
-  signupUrl.search = new URLSearchParams({tool:'raid',raid:event.id});
-  byId('raidLink').value = signupUrl.href;
+  byId('raidLink').value = raidInviteUrl(event.id);
+  byId('copyRaid').textContent = 'Copy link';
   const going = roster.filter(row => row.status === 'Going');
   raidStats(byId('raidStats'), [...raidRoles.map(role => [role, going.filter(row => row.role === role).length + (config.roles ? ' / ' + config.roles[role] : '')]),['Going / capacity',going.length + ' / ' + event.size]]);
   const picker = byId('signupCharacter');
@@ -1657,11 +1664,22 @@ signupForm.addEventListener('submit',async event=>{
   catch (error) { raidError(error); }
   finally { button.disabled = false; }
 });
-byId('copyRaid').addEventListener('click',async()=>{
-  const field = byId('raidLink');
-  try { await navigator.clipboard.writeText(field.value); byId('copyRaid').textContent = 'Copied'; }
-  catch { field.select(); }
-});
+function raidInviteUrl(id) {
+  const url = new URL('/',location.origin);
+  url.search = new URLSearchParams({tool:'raid',raid:id});
+  return url.href;
+}
+async function copyRaidInvite(button,field) {
+  try {
+    await navigator.clipboard.writeText(field.value);
+    button.textContent = 'Copied!';
+  } catch {
+    field.hidden = false;
+    field.focus();
+    field.select();
+  }
+}
+byId('copyRaid').addEventListener('click',()=>copyRaidInvite(byId('copyRaid'),byId('raidLink')));
 function writeRoute(tool, view, raid) {
   const url = new URL('/',location.origin);
   url.searchParams.set('tool', tool);
