@@ -1,0 +1,11 @@
+services:
+  solstice:
+    networks:
+      main-router:
+        aliases:
+          - solstice
+
+networks:
+  main-router:
+    name: main-router
+    external: true
