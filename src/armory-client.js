@@ -120,7 +120,12 @@ export function renderArmoryConfirmation(card,character,search) {
     character.ruleset,character.level != null && 'Level '+character.level,
   ].filter(Boolean).join(' · ')));
   const badges = raidElement('div',null,'armory-confirm-badges');
-  for (const label of [character.className,character.faction].filter(Boolean)) badges.append(raidElement('span',label));
+  if (character.className) {
+    const classBadge = raidElement('span',character.className,'armory-class-badge');
+    classBadge.dataset.wowClass = character.className;
+    badges.append(classBadge);
+  }
+  if (character.faction) badges.append(raidElement('span',character.faction));
   identity.append(badges);
   if (character.guild) identity.append(raidElement('p','‹'+character.guild+'›','armory-confirm-guild'));
   summary.append(portrait,identity);

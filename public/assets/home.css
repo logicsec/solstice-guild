@@ -449,7 +449,21 @@ body { border-top: 0; }
 .armory-confirm-portrait img { width: 100%; height: 100%; object-fit: cover; }
 .armory-confirm-badges { display: flex; gap: 6px; margin: 6px 0; }
 .armory-confirm-badges span { border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
-.guild-app .armory-confirm-guild { color: var(--gold); }
+.armory-confirm-badges .armory-class-badge {
+  color: var(--class-color, var(--ink));
+  border-color: color-mix(in srgb, var(--class-color, var(--ink)) 28%, var(--line));
+  background: color-mix(in srgb, var(--class-color, var(--ink)) 8%, transparent);
+}
+.armory-class-badge[data-wow-class="Druid"] { --class-color: #ff7c0a; }
+.armory-class-badge[data-wow-class="Hunter"] { --class-color: #aad372; }
+.armory-class-badge[data-wow-class="Mage"] { --class-color: #3fc7eb; }
+.armory-class-badge[data-wow-class="Paladin"] { --class-color: #f48cba; }
+.armory-class-badge[data-wow-class="Priest"] { --class-color: #fff; }
+.armory-class-badge[data-wow-class="Rogue"] { --class-color: #fff468; }
+.armory-class-badge[data-wow-class="Shaman"] { --class-color: #0070dd; }
+.armory-class-badge[data-wow-class="Warlock"] { --class-color: #8788ee; }
+.armory-class-badge[data-wow-class="Warrior"] { --class-color: #c69b6d; }
+.guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 700; }
 .armory-confirm-form { float: none; margin-top: 14px; }
 .armory-specs { border: 0; padding: 0; margin: 0 0 12px; }
 .armory-specs legend { margin-bottom: 6px; font-weight: 650; }
