@@ -259,6 +259,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .item-label[href]{text-decoration:none}.item-label[href]:hover,.item-label[href]:focus-visible{text-decoration:underline}
 
 [hidden]{display:none!important}
+.readiness-invite{display:flex;width:min(100%,560px);margin:0 0 14px;gap:0}.guild-app .readiness-invite input{flex:1;min-width:0;color:var(--muted);background:var(--field);border-radius:8px 0 0 8px}.guild-app .readiness-invite button{flex:none;min-width:76px;border-inline-start:0;border-radius:0 8px 8px 0}
 .raid-shell{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:580px;background:radial-gradient(at top right,#13232a,#0b1315 55%);color:#eef6f5}.raid-sidebar{padding:18px 10px;border-right:1px solid #253336;background:#091114}.raid-sidebar button{display:block;width:100%;text-align:left;margin:5px 0;background:transparent;border-color:transparent}.raid-sidebar button[aria-current=true]{background:#163338;color:#a1f2f1}.raid-content{padding:22px clamp(12px,3vw,36px);min-width:0}.raid-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.raid-heading h2{font-size:26px}.raid-primary{display:inline-block;background:#e6f3f2;color:#102225;border:0;font-weight:750;padding:8px 12px;border-radius:5px;text-decoration:none}.raid-card,.raid-stats>div{background:#111d21;border:1px solid #2d4145;border-radius:7px;padding:14px;margin:10px 0}.raid-card h3{margin:0 0 8px}.raid-form label{margin:9px 0}.raid-form label :is(input,select,textarea){display:block;width:100%;margin-top:4px;background:#0c1518;border-color:#42575b}.raid-form textarea{min-height:70px;color:inherit;font:inherit;padding:8px}.raid-form{max-width:740px}.raid-actions,.raid-steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.raid-actions input{flex:1;min-width:120px}.raid-steps span{flex:1;border-bottom:2px solid #42575b;padding:6px}.raid-steps span[aria-current=step]{border-color:#64d7d4;color:#a1f2f1}.raid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}.raid-stats strong{display:block;color:#a1f2f1}.raid-stats>div{margin:4px 0}.raid-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #2d4145;padding:9px 0}.raid-row button{background:transparent}.raid-row small{display:block}.raid-shell p{color:#aabdbf}.raid-content #raidMessage{margin:8px 0}
 @media(max-width:680px){.raid-shell{grid-template-columns:1fr}.raid-sidebar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;border-right:0;border-bottom:1px solid #253336}.raid-sidebar button{width:auto}.raid-sidebar .eyebrow{width:100%}}
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
@@ -310,6 +311,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
+<div id="readinessInvite" class="readiness-invite" role="group" aria-label="Raid invite" hidden><input id="readinessInviteLink" type="text" readonly aria-label="Raid invite link"><button id="copyReadinessInvite" type="button" aria-label="Copy raid link">Copy</button></div>
 <div id="raidList"></div>
 <form id="characterForm" class="raid-card raid-form" hidden>
 <h3>Add or update a character</h3><label>Name<input name="name" required maxlength="30"></label><label>Class<select name="className"></select></label><label>Specialization<input name="spec" maxlength="30" placeholder="Optional"></label><label>Role<select name="role"></select></label><button class="raid-primary">Save character</button></form>
@@ -980,6 +982,7 @@ function raidReset(view, id) {
   byId('raidSignIn').hidden = true;
   byId('newRaid').hidden = view === 'new';
   byId('raidList').replaceChildren();
+  byId('readinessInvite').hidden = true;
   characterForm.hidden = true;
   raidForm.hidden = true;
   byId('raidDetail').hidden = true;
@@ -1182,15 +1185,10 @@ function renderReadinessWorkspace(root,{event,roster}) {
   const actions = raidElement('div',null,'raid-actions');
   const details = raidElement('button','Open raid details');
   details.addEventListener('click',()=>openRaidView('detail',event.id));
-  const copy = raidElement('button','Copy raid link');
-  const invite = raidElement('input');
-  invite.type = 'url';
-  invite.readOnly = true;
-  invite.hidden = true;
-  invite.value = raidInviteUrl(event.id);
-  invite.setAttribute('aria-label','Raid invite link');
-  copy.addEventListener('click',()=>copyRaidInvite(copy,invite));
-  actions.append(inspect,plan,details,copy,invite); intro.append(actions);
+  byId('readinessInviteLink').value = raidInviteUrl(event.id);
+  byId('copyReadinessInvite').textContent = 'Copy';
+  byId('readinessInvite').hidden = false;
+  actions.append(inspect,plan,details); intro.append(actions);
   const issue = raidElement('div');
   const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
   issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+(access === 1 ? ' raider needs raid access.' : ' raiders need raid access.') :
@@ -1679,6 +1677,7 @@ async function copyRaidInvite(button,field) {
     field.select();
   }
 }
+byId('copyReadinessInvite').addEventListener('click',()=>copyRaidInvite(byId('copyReadinessInvite'),byId('readinessInviteLink')));
 byId('copyRaid').addEventListener('click',()=>copyRaidInvite(byId('copyRaid'),byId('raidLink')));
 function writeRoute(tool, view, raid) {
   const url = new URL('/',location.origin);
