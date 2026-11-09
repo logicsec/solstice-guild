@@ -1,3 +1,4 @@
+import { raidReserves } from './reserves.js';
 import { sameOriginWrite } from './auth.js';
 
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
@@ -18,7 +19,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=43b121777f24"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=713594c478a2"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -71,6 +72,7 @@ export async function publicRaidPage(db, id, roles, session) {
     return response;
   };
   const { results } = await db.prepare(`SELECT r.title, r.starts_at, r.size, r.state,
+      r.reserve_limit, r.reserves_locked, json_extract(r.settings, '$.softReserve') AS reserve_url,
       json_extract(r.settings, '$.roles') AS role_targets, s.character, s.class_name, s.role, s.group_no
     FROM raids r LEFT JOIN raid_signups s ON s.raid_id = r.id AND s.status = 'Going'
     WHERE r.id = ?
@@ -79,6 +81,10 @@ export async function publicRaidPage(db, id, roles, session) {
   if (!raid) return respond('Raid unavailable',
     '<main class="article-page"><h1>Raid unavailable</h1><p>This raid link may be outdated.</p><a class="text-link" href="/">Back to Solstice</a></main>',404);
   const roster = results.filter(row=>row.character != null);
+  const reserves = await raidReserves(db,id);
+  const reserveRows = reserves.map(row=>`<tr><th scope="row">${escape(row.character)}</th><td>${row.items.map(escape).join(' · ')}</td></tr>`).join('');
+  const external = typeof raid.reserve_url === 'string' && /^https:\/\//i.test(raid.reserve_url) ?
+    `<a class="text-link" href="${escape(raid.reserve_url)}" rel="noreferrer">Open external soft reserves</a>` : '';
   const targets = JSON.parse(raid.role_targets || 'null');
   const date = new Intl.DateTimeFormat('en-US',{
     dateStyle:'full', timeStyle:'short', timeZone:'America/New_York',
@@ -103,6 +109,12 @@ export async function publicRaidPage(db, id, roles, session) {
       ${rows ? `<div class="news-card public-raid-table"><table aria-label="Confirmed raid roster">
         <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
         <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
+      <h2 class="public-raid-roster-heading">Loot reserves</h2>
+      <p>${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Open'} · ${raid.reserve_limit} per player</p>
+      ${reserveRows ? `<div class="news-card public-raid-table"><table aria-label="Raid loot reserves">
+        <thead><tr><th scope="col">Character</th><th scope="col">Reserved items</th></tr></thead>
+        <tbody>${reserveRows}</tbody></table></div>` : '<p class="empty">No reserves recorded yet.</p>'}
+      ${external}
     </section>
   </main>`);
 }

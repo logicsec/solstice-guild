@@ -55,8 +55,8 @@ async function loadCharacter(env, slug) {
       return result.ok ? await result.json() : null;
     } catch { return null; }
   }
-  const [data, equipment, media] = await Promise.all([
-    optional('/professions'), optional('/equipment'), optional('/character-media'),
+  const [data, equipment, media, statistics] = await Promise.all([
+    optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'),
   ]);
   let professions = null;
   if (data) {
@@ -76,12 +76,22 @@ async function loadCharacter(env, slug) {
   const mediaUrl = keys => keys.map(key=>renders.find(asset=>asset.key === key)?.value).find(value=>
     typeof value === 'string' && /^https:\/\/render(?:-[a-z]+)?\.worldofwarcraft\.com\//i.test(value));
   const gear = Array.isArray(equipment?.equipped_items) ? equipment.equipped_items.map(item=>({
+    id: Number.isSafeInteger(item.item?.id) ? item.item.id : null,
+    slotType: item.slot?.type ?? '',
+    level: Number.isFinite(item.level?.value) ? item.level.value : null,
     slot: localized(item.slot?.name ?? item.slot?.type),
     name: localized(item.name),
     quality: item.quality?.type ?? 'COMMON',
     enchants: (Array.isArray(item.enchantments) ? item.enchantments : []).map(enchant=>
       localized(enchant.display_string ?? enchant.enchantment?.name ?? enchant.source_item?.name)).filter(Boolean),
   })).filter(item=>item.name) : null;
+  const attributes = [
+    ['Primary stats',[['Strength',statistics?.strength?.effective],['Agility',statistics?.agility?.effective],
+      ['Intellect',statistics?.intellect?.effective],['Stamina',statistics?.stamina?.effective],
+      ['Spirit',statistics?.spirit?.effective]]],
+    ['Defense',[['Health',statistics?.health],['Armor',statistics?.armor?.effective]]],
+    ['Offense',[['Attack power',statistics?.attack_power],['Spell power',statistics?.spell_power]]],
+  ].map(([group,values])=>[group,values.filter(([,value])=>Number.isFinite(value))]).filter(([,values])=>values.length);
   return {
     slug, name, level: profile.level ?? null,
     className: localized(profile.character_class?.name),
@@ -90,7 +100,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, render: mediaUrl(['main-raw','main','inset']) ?? null,
+    professions, gear, attributes, render: mediaUrl(['main-raw','main','inset']) ?? null,
   };
 }
 
@@ -140,8 +150,9 @@ export async function armoryApi(request, env, url, member) {
 }
 
 export async function linkedRosterProfiles(db, id) {
-  const result = await db.prepare(`SELECT s.member, a.slug FROM raid_signups s JOIN armory_links a
+  const result = await db.prepare(`SELECT s.member, a.slug, COALESCE(NULLIF(a.spec, ''), c.spec, '') AS spec FROM raid_signups s LEFT JOIN armory_links a
     ON a.member = s.member AND a.name = s.character COLLATE NOCASE AND a.class_name = s.class_name
+    LEFT JOIN raid_characters c ON c.member = s.member AND c.name = s.character COLLATE NOCASE AND c.class_name = s.class_name
     WHERE s.raid_id = ?`).bind(id).all();
-  return new Map(result.results.map(row=>[row.member,row.slug]));
+  return new Map(result.results.map(row=>[row.member,row]));
 }

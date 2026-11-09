@@ -1,7 +1,9 @@
+import { changeReserves, raidReserves, reserveHistory } from './reserves.js';
+import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
 import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
-import { renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
+import { characterIcons, openCharacterSheet, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
 import { articlePage, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
@@ -112,17 +114,22 @@ async function raidApi(request, db, url, user) {
   const organizer = raid.owner === user;
   const settings = JSON.parse(raid.settings || '{}');
   if (!post) {
+    if (url.searchParams.has('reserveHistory')) return reserveHistory(db,raid,user,url.searchParams.get('reserveHistory'),reply);
     const signups = await db.prepare('SELECT member, character, class_name, role, status, group_no, assignment, readiness, readiness_note, reviewed_at FROM raid_signups WHERE raid_id = ? ORDER BY character COLLATE NOCASE').bind(id).all();
     const mine = signups.results.find(row => row.member === user);
     const participant = organizer || Boolean(mine);
     const profiles = participant && url.searchParams.has('armory') ? await linkedRosterProfiles(db,id) : new Map();
     const prep = participant && url.searchParams.has('prep') ? await prepTasks(db,id) : [];
     const roster = signups.results.map(({ member, readiness, ...row }) => ({
-      ...row, readiness: JSON.parse(readiness || '{}'), ...(organizer ? { member } : {}), ...(profiles.has(member) ? { armorySlug: profiles.get(member) } : {}),
+      ...row, readiness: JSON.parse(readiness || '{}'), ...(organizer ? { member } : {}), ...(profiles.has(member) ? { armorySlug: profiles.get(member).slug ?? undefined, spec: profiles.get(member).spec } : {}),
     }));
+    const reserveRows = await raidReserves(db,id,true);
+    const myReserveItems = reserveRows.find(row=>row.key === 'member:'+user)?.items ?? [];
+    const reserves = organizer ? reserveRows : reserveRows.map(({key,...row})=>row);
     const { owner, ...event } = raid;
-    return reply({ event: { ...event, settings }, organizer, roster, prep, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
+    return reply({ event: { ...event, settings }, organizer, roster, prep, reserves, myReserveItems, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
   }
+  if (typeof input.action === 'string' && input.action.startsWith('reserve-')) return changeReserves(db,raid,user,input,reply);
   if (input.action === 'delete') {
     if (!organizer) return reply({ error: 'Only the raid organizer can delete this raid.' },403);
     const result = await db.prepare('DELETE FROM raids WHERE id = ? AND owner = ?').bind(id,user).run();
@@ -265,7 +272,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=43b121777f24"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=713594c478a2"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -348,6 +355,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div id="raidControls" class="raid-controls" role="group" aria-label="Raid actions"></div>
 <div id="raidStats" class="raid-stats"></div>
 <div id="raidRequirements" class="raid-card" hidden></div>
+<div id="raidReserves" class="raid-card"></div>
 <form id="raidSignup" class="raid-card raid-form">
 <h3>Your RSVP</h3><label>Saved character<select id="signupCharacter"><option value="">Enter manually</option></select></label>
 <label>Character<input name="character" required maxlength="61"></label><label>Class<select name="className"></select></label><label>Role<select name="role"></select></label><label>Status<select name="status"><option>Going</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><button class="raid-primary">Save RSVP</button></form>
@@ -1135,7 +1143,11 @@ ${renderTonight.toString()}
 const armorySpecs = ${JSON.stringify(armorySpecs)};
 ${renderArmoryConfirmation.toString()}
 ${renderArmory.toString()}
+${renderRaidReserves.toString()}
+${showReserveHistory.toString()}
 ${renderArmoryProfile.toString()}
+${characterIcons.toString()}
+${openCharacterSheet.toString()}
 
 async function openRaidWorkspace(view, revision) {
   await loadWorkingRaids(revision);
@@ -1234,28 +1246,27 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
   function inspect(player) {
     detail.replaceChildren(raidElement('p','Character inspector','eyebrow'));
     if (!player) { detail.append(raidElement('p','No raider selected.')); return; }
-    detail.append(raidElement('h3',player.character),raidElement('p',[player.class_name,player.role,player.status].join(' · ')));
+    const heading = raidElement('div',null,'character-inspector-title');
+    heading.append(characterIcons(player.class_name,player.spec),raidElement('h3',player.character));
+    detail.append(heading,raidElement('p',[player.class_name,player.spec,player.role,player.status].filter(Boolean).join(' · ')));
     const checks = reviewCharacter(event,player,organizer);
-    checks.open = true;
-    detail.append(checks);
+    checks.open = !player.armorySlug;
     if (player.armorySlug) {
-      const armory = raidElement('details',null,'armory-inspector');
-      armory.append(raidElement('summary','Armory · gear, enchants & professions'));
-      const panel = raidElement('div');
-      armory.append(panel);
-      armory.addEventListener('toggle',async()=>{
-        if (!armory.open || panel.childNodes.length) return;
-        panel.append(raidElement('p','Loading the Armory…'));
-        try {
-          const {character} = await armoryRequest('?name='+encodeURIComponent(player.armorySlug));
-          panel.replaceChildren(renderArmoryProfile(character));
-        } catch (error) { panel.replaceChildren(raidElement('p',error.message)); }
-      });
-      detail.append(armory);
+      const sheet = raidElement('button','Open character sheet','raid-primary');
+      sheet.addEventListener('click',()=>openCharacterSheet(player));
+      detail.append(sheet);
+    } else {
+      detail.append(raidElement('p','Link this character in My characters to see their Armory gear.'));
     }
+    detail.append(checks);
     const manage = raidElement('button','Open raid & assignments');
     manage.addEventListener('click',()=>openRaidView('detail',event.id));
     detail.append(manage);
+    if (organizer) {
+      const history = raidElement('button','Reserve history');
+      history.addEventListener('click',()=>showReserveHistory(event.id,'member:'+player.member,player.character));
+      detail.append(history);
+    }
   }
   function draw() {
     const query = search.value.trim().toLowerCase();
@@ -1267,10 +1278,12 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
       const row = raidElement('button',null,'workspace-player');
       row.setAttribute('aria-current',String(player===selected));
       const title = raidElement('span');
-      title.append(raidElement('strong',player.character),raidElement('small',player.class_name+' · '+player.role));
+      title.append(raidElement('strong',player.character),raidElement('small',[player.class_name,player.spec,player.role].filter(Boolean).join(' · ')));
+      const identity = raidElement('span',null,'roster-character');
+      identity.append(characterIcons(player.class_name,player.spec),title);
       const status = readinessOf(player);
       const known = readinessChecks.filter(([key])=>['Ready','Blocked','Not applicable'].includes(player.readiness?.[key])).length;
-      row.append(title,raidElement('span',status,'readiness-badge '+status.toLowerCase()),
+      row.append(identity,raidElement('span',status,'readiness-badge '+status.toLowerCase()),
         raidElement('small',known+'/'+readinessChecks.length+' checks reviewed'));
       row.addEventListener('click',()=>{
         selected=player;
@@ -1421,7 +1434,9 @@ function reviewCharacter(event, player, organizer) {
   return details;
 }
 
-function renderRaid({ event, organizer, roster, mine }) {
+function renderRaid(data) {
+  const { event, organizer, roster, mine } = data;
+  renderRaidReserves(byId('raidReserves'),data);
   byId('raidTitle').textContent = event.title;
   byId('raidSubtitle').textContent = raidDate(event.starts_at) + ' · ' + event.size + ' players · US Normal Alliance';
   byId('raidMessage').textContent = event.notes;
@@ -1450,7 +1465,7 @@ function renderRaid({ event, organizer, roster, mine }) {
     const remove = raidElement('button','Delete raid','raid-control-danger');
     remove.type = 'button';
     remove.addEventListener('click',async()=>{
-      if (!window.confirm('Permanently delete “'+event.title+'”? This removes all sign-ups and preparation tasks for this occurrence and disables its invite link.')) return;
+      if (!window.confirm('Permanently delete “'+event.title+'”? This removes all sign-ups, preparation tasks, and loot reserves for this occurrence and disables its invite link.')) return;
       remove.disabled = true;
       try {
         await raidRequest('/'+event.id,{action:'delete'});
@@ -1538,7 +1553,9 @@ function renderRoster({ event, organizer, roster }) {
       assignment.placeholder = 'Raid assignment'; assignment.value = player.assignment; assignment.maxLength = 160;
       assignment.setAttribute('aria-label','Assignment for '+player.character);
       assignment.addEventListener('change',()=>changeRaid(event.id,{action:'assignment',member:player.member,assignment:assignment.value}));
-      actions.append(review,assignment); row.append(actions);
+      const history = raidElement('button','Reserve history');
+      history.addEventListener('click',()=>showReserveHistory(event.id,'member:'+player.member,player.character));
+      actions.append(review,assignment,history); row.append(actions);
     }
     if (organizer && player.status === 'Going') {
       const select = raidElement('select');

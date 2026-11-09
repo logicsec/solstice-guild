@@ -40,8 +40,9 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
       const profile = new URL(url);
       assert.equal(profile.searchParams.get('namespace'),'profile-forever-us');
       const suffix = profile.pathname.split('/').at(-1);
-      if (suffix === 'equipment') return Response.json({equipped_items:[{name:'Staff',slot:{name:'Main Hand'},
+      if (suffix === 'equipment') return Response.json({equipped_items:[{item:{id:123},name:'Staff',slot:{name:'Main Hand',type:'MAIN_HAND'},level:{value:27},
         quality:{type:'RARE'},enchantments:[{display_string:'Intellect'}]}]});
+      if (suffix === 'statistics') return Response.json({intellect:{effective:42},health:900});
       if (suffix === 'professions') return Response.json({primaries:[{profession:{name:'Alchemy'},skill_points:100}]});
       if (suffix === 'character-media') return Response.json({assets:[{key:'main-raw',value:'https://render.worldofwarcraft.com/us/test.png'}]});
       return Response.json({name:'Astra',surname:'Mortis',character_class:{name:'Mage'},level:60});
@@ -122,6 +123,9 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' })).status, 200);
   const armory = await (await send('/api/armory?name=Astra+Mortis',{headers:{Cookie:member}})).json();
   assert.equal(armory.character.gear[0].enchants[0],'Intellect');
+  assert.equal(armory.character.gear[0].id,123);
+  assert.equal(armory.character.gear[0].slotType,'MAIN_HAND');
+  assert.deepEqual(armory.character.attributes[0],['Primary stats',[['Intellect',42]]]);
   assert.equal(armory.character.professions[0].name,'Alchemy');
   assert.match(armory.character.render,/^https:\/\/render\./);
   const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
@@ -133,6 +137,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post('/api/armory',link)).status,409);
   const withProfile = await (await send(raid+'?armory=1',{headers:{Cookie:member}})).json();
   assert.equal(withProfile.roster[0].armorySlug,'astra-mortis');
+  assert.equal(withProfile.roster[0].spec,'Frost');
   assert.equal(withProfile.roster[0].member,undefined);
   const task = {action:'prep-add',title:'Finish the entry quest',minutes:30,category:'Individual quests & tasks',
     players:['Astra Mortis'],target:'Astra Mortis',check:'access',ready:true};
@@ -153,12 +158,37 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.match(body,/Ranged DPS/);
     assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);
   }
+  const picks = {action:'reserve-picks',items:['Staff of the Wild','Ember Ring']};
+  assert.equal((await post(raid,{...picks,guest:'Guest Raider'},member)).status,403);
+  assert.equal((await post(raid,{...picks,items:[...picks.items,'Third item']},member)).status,409);
+  assert.equal((await post(raid,picks,member)).status,200);
+  assert.equal((await post(raid,{action:'reserve-settings',limit:1})).status,409);
+  assert.equal((await post(raid,{...picks,guest:'Guest Raider',items:['Copper Helm']})).status,200);
+  assert.equal((await post(raid,{action:'reserve-settings',locked:true},member)).status,403);
+  assert.equal((await post(raid,{action:'reserve-settings',locked:true})).status,200);
+  assert.equal((await post(raid,{...picks,items:[]},member)).status,409);
+  assert.equal((await post(raid,{...picks,member:'31'})).status,409);
+  const publicReserves = await (await send(publicPath)).text();
+  assert.match(publicReserves,/Locked · 2 per player/);
+  assert.match(publicReserves,/Staff of the Wild/);
+  assert.match(publicReserves,/Guest Raider/);
+  assert.doesNotMatch(publicReserves,/member:31|guest:guest raider/);
+  const second = await post('/api/raids',{title:'Second week',startsAt:new Date(Date.now()+8*86400000).toISOString(),size:10});
+  const secondRaid = '/api/raids/'+(await second.json()).id;
+  assert.equal((await post(secondRaid,{action:'signup',character:'Astra Mortis',className:'Mage',role:'Ranged DPS',status:'Going'},member)).status,200);
+  assert.equal((await post(secondRaid,{...picks,items:['Next week item']},member)).status,200);
+  const history = await (await send(raid+'?reserveHistory=member%3A31',options)).json();
+  assert.deepEqual(history.history.map(entry=>entry.title),['Second week','Barrow Deeps']);
+  assert.equal((await send(raid+'?reserveHistory=guest%3Aguest%20raider',{headers:{Cookie:member}})).status,403);
+  assert.equal((await post(raid,{action:'reserve-settings',locked:false})).status,200);
+  assert.equal((await post(raid,{...picks,items:['Replacement item']},member)).status,200);
   assert.equal((await post(raid,{action:'delete'},member)).status,403);
   assert.equal((await post(raid,{action:'delete'})).status,200);
   assert.equal((await send(raid,options)).status,404);
   assert.equal((await send(publicPath)).status,404);
   assert.equal(db.prepare('SELECT count(*) AS total FROM raid_signups WHERE raid_id = ?').get(id).total,0);
   assert.equal(db.prepare('SELECT count(*) AS total FROM raid_prep WHERE raid_id = ?').get(id).total,0);
+  assert.equal(db.prepare('SELECT count(*) AS total FROM raid_reserves WHERE raid_id = ?').get(id).total,0);
   assert.equal((await send('/cms', { headers: { Cookie: member } })).status, 403);
   const article = new URLSearchParams({title:'First & Dawn', summary:'A guild update', body:'<script>unsafe</script>', action:'draft'});
   const save = () => send('/cms', { method:'POST', headers:{ Cookie:cookie, Origin:origin }, body:article });
