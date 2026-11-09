@@ -12,11 +12,11 @@ export function canEditArticles(env, session) {
   return Boolean(session && (env.CMS_ADMIN_DISCORD_IDS ?? '').split(',').map(id => id.trim()).includes(session.discord_id));
 }
 
-function shell(title, body, { session, editor, next = '/?tool=auction' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=02b581d5c8bb"></head><body>
+function shell(title, body, { session, editor, next = '/?tool=raid' } = {}) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=edf4830f6055"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
-  ${session ? '<a class="button discord" href="/?tool=auction">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord <span aria-hidden="true">↗</span></a>'}</nav></header>
+  ${session ? '<a class="button discord" href="/?tool=raid">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
   ${body}
   <footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
   </body></html>`;
@@ -31,28 +31,31 @@ export async function publicHome(env, url, session) {
   const params = new URLSearchParams(url.search);
   const login = params.get('login');
   params.delete('login');
-  const next = params.has('tool') || params.has('raid') ? '/?' + params : '/?tool=auction';
+  const next = params.has('tool') || params.has('raid') ? '/?' + params : '/?tool=raid';
   const notice = { membership: 'Use a Discord account that belongs to the Solstice server.', expired: 'Your sign-in expired. Please try again.', unavailable: 'Discord sign-in is temporarily unavailable.' }[login];
   const { results } = await env.DB.prepare('SELECT id, title, summary, published_at FROM articles WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 12').bind().all();
   const cards = results.map(article => `<article class="news-card"><p class="eyebrow">${dateLabel(article.published_at)}</p><h3><a href="/chronicle/${escape(article.id)}">${escape(article.title)}</a></h3><p>${escape(article.summary)}</p><a class="text-link" href="/chronicle/${escape(article.id)}">Read article <span aria-hidden="true">→</span></a></article>`).join('');
-  return html(shell('Home', `<main>
-  <section class="hero"><div class="hero-inner"><div class="hero-copy"><p class="eyebrow"><span class="sun-dot"></span> World of Warcraft: Forever</p><h1>Solstice guild.<br><em>Ready for raid night.</em></h1><p class="hero-description">An Alliance guild for raiders, crafters, and the friends you make along the way.</p>
-  ${notice ? '<p class="notice" role="status">' + escape(notice) + '</p>' : ''}
-  <div class="actions"><a class="button gold" href="${session ? '/?tool=auction' : escape(loginLink(next))}">${session ? 'Enter the Guild Hall' : 'Sign in with Discord'} <span aria-hidden="true">→</span></a><a class="button outline" href="#chronicle">Read the Chronicle</a></div></div>
-  <aside class="guild-panel" aria-label="Guild tools preview"><div class="panel-kicker"><span>◇ &nbsp; The Guild Hall</span><small>Tool preview</small></div>
-  <div class="panel-title"><h2>Prepare for the next pull</h2><p>Solstice · US Normal Alliance</p></div>
-  <div class="panel-tabs"><input type="radio" id="preview-raids" name="preview" checked><label for="preview-raids"><small>01</small>Raid Planner</label>
-  <input type="radio" id="preview-market" name="preview"><label for="preview-market"><small>02</small>Auction House</label>
-  <input type="radio" id="preview-crafts" name="preview"><label for="preview-crafts"><small>03</small>Professions</label></div>
-  <div class="panel-content preview-raids"><p class="eyebrow">Before raid night</p><h3>Turn sign-ups into a roster</h3><p>Set the roles you need, review who’s coming, and build your groups.</p><ul><li><span>01</span><div><strong>Create a raid</strong><small>Set the time, raid size, and role slots.</small></div></li><li><span>02</span><div><strong>Share the sign-up link</strong><small>Guildmates RSVP with a character.</small></div></li><li><span>03</span><div><strong>Organize the groups</strong><small>Assign roles and jobs before the first pull.</small></div></li></ul></div>
-  <div class="panel-content preview-market"><p class="eyebrow">US Normal Alliance</p><h3>Find the materials you need</h3><p>Browse categories or search by item, then compare buyouts and recent medians.</p><ul><li><span>01</span><div><strong>Browse listings</strong><small>Filter by category and subcategory.</small></div></li><li><span>02</span><div><strong>Compare prices</strong><small>Check the latest scan and price history.</small></div></li></ul></div>
-  <div class="panel-content preview-crafts"><p class="eyebrow">Guild crafting</p><h3>Know the cost before you craft</h3><p>Pick a profession to compare estimated margins and see which ingredients are listed.</p><ul><li><span>01</span><div><strong>Choose a profession</strong><small>Browse recipes and estimated profit.</small></div></li><li><span>02</span><div><strong>Check the reagents</strong><small>Expand a recipe to see what it takes.</small></div></li></ul></div>
-  </aside></div></section>
-  <section class="paths" aria-labelledby="paths-title"><p class="eyebrow">Life in Solstice</p><h2 id="paths-title">Find your place in the guild</h2>
-  <div class="path-grid"><article><span class="medallion" aria-hidden="true">⚔</span><h3>Raid together</h3><p>See what’s coming up, sign up with your character, and check your group before raid night.</p></article>
-  <article><span class="medallion" aria-hidden="true">⚒</span><h3>Craft with purpose</h3><p>Look up materials and compare crafting costs before spending your gold.</p></article>
-  <article><span class="medallion" aria-hidden="true">✦</span><h3>Keep up with the guild</h3><p>Read announcements and raid recaps in the Guild Chronicle.</p></article></div></section>
-  <section class="chronicle" id="chronicle"><p class="eyebrow">News from Solstice</p><h2>The Guild Chronicle</h2><p class="section-intro">Raid recaps, guild announcements, and stories from Azeroth.</p><div class="news-grid">${cards || '<p class="empty">There are no published articles yet.</p>'}</div></section>
+  return html(shell('Home', `<main class="guild-home">
+  <section class="home-banner" aria-labelledby="home-title"><div class="home-banner-content">
+    <p class="eyebrow">World of Warcraft: Forever <span>·</span> US Normal Alliance</p>
+    <h1 id="home-title">Solstice</h1>
+    <p class="home-intro">An Alliance guild for the people you want beside you in Azeroth.</p>
+    ${notice ? '<p class="notice" role="status">' + escape(notice) + '</p>' : ''}
+    <a class="button outline" href="#chronicle">Read the Chronicle <span aria-hidden="true">↓</span></a>
+  </div></section>
+  <div class="home-journal" id="chronicle">
+    <section class="chronicle" aria-labelledby="chronicle-title">
+      <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
+      <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
+      <div class="news-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
+    </section>
+    <aside class="home-about" aria-labelledby="about-title">
+      ${solsticeMark}
+      <p class="eyebrow">Alliance guild</p><h2 id="about-title">Life in Solstice</h2>
+      <p>We raid together, help each other get ready, and share what we learn along the way.</p>
+      <dl><div><dt>Game</dt><dd>WoW Forever</dd></div><div><dt>Server</dt><dd>US Normal</dd></div><div><dt>Faction</dt><dd>Alliance</dd></div></dl>
+    </aside>
+  </div>
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
 

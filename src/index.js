@@ -1,3 +1,7 @@
+import { armoryApi, linkedRosterProfiles } from './armory.js';
+import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
+import { renderTonight } from './tonight.js';
+import { renderArmory, renderArmoryProfile } from './armory-client.js';
 import { articlePage, cmsPage, publicHome, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
@@ -54,7 +58,10 @@ async function raidApi(request, db, url, user) {
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
-      return reply({ characters: result.results });
+      const linked = await db.prepare('SELECT name, class_name, role FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
+      const names = new Set(linked.results.map(row=>row.name.toLowerCase()));
+      return reply({ characters: result.results, signupCharacters: [...linked.results.map(row=>({...row,spec:''})),
+        ...result.results.filter(row=>!names.has(row.name.toLowerCase()))] });
     }
     const name = clean(input.name, 30);
     const spec = clean(input.spec, 30);
@@ -107,11 +114,18 @@ async function raidApi(request, db, url, user) {
   if (!post) {
     const signups = await db.prepare('SELECT member, character, class_name, role, status, group_no, assignment, readiness, readiness_note, reviewed_at FROM raid_signups WHERE raid_id = ? ORDER BY character COLLATE NOCASE').bind(id).all();
     const mine = signups.results.find(row => row.member === user);
+    const participant = organizer || Boolean(mine);
+    const profiles = participant && url.searchParams.has('armory') ? await linkedRosterProfiles(db,id) : new Map();
+    const prep = participant && url.searchParams.has('prep') ? await prepTasks(db,id) : [];
     const roster = signups.results.map(({ member, readiness, ...row }) => ({
-      ...row, readiness: JSON.parse(readiness || '{}'), ...(organizer ? { member } : {}),
+      ...row, readiness: JSON.parse(readiness || '{}'), ...(organizer ? { member } : {}), ...(profiles.has(member) ? { armorySlug: profiles.get(member) } : {}),
     }));
     const { owner, ...event } = raid;
-    return reply({ event: { ...event, settings }, organizer, roster, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
+    return reply({ event: { ...event, settings }, organizer, roster, prep, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
+  }
+  if (typeof input.action === 'string' && input.action.startsWith('prep-')) {
+    if (!organizer) return reply({ error:'Only the raid organizer can manage preparation.' },403);
+    return changePrep(db,id,input,reply);
   }
   if (['state', 'review', 'assignment'].includes(input.action)) {
     if (!organizer) return reply({ error: 'Only the raid organizer can do this.' }, 403);
@@ -129,7 +143,7 @@ async function raidApi(request, db, url, user) {
   if (input.action === 'readiness') {
     if (!organizer) return reply({ error: 'Only the raid organizer can review readiness.' }, 403);
     const member = clean(input.member, 250);
-    const character = clean(input.character, 30);
+    const character = clean(input.character, 61);
     const checks = Object.fromEntries(readinessChecks.map(([key]) => [key, input.checks?.[key]]));
     if (!member || !character || Object.values(checks).some(value => !readinessValues.includes(value))) {
       return reply({ error: 'Select a valid status for each check.' }, 400);
@@ -151,7 +165,7 @@ async function raidApi(request, db, url, user) {
     return reply({ ok: true });
   }
   if (input.action !== 'signup') return reply({ error: 'Unknown action.' }, 400);
-  const character = clean(input.character, 30);
+  const character = clean(input.character, 61);
   if (!character || !raidClasses.includes(input.className) || !raidRoles.includes(input.role) || !raidStatuses.includes(input.status)) {
     return reply({ error: 'Enter a character, class, role, and RSVP.' }, 400);
   }
@@ -244,9 +258,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=02b581d5c8bb"></head><body class="guild-app"><main>
-<header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav>
+<link rel="stylesheet" href="/assets/home.css?v=edf4830f6055"></head><body class="guild-app"><main>
+<div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
+<nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -286,7 +300,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><div class="eyebrow">Solstice · Raid Planner</div><button data-raid-view="readiness">Raid readiness</button><button data-raid-view="roster">Raid roster</button><button data-raid-view="signups">My sign-ups</button><button data-raid-view="calendar">Calendar</button><button data-raid-view="discover">Find a raid</button><button data-raid-view="characters">My characters</button><button data-raid-view="manage">Manage raids</button></aside>
+<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -313,7 +327,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div id="raidRequirements" class="raid-card" hidden></div>
 <form id="raidSignup" class="raid-card raid-form">
 <h3>Your RSVP</h3><label>Saved character<select id="signupCharacter"><option value="">Enter manually</option></select></label>
-<label>Character<input name="character" required maxlength="30"></label><label>Class<select name="className"></select></label><label>Role<select name="role"></select></label><label>Status<select name="status"><option>Going</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><button class="raid-primary">Save RSVP</button></form>
+<label>Character<input name="character" required maxlength="61"></label><label>Class<select name="className"></select></label><label>Role<select name="role"></select></label><label>Status<select name="status"><option>Going</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><button class="raid-primary">Save RSVP</button></form>
 <div class="raid-card"><p class="eyebrow">Raid workspace</p><h3>Roster &amp; readiness</h3>
 <div id="readinessSummary" class="raid-stats"></div><p class="readiness-caption">Readiness is reviewed by the raid organizer. Counts cover players marked Going.</p>
 <div class="roster-filters"><label>Find a character<input id="rosterSearch" type="search" placeholder="Name or class"></label>
@@ -323,7 +337,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="raid-card"><h3>Group planner</h3><div id="raidGroups" class="raid-stats"></div></div>
 </div>
 </div></section>
-<footer><a href="https://ahledger.com">Prices from AHledger</a> · Player-submitted scans · Feed checked every 10 minutes while open</footer>
+<footer id="marketFooter"><a href="https://ahledger.com">Prices from AHledger</a> · Player-submitted scans · Feed checked every 10 minutes while open</footer>
 <dialog id="detail"><form method="dialog"><button aria-label="Close details">Close</button></form><h2 id="detailTitle"></h2><div id="detailBody"></div></dialog>
 <script>
 const byId = id => document.getElementById(id);
@@ -495,6 +509,7 @@ for (const [name, iconPath] of professionTiles) {
 }
 
 function setView(view) {
+  byId('marketFooter').hidden = view === 'raid';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
   byId('raidPanel').hidden = !showRaids;
@@ -907,8 +922,12 @@ function raidElement(tag, text, className) {
   if (className) node.className = className;
   return node;
 }
-async function raidRequest(path = '', data) {
-  const response = await fetch('/api/' + (path === 'characters' ? 'raid-characters' : 'raids' + path), data ? {
+function raidRequest(path = '', data) {
+  return guildRequest('/api/' + (path === 'characters' ? 'raid-characters' : 'raids' + path),data);
+}
+function armoryRequest(path = '', data) { return guildRequest('/api/armory'+path,data); }
+async function guildRequest(path,data) {
+  const response = await fetch(path, data ? {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   } : undefined);
   const result = await response.json();
@@ -932,10 +951,11 @@ function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
   for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { readiness:'Raid readiness', roster:'Raid roster', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = { readiness:'Raid readiness', roster:'Raid roster', tonight:'Tonight', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = {
     readiness:'See which raid requirements are met and which still need attention.',
     roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
+    tonight:'Plan the evening around raid blockers, available players, and the work that fits.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
@@ -959,14 +979,14 @@ async function openRaidView(view, id, navigate = true) {
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
-    if (view === 'readiness' || view === 'roster') {
+    if (['readiness','roster','tonight'].includes(view)) {
       await openRaidWorkspace(view, revision);
       return;
     }
     if (view === 'detail') {
       const [data, chars] = await Promise.all([raidRequest('/' + id), raidRequest('characters')]);
       if (revision !== raidRevision) return;
-      savedCharacters = chars.characters;
+      savedCharacters = chars.signupCharacters;
       activeRaidData = data;
       byId('rosterFilter').value = '';
       renderRaid(data);
@@ -976,6 +996,7 @@ async function openRaidView(view, id, navigate = true) {
       const { characters } = await raidRequest('characters');
       if (revision !== raidRevision) return;
       characterForm.hidden = false;
+      renderArmory(byId('raidList'));
       for (const item of characters) {
         const card = raidElement('div', null, 'raid-card');
         card.append(raidElement('h3', item.name), raidElement('p', [item.class_name,item.spec,item.role].filter(Boolean).join(' · ')));
@@ -1028,6 +1049,7 @@ function workspaceSteps(view) {
   for (const [target,title,sub] of [
     ['readiness','See readiness','Start with the raid goal'],
     ['roster','Find the blockers','Inspect a character'],
+    ['tonight','Plan useful work','Build tonight’s assignments'],
   ]) {
     const step = raidElement('button');
     step.setAttribute('aria-current', String(view === target));
@@ -1039,6 +1061,12 @@ function workspaceSteps(view) {
 }
 
 let workspaceGoal;
+const prepCategories = ${JSON.stringify(prepCategories)};
+${schedulePrep.toString()}
+${renderTonight.toString()}
+${renderArmory.toString()}
+${renderArmoryProfile.toString()}
+
 async function openRaidWorkspace(view, revision) {
   const { raids } = await raidRequest();
   if (revision !== raidRevision) return;
@@ -1047,7 +1075,15 @@ async function openRaidWorkspace(view, revision) {
   const upcoming = events.filter(raid => Date.parse(raid.starts_at) >= Date.now()).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
   root.append(workspaceSteps(view));
   if (!events.length) {
-    root.append(raidElement('p','Create a raid or RSVP to one to see its readiness and roster.'));
+    const empty = raidElement('section',null,'raid-card workspace-empty');
+    empty.append(raidElement('p','Guild workspace','eyebrow'),raidElement('h3','Set your first raid goal'),
+      raidElement('p','Create a raid to track readiness, build a roster and plan your preparation.'));
+    const create = raidElement('button','Create a raid','raid-primary');
+    create.addEventListener('click',()=>openRaidView('new'));
+    const discover = raidElement('button','Find a raid');
+    discover.addEventListener('click',()=>openRaidView('discover'));
+    const actions = raidElement('div',null,'raid-actions');
+    actions.append(create,discover); empty.append(actions); root.append(empty);
     return;
   }
   const toolbar = raidElement('label','Raid goal','workspace-goal-select');
@@ -1063,11 +1099,12 @@ async function openRaidWorkspace(view, revision) {
     const id = picker.value;
     content.replaceChildren(raidElement('p','Loading raid goal…'));
     try {
-      const data = await raidRequest('/'+id);
+      const data = await raidRequest('/'+id + (view === 'roster' ? '?armory=1' : view === 'tonight' ? '?prep=1' : ''));
       if (revision !== raidRevision || id !== picker.value) return;
       content.replaceChildren();
       if (view === 'readiness') renderReadinessWorkspace(content,data);
-      else renderRosterWorkspace(content,data);
+      else if (view === 'roster') renderRosterWorkspace(content,data);
+      else renderTonight(content,data);
     } catch (error) {
       if (revision === raidRevision && id === picker.value) content.replaceChildren(raidElement('p',error.message));
     }
@@ -1091,11 +1128,14 @@ function renderReadinessWorkspace(root,{event,roster}) {
   if (event.settings?.requirements) intro.append(raidElement('p',event.settings.requirements));
   const inspect = raidElement('button','Inspect the raid team →','raid-primary');
   inspect.addEventListener('click',()=>openRaidView('roster'));
-  intro.append(inspect);
+  const plan = raidElement('button','Plan tonight’s preparation');
+  plan.addEventListener('click',()=>openRaidView('tonight'));
+  const actions = raidElement('div',null,'raid-actions');
+  actions.append(inspect,plan); intro.append(actions);
   const issue = raidElement('div');
   const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
-  issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+' raiders need raid access.' :
-    blocked.length ? blocked.length+' raiders have a known blocker.' : !going.length ? 'No confirmed raiders yet.' :
+  issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+(access === 1 ? ' raider needs raid access.' : ' raiders need raid access.') :
+    blocked.length ? blocked.length+(blocked.length === 1 ? ' raider has a known blocker.' : ' raiders have a known blocker.') : !going.length ? 'No confirmed raiders yet.' :
     ready.length !== going.length ? 'Some character checks are still unreviewed.' : 'All going raiders meet the reviewed checks.'),
     raidElement('p',ready.length+' of '+going.length+' confirmed raiders meet all character checks.'),
     raidElement('small','Readiness is based on organizer reviews. Team composition and shared supplies still need review.'));
@@ -1141,6 +1181,21 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
     const checks = reviewCharacter(event,player,organizer);
     checks.open = true;
     detail.append(checks);
+    if (player.armorySlug) {
+      const armory = raidElement('details',null,'armory-inspector');
+      armory.append(raidElement('summary','Armory · gear, enchants & professions'));
+      const panel = raidElement('div');
+      armory.append(panel);
+      armory.addEventListener('toggle',async()=>{
+        if (!armory.open || panel.childNodes.length) return;
+        panel.append(raidElement('p','Loading the Armory…'));
+        try {
+          const {character} = await armoryRequest('?name='+encodeURIComponent(player.armorySlug));
+          panel.replaceChildren(renderArmoryProfile(character));
+        } catch (error) { panel.replaceChildren(raidElement('p',error.message)); }
+      });
+      detail.append(armory);
+    }
     const manage = raidElement('button','Open raid & assignments');
     manage.addEventListener('click',()=>openRaidView('detail',event.id));
     detail.append(manage);
@@ -1459,7 +1514,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : ['readiness','roster','calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
+    openRaidView(id ? 'detail' : ['readiness','roster','tonight','calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
@@ -1519,6 +1574,10 @@ export default {
       return new Response('Guild Chronicle storage is unavailable. Check that migrations have run.', { status: 503 });
     }
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+    if (pathname === '/api/armory') {
+      try { return await armoryApi(request, env, url, session.discord_id); }
+      catch { return Response.json({ error:'The Armory is temporarily unavailable.' }, { status:502, headers:{ 'Cache-Control':'no-store' } }); }
+    }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
       try { return await raidApi(request, env.DB, url, session.discord_id); }

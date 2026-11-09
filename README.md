@@ -60,7 +60,7 @@ For subsequent GitHub deployments, create a repository environment named `produc
 
 Sessions expire after eight hours and Discord membership is checked again at the next sign-in. The database stores Discord user IDs, display names for active sessions, and submitted raid data. OAuth access tokens are used only for the membership check and are never stored.
 
-The migrations create a fresh database. The existing hosted site's records and ChatGPT-linked identities are separate. Character entry is manual. Armory verification, Discord bot reminders, and in-game addon sync are outside this package.
+The first deployment creates a fresh database. The existing hosted site's records and ChatGPT-linked identities are separate.
 
 ## References
 
@@ -74,3 +74,10 @@ The migrations create a fresh database. The existing hosted site's records and C
 The homepage and published articles are public. Guild Hall, market data and raid tools still require Discord login. To enable the article editor, set `CMS_ADMIN_DISCORD_IDS` to a comma-separated list of Discord **user** IDs in the Komodo stack environment. With Developer Mode enabled, right-click your Discord profile and select **Copy User ID**. This is separate from the Discord server ID.
 
 Redeploy the stack to apply the migration and environment setting. Sign in, then select **Article editor** on the homepage or go to `/cms`. Drafts are visible only in the editor. Publishing adds the article to the homepage and gives it a shareable link. Saving a published article as a draft takes it offline. Articles support plain text with blank lines between paragraphs.
+
+
+## Armory and raid preparation
+
+To enable Armory search for US WoW Forever, set `BLIZZARD_CLIENT_ID` and `BLIZZARD_CLIENT_SECRET` in Komodo, using a secret variable for the secret. For a Worker deployment, configure the same names as Worker secrets. In **My characters**, search by first name and surname and choose **Link to Discord**. The link is self-reported. Profiles are retrieved on demand and may include a static character render, equipment, enchants, and professions. The guild stores the character link and basic signup fields.
+
+In **Tonight**, choose a raid, confirm attendance, and enter the time available. The organizer can add individual tasks, profession work, and five-player runs, then confirm materials and prerequisites for each task. The planner schedules the confirmed tasks that fit, explains skipped tasks, and generates a copyable Discord message. Reported completion is recorded separately from readiness reviews.
