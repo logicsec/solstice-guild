@@ -182,3 +182,24 @@ body { border-top: 3px solid var(--gold); }
 .guild-app .readiness-checks strong { display: block; }
 .readiness-badge { display: inline-block; border: 1px solid var(--line); border-radius: 3px; padding: 1px 6px; margin-top: 3px; font-size: 11px; }
 .readiness-badge.ready { color: #a6ce99; } .readiness-badge.blocked { color: #efa58c; }
+
+.guild-app .workspace-steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.workspace-steps button { text-align: left; padding: 12px; }
+.workspace-steps small, .workspace-player small { display: block; color: var(--muted); }
+.guild-app :is(.workspace-steps button, .workspace-player)[aria-current=true] { background: #303626; border-color: #807c50; color: var(--gold); }
+.workspace-goal-select { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
+.workspace-goal-select select { max-width: 100%; min-width: 0; }
+.guild-app .workspace-goal { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: start; padding: clamp(18px, 3vw, 36px); background: linear-gradient(125deg, #202a20, #2a3323); }
+.workspace-goal > :last-child { border-inline-start: 1px solid var(--line); padding-inline-start: 24px; }
+.workspace-goal h3 { margin: 10px 0; font-size: clamp(22px, 3vw, 34px); }
+.workspace-goal .raid-primary { margin-top: 12px; }
+.workspace-metrics { margin: 20px 0; }
+.workspace-activity .raid-row { flex-wrap: wrap; }
+.workspace-roster { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
+.roster-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
+.workspace-player { width: 100%; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; justify-items: start; text-align: left; padding: 12px; margin-bottom: 5px; overflow-wrap: anywhere; }
+.workspace-inspector > button { margin-top: 12px; }
+@media (max-width: 940px) {
+  .guild-app .workspace-goal, .workspace-roster { grid-template-columns: 1fr; }
+  .workspace-goal > :last-child { border-inline-start: 0; border-top: 1px solid var(--line); padding: 14px 0 0; }
+}

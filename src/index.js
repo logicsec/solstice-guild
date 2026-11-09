@@ -244,7 +244,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=3a7eda1a288c"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=02b581d5c8bb"></head><body class="guild-app"><main>
 <header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -286,7 +286,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><div class="eyebrow">Solstice · Raid Planner</div><button data-raid-view="signups">My sign-ups</button><button data-raid-view="calendar">Calendar</button><button data-raid-view="discover">Find a raid</button><button data-raid-view="characters">My characters</button><button data-raid-view="manage">Manage raids</button></aside>
+<aside class="raid-sidebar"><div class="eyebrow">Solstice · Raid Planner</div><button data-raid-view="readiness">Raid readiness</button><button data-raid-view="roster">Raid roster</button><button data-raid-view="signups">My sign-ups</button><button data-raid-view="calendar">Calendar</button><button data-raid-view="discover">Find a raid</button><button data-raid-view="characters">My characters</button><button data-raid-view="manage">Manage raids</button></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -932,8 +932,11 @@ function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
   for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
-  byId('raidSubtitle').textContent = 'World of Warcraft: Forever · US Normal Alliance';
+  byId('raidTitle').textContent = { readiness:'Raid readiness', roster:'Raid roster', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidSubtitle').textContent = {
+    readiness:'See which raid requirements are met and which still need attention.',
+    roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
+  }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
   byId('newRaid').hidden = view === 'new';
@@ -956,6 +959,10 @@ async function openRaidView(view, id, navigate = true) {
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
+    if (view === 'readiness' || view === 'roster') {
+      await openRaidWorkspace(view, revision);
+      return;
+    }
     if (view === 'detail') {
       const [data, chars] = await Promise.all([raidRequest('/' + id), raidRequest('characters')]);
       if (revision !== raidRevision) return;
@@ -1016,6 +1023,158 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
+function workspaceSteps(view) {
+  const strip = raidElement('div',null,'workspace-steps raid-card');
+  for (const [target,title,sub] of [
+    ['readiness','See readiness','Start with the raid goal'],
+    ['roster','Find the blockers','Inspect a character'],
+  ]) {
+    const step = raidElement('button');
+    step.setAttribute('aria-current', String(view === target));
+    step.append(raidElement('strong',title),raidElement('small',sub));
+    step.addEventListener('click',()=>openRaidView(target));
+    strip.append(step);
+  }
+  return strip;
+}
+
+let workspaceGoal;
+async function openRaidWorkspace(view, revision) {
+  const { raids } = await raidRequest();
+  if (revision !== raidRevision) return;
+  const root = byId('raidList');
+  const events = raids.filter(raid => raid.state !== 'Cancelled');
+  const upcoming = events.filter(raid => Date.parse(raid.starts_at) >= Date.now()).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
+  root.append(workspaceSteps(view));
+  if (!events.length) {
+    root.append(raidElement('p','Create a raid or RSVP to one to see its readiness and roster.'));
+    return;
+  }
+  const toolbar = raidElement('label','Raid goal','workspace-goal-select');
+  const picker = raidElement('select');
+  for (const event of events) picker.add(new Option(event.title+' · '+raidDate(event.starts_at),event.id));
+  picker.value = events.some(event=>event.id === workspaceGoal) ? workspaceGoal : (upcoming[0] ?? events[0]).id;
+  toolbar.append(picker);
+  root.append(toolbar);
+  const content = raidElement('div');
+  root.append(content);
+  async function selectGoal() {
+    workspaceGoal = picker.value;
+    const id = picker.value;
+    content.replaceChildren(raidElement('p','Loading raid goal…'));
+    try {
+      const data = await raidRequest('/'+id);
+      if (revision !== raidRevision || id !== picker.value) return;
+      content.replaceChildren();
+      if (view === 'readiness') renderReadinessWorkspace(content,data);
+      else renderRosterWorkspace(content,data);
+    } catch (error) {
+      if (revision === raidRevision && id === picker.value) content.replaceChildren(raidElement('p',error.message));
+    }
+  }
+  picker.addEventListener('change',selectGoal);
+  await selectGoal();
+}
+
+function renderReadinessWorkspace(root,{event,roster}) {
+  const going = roster.filter(row=>row.status === 'Going');
+  const reviewed = going.filter(row=>row.reviewed_at);
+  const blocked = going.filter(row=>readinessOf(row) === 'Blocked');
+  const ready = going.filter(row=>readinessOf(row) === 'Ready');
+  const access = going.filter(row=>row.readiness?.access === 'Blocked').length;
+  const goal = raidElement('section',null,'workspace-goal raid-card');
+  const intro = raidElement('div');
+  intro.append(raidElement('p','Solstice raid goal','eyebrow'),raidElement('h3','Get ready for '+event.title),
+    raidElement('p',raidDate(event.starts_at)+' · '+event.size+' players'));
+  const targets = event.settings?.roles;
+  if (targets) intro.append(raidElement('p',raidRoles.map(role=>targets[role]+' '+role.toLowerCase()).join(' · ')));
+  if (event.settings?.requirements) intro.append(raidElement('p',event.settings.requirements));
+  const inspect = raidElement('button','Inspect the raid team →','raid-primary');
+  inspect.addEventListener('click',()=>openRaidView('roster'));
+  intro.append(inspect);
+  const issue = raidElement('div');
+  const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
+  issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+' raiders need raid access.' :
+    blocked.length ? blocked.length+' raiders have a known blocker.' : !going.length ? 'No confirmed raiders yet.' :
+    ready.length !== going.length ? 'Some character checks are still unreviewed.' : 'All going raiders meet the reviewed checks.'),
+    raidElement('p',ready.length+' of '+going.length+' confirmed raiders meet all character checks.'),
+    raidElement('small','Readiness is based on organizer reviews. Team composition and shared supplies still need review.'));
+  goal.append(intro,issue);
+  const stats = raidElement('div',null,'raid-stats workspace-metrics');
+  const checks = going.flatMap(row=>readinessChecks.map(([key])=>row.readiness?.[key])).filter(value=>value === 'Ready' || value === 'Blocked');
+  const percent = checks.length ? Math.round(checks.filter(value=>value==='Ready').length/checks.length*100)+'%' : '—';
+  raidStats(stats,[['Characters reviewed',reviewed.length+'/'+going.length],['Meet character requirements',ready.length+'/'+going.length],['Known checks passed',percent]]);
+  const activity = raidElement('section',null,'raid-card workspace-activity');
+  activity.append(raidElement('p','Raid preparation activity','eyebrow'),raidElement('h3','What changed?'));
+  const recent = [...roster].filter(row=>row.reviewed_at).sort((a,b)=>b.reviewed_at.localeCompare(a.reviewed_at)).slice(0,5);
+  if (!recent.length) activity.append(raidElement('p','No character reviews have been recorded for this raid.'));
+  for (const player of recent) {
+    const row = raidElement('div',null,'raid-row');
+    row.append(raidElement('strong',player.character+' · '+readinessOf(player)),raidElement('small',raidDate(player.reviewed_at)));
+    if (player.readiness_note) row.append(raidElement('p',player.readiness_note));
+    activity.append(row);
+  }
+  root.append(goal,stats,activity);
+}
+
+function renderRosterWorkspace(root,{event,organizer,roster}) {
+  const note = raidElement('p','Readiness follows the selected raid character. Open a raider to inspect their readiness checks.','raid-card');
+  const columns = raidElement('div',null,'workspace-roster');
+  const list = raidElement('section',null,'raid-card');
+  const detail = raidElement('aside',null,'raid-card workspace-inspector');
+  const filters = raidElement('div',null,'roster-filters');
+  const search = raidElement('input');
+  search.type='search'; search.placeholder='Search raiders…'; search.setAttribute('aria-label','Search raiders');
+  const state = raidElement('select');
+  state.setAttribute('aria-label','Readiness filter');
+  for (const value of ['','Ready','Blocked','Unreviewed']) state.add(new Option(value || 'All readiness states',value));
+  filters.append(search,state);
+  const rows = raidElement('div');
+  list.append(filters,rows);
+  columns.append(list,detail);
+  root.append(note,columns);
+  let selected;
+  function inspect(player) {
+    detail.replaceChildren(raidElement('p','Character inspector','eyebrow'));
+    if (!player) { detail.append(raidElement('p','No raider selected.')); return; }
+    detail.append(raidElement('h3',player.character),raidElement('p',[player.class_name,player.role,player.status].join(' · ')));
+    const checks = reviewCharacter(event,player,organizer);
+    checks.open = true;
+    detail.append(checks);
+    const manage = raidElement('button','Open raid & assignments');
+    manage.addEventListener('click',()=>openRaidView('detail',event.id));
+    detail.append(manage);
+  }
+  function draw() {
+    const query = search.value.trim().toLowerCase();
+    const visible = roster.filter(row=>(!state.value || readinessOf(row)===state.value) &&
+      (!query || (row.character+' '+row.class_name+' '+row.role).toLowerCase().includes(query)));
+    if (!visible.includes(selected)) selected = visible[0];
+    rows.replaceChildren();
+    for (const player of visible) {
+      const row = raidElement('button',null,'workspace-player');
+      row.setAttribute('aria-current',String(player===selected));
+      const title = raidElement('span');
+      title.append(raidElement('strong',player.character),raidElement('small',player.class_name+' · '+player.role));
+      const status = readinessOf(player);
+      const known = readinessChecks.filter(([key])=>['Ready','Blocked','Not applicable'].includes(player.readiness?.[key])).length;
+      row.append(title,raidElement('span',status,'readiness-badge '+status.toLowerCase()),
+        raidElement('small',known+'/'+readinessChecks.length+' checks reviewed'));
+      row.addEventListener('click',()=>{
+        selected=player;
+        for (const item of rows.children) item.setAttribute('aria-current',String(item===row));
+        inspect(player);
+      });
+      rows.append(row);
+    }
+    if (!visible.length) rows.append(raidElement('p','No raiders match this view.'));
+    inspect(selected);
+  }
+  search.addEventListener('input',draw);
+  state.addEventListener('change',draw);
+  draw();
+}
+
 function setWizardStep(step) {
   wizardStep = step;
   for (const node of raidForm.querySelectorAll('[data-step]')) node.hidden = Number(node.dataset.step) !== step;
@@ -1203,6 +1362,7 @@ async function changeRaid(id, update) {
   try {
     await raidRequest('/'+id, update);
     if (activeRaid === id) await openRaidView('detail',id);
+    else if (raidView === 'roster' && workspaceGoal === id) await openRaidView('roster',null,false);
   } catch (error) { raidError(error); }
 }
 function downloadRaidCalendar(event) {
@@ -1221,7 +1381,7 @@ for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch'])
     if (activeRaidData) renderRoster(activeRaidData);
   });
 }
-byId('raidTab').addEventListener('click',()=>openRaidView('signups'));
+byId('raidTab').addEventListener('click',()=>openRaidView('readiness'));
 for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
@@ -1299,7 +1459,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : ['calendar','discover','characters','manage','new'].includes(view) ? view : 'signups',id,false);
+    openRaidView(id ? 'detail' : ['readiness','roster','calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
