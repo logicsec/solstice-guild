@@ -18,7 +18,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=64509a02ecd3"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=2255b6d940c9"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="/?tool=raid">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -61,6 +61,50 @@ export async function publicHome(env, url, session) {
       <div class="news-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
   </section>
   </main>`, { session, editor: canEditArticles(env, session), next }));
+}
+
+export async function publicRaidPage(db, id, roles) {
+  const next = '/raid/' + id;
+  const respond = (title, body, status) => {
+    const response = html(shell(title, body, { next }),status);
+    response.headers.set('X-Robots-Tag','noindex, nofollow');
+    return response;
+  };
+  const { results } = await db.prepare(`SELECT r.title, r.starts_at, r.size, r.state,
+      json_extract(r.settings, '$.roles') AS role_targets, s.character, s.class_name, s.role, s.group_no
+    FROM raids r LEFT JOIN raid_signups s ON s.raid_id = r.id AND s.status = 'Going'
+    WHERE r.id = ?
+    ORDER BY s.group_no IS NULL, s.group_no, s.character COLLATE NOCASE`).bind(id).all();
+  const raid = results[0];
+  if (!raid) return respond('Raid unavailable',
+    '<main class="article-page"><h1>Raid unavailable</h1><p>This raid link may be outdated.</p><a class="text-link" href="/">Back to Solstice</a></main>',404);
+  const roster = results.filter(row=>row.character != null);
+  const targets = JSON.parse(raid.role_targets || 'null');
+  const date = new Intl.DateTimeFormat('en-US',{
+    dateStyle:'full', timeStyle:'short', timeZone:'America/New_York',
+  }).format(new Date(raid.starts_at));
+  const composition = roles.map(role=>{
+    const count = roster.filter(player=>player.role === role).length;
+    const target = targets?.[role];
+    return `<div class="news-card"><dt>${escape(role)}</dt><dd>${count}${Number.isInteger(target) ? ' / '+target : ''}</dd></div>`;
+  }).join('');
+  const rows = roster.map(player=>`<tr><th scope="row">${escape(player.character)}</th><td>${escape(player.class_name)}</td><td>${escape(player.role)}</td><td>${player.group_no == null ? 'Unassigned' : escape(player.group_no)}</td></tr>`).join('');
+  return respond(raid.title,`<main class="guild-home public-raid">
+    <section class="home-banner public-raid-banner"><div class="home-banner-content">
+      <p class="eyebrow">Solstice raid · Guest view</p><h1>${escape(raid.title)}</h1>
+      <p><time datetime="${escape(raid.starts_at)}">${escape(date)} Eastern</time> · ${escape(raid.state)}</p>
+      <p>${roster.length} of ${escape(raid.size)} slots filled</p>
+      <p>Anyone with the link can view this roster. Solstice Discord members can sign in to RSVP.</p>
+    </div></section>
+    <section class="chronicle home-journal" aria-labelledby="raid-composition">
+      <p class="eyebrow">Raid overview</p><h2 id="raid-composition">Raid composition</h2>
+      <dl class="news-grid public-raid-composition">${composition}</dl>
+      <h2>Confirmed roster</h2>
+      ${rows ? `<div class="news-card public-raid-table"><table aria-label="Confirmed raid roster">
+        <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
+        <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
+    </section>
+  </main>`);
 }
 
 export async function articlePage(env, id, session) {

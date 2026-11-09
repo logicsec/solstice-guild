@@ -87,6 +87,11 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   discordId = '31';
   const member = (await signIn('/?tool=raid&raid=' + id)).headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
   const raid = '/api/raids/' + id;
+  const publicPath = '/raid/' + id;
+  assert.equal((await signIn(publicPath)).headers.get('location'),publicPath);
+  assert.match(await (await send(publicPath,options)).text(),/Invite link/);
+  assert.equal((await send(raid)).status,401);
+  assert.equal((await post(raid,{action:'delete'},'')).status,401);
   assert.equal((await post(raid, { action: 'signup', character: 'Astra Mortis', className: 'Mage', role: 'Ranged DPS', status: 'Going' }, member)).status, 200);
   const review = { action:'readiness', member:'31', character:'Astra Mortis', checks:{ access:'Blocked', gear:'Ready', enchants:'Not applicable', supplies:'Unreviewed' }, note:'Needs access' };
   assert.equal((await post(raid, review, member)).status, 403);
@@ -98,6 +103,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(reviewed.member, undefined);
   const detail = await (await send(raid, options)).json();
   assert.equal(detail.roster[0].status, 'Pending');
+  const pendingPublic = await send(publicPath);
+  assert.equal(pendingPublic.status,200);
+  assert.match(pendingPublic.headers.get('x-robots-tag'),/noindex/);
+  const pendingPage = await pendingPublic.text();
+  assert.match(pendingPage,/No players have been confirmed/);
+  assert.doesNotMatch(pendingPage,/Astra Mortis/);
+  assert.match(pendingPage,new RegExp('next='+encodeURIComponent(publicPath)));
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' }, member)).status, 403);
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' })).status, 200);
   const armory = await (await send('/api/armory?name=Astra+Mortis',{headers:{Cookie:member}})).json();
@@ -124,9 +136,19 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const reported = await (await send(raid+'?prep=1',options)).json();
   assert.ok(reported.prep[0].reportedAt);
   assert.equal(reported.roster[0].readiness.access,'Blocked');
+  for (const path of [publicPath,'/?tool=raid&raid='+id]) {
+    const guest = await send(path);
+    assert.equal(guest.status,200);
+    const body = await guest.text();
+    assert.match(body,/Barrow Deeps/);
+    assert.match(body,/Astra Mortis/);
+    assert.match(body,/Ranged DPS/);
+    assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);
+  }
   assert.equal((await post(raid,{action:'delete'},member)).status,403);
   assert.equal((await post(raid,{action:'delete'})).status,200);
   assert.equal((await send(raid,options)).status,404);
+  assert.equal((await send(publicPath)).status,404);
   assert.equal(db.prepare('SELECT count(*) AS total FROM raid_signups WHERE raid_id = ?').get(id).total,0);
   assert.equal(db.prepare('SELECT count(*) AS total FROM raid_prep WHERE raid_id = ?').get(id).total,0);
   assert.equal((await send('/cms', { headers: { Cookie: member } })).status, 403);

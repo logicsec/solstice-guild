@@ -30,7 +30,7 @@ function safeReturn(value, origin) {
   if (!value || value.length > 512 || !value.startsWith('/') || value.startsWith('//')) return '/';
   try {
     const url = new URL(value, origin);
-    if (url.origin !== origin || url.pathname !== '/') return '/';
+    if (url.origin !== origin || (url.pathname !== '/' && !/^\/raid\/[0-9a-f-]{36}$/.test(url.pathname))) return '/';
     return url.pathname + url.search;
   } catch { return '/'; }
 }
