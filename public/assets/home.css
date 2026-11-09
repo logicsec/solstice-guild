@@ -483,3 +483,38 @@ body { border-top: 0; }
   background: color-mix(in srgb, var(--raised) 78%, transparent);
 }
 .guild-app .armory-confirm { background: var(--panel); }
+
+/* Guild Hall uses neutral dark surfaces and shares the homepage accents. */
+.guild-app {
+  --surface: #151719;
+  --night: var(--surface);
+  --container: #202326;
+  --ink: #f3eee8;
+  --muted: #b9b5b0;
+  --line: #414448;
+  --hover: #292c30;
+  --field: #111315;
+  --glass-panel: color-mix(in srgb, var(--container) 82%, transparent);
+  --glass-nav: color-mix(in srgb, var(--container) 62%, transparent);
+}
+.guild-app > main {
+  background: radial-gradient(ellipse at 84% 0%, #27272a, transparent 58%), var(--surface);
+}
+.guild-app :is(.raid-primary,.search-button) {
+  background: color-mix(in srgb, var(--copper) 66%, var(--gold));
+  border-color: transparent;
+  color: var(--field);
+}
+.guild-app :is(.raid-primary,.search-button):hover {
+  background: color-mix(in srgb, var(--gold) 75%, var(--ink));
+}
+.guild-app .armory-confirm {
+  background: #1c1f22;
+  border-color: var(--line);
+}
+.armory-confirm::backdrop { background: #070809bf; }
+.guild-app .armory-confirm .raid-primary {
+  background: var(--ink);
+  color: var(--field);
+}
+.guild-app .armory-confirm .raid-primary:hover { background: var(--gold); }
