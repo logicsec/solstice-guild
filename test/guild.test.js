@@ -124,6 +124,11 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const reported = await (await send(raid+'?prep=1',options)).json();
   assert.ok(reported.prep[0].reportedAt);
   assert.equal(reported.roster[0].readiness.access,'Blocked');
+  assert.equal((await post(raid,{action:'delete'},member)).status,403);
+  assert.equal((await post(raid,{action:'delete'})).status,200);
+  assert.equal((await send(raid,options)).status,404);
+  assert.equal(db.prepare('SELECT count(*) AS total FROM raid_signups WHERE raid_id = ?').get(id).total,0);
+  assert.equal(db.prepare('SELECT count(*) AS total FROM raid_prep WHERE raid_id = ?').get(id).total,0);
   assert.equal((await send('/cms', { headers: { Cookie: member } })).status, 403);
   const article = new URLSearchParams({title:'First & Dawn', summary:'A guild update', body:'<script>unsafe</script>', action:'draft'});
   const save = () => send('/cms', { method:'POST', headers:{ Cookie:cookie, Origin:origin }, body:article });

@@ -123,6 +123,11 @@ async function raidApi(request, db, url, user) {
     const { owner, ...event } = raid;
     return reply({ event: { ...event, settings }, organizer, roster, prep, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
   }
+  if (input.action === 'delete') {
+    if (!organizer) return reply({ error: 'Only the raid organizer can delete this raid.' },403);
+    const result = await db.prepare('DELETE FROM raids WHERE id = ? AND owner = ?').bind(id,user).run();
+    return result.meta.changes ? reply({ ok:true }) : reply({ error:'Raid not found.' },404);
+  }
   if (typeof input.action === 'string' && input.action.startsWith('prep-')) {
     if (!organizer) return reply({ error:'Only the raid organizer can manage preparation.' },403);
     return changePrep(db,id,input,reply);
@@ -1435,6 +1440,23 @@ function renderRaid({ event, organizer, roster, mine }) {
       });
       actions.append(button);
     }
+    const remove = raidElement('button','Delete raid','raid-control-danger');
+    remove.type = 'button';
+    remove.addEventListener('click',async()=>{
+      if (!window.confirm('Permanently delete “'+event.title+'”? This removes all sign-ups and preparation tasks for this occurrence and disables its invite link.')) return;
+      remove.disabled = true;
+      try {
+        await raidRequest('/'+event.id,{action:'delete'});
+        if (workspaceGoal === event.id) setWorkingRaid('');
+        if (activeRaid === event.id) {
+          await openRaidView('manage');
+          byId('raidMessage').textContent = 'Raid deleted.';
+        }
+      } catch (error) {
+        if (activeRaid === event.id) raidError(error);
+      } finally { remove.disabled = false; }
+    });
+    actions.append(remove);
   }
   signupForm.hidden = event.state !== 'Open';
   const requirements = byId('raidRequirements');
