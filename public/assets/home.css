@@ -464,7 +464,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .armory-class-badge[data-wow-class="Shaman"] { --class-color: #0070dd; }
 .armory-class-badge[data-wow-class="Warlock"] { --class-color: #8788ee; }
 .armory-class-badge[data-wow-class="Warrior"] { --class-color: #c69b6d; }
-.guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 300; }
+.guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 400; }
 .armory-confirm-form { float: none; margin-top: 14px; }
 .armory-specs { border: 0; padding: 0; margin: 0 0 12px; }
 .armory-specs legend { margin-bottom: 6px; font-weight: 650; }
