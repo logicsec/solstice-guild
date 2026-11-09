@@ -258,7 +258,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=edf4830f6055"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=da8a68438d96"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -300,7 +300,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -310,7 +310,22 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <form id="raidCreate" class="raid-card raid-form" hidden>
 <div class="raid-steps"><span>1 · Raid details</span><span>2 · Schedule &amp; roster</span><span>3 · Review</span></div>
 <div data-step="0"><label>Raid title<input name="title" required maxlength="80" placeholder="Barrow Deeps — Monday"></label><label>Notes<textarea name="notes" maxlength="1000" placeholder="Loot rules, voice chat, and what to bring"></textarea></label></div>
-<div data-step="1" hidden><label>Start date and time<input name="startsAt" required type="datetime-local"></label><small id="raidTimezone"></small><label>Raid size<select name="size"><option>10</option><option>20</option><option>40</option></select></label><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div></div>
+<div data-step="1" hidden><div class="raid-schedule">
+  <fieldset class="raid-date-field"><legend>Start date</legend>
+    <details id="raidDatePicker"><summary id="raidSelectedDate">Choose a date</summary>
+      <div class="raid-calendar">
+        <div class="raid-calendar-month"><button type="button" id="raidPreviousMonth" aria-label="Previous month">‹</button><strong id="raidCalendarMonth" aria-live="polite"></strong><button type="button" id="raidNextMonth" aria-label="Next month">›</button></div>
+        <div class="raid-calendar-week" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+        <div id="raidCalendarDays" class="raid-calendar-days"></div>
+      </div>
+    </details>
+  </fieldset>
+  <fieldset class="raid-time-field"><legend>Start time</legend><div class="raid-time-controls">
+    <select id="raidHour" aria-label="Hour"></select><span aria-hidden="true">:</span><input id="raidMinute" aria-label="Minute" type="number" min="0" max="59" value="00" required>
+    <select id="raidPeriod" aria-label="AM or PM"><option>AM</option><option selected>PM</option></select>
+  </div></fieldset>
+  <input type="hidden" name="startsAt">
+</div><small id="raidTimezone"></small><label>Raid size<select name="size"><option>10</option><option>20</option><option>40</option></select></label><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div></div>
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
@@ -322,7 +337,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </form>
 <div id="raidDetail" hidden>
 <div class="raid-card"><h3>Invite link</h3><div class="raid-actions"><input id="raidLink" readonly aria-label="Invite link"><button id="copyRaid" type="button">Copy link</button></div></div>
-<div id="raidControls" class="raid-actions"></div>
+<div id="raidControls" class="raid-controls" role="group" aria-label="Raid actions"></div>
 <div id="raidStats" class="raid-stats"></div>
 <div id="raidRequirements" class="raid-card" hidden></div>
 <form id="raidSignup" class="raid-card raid-form">
@@ -979,9 +994,17 @@ async function openRaidView(view, id, navigate = true) {
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
-    if (['readiness','roster','tonight'].includes(view)) {
+    if (workspaceViews.includes(view)) {
       await openRaidWorkspace(view, revision);
       return;
+    }
+    if (['detail','characters','discover'].includes(view)) {
+      loadWorkingRaids(revision).catch(error=>{
+        if (revision !== raidRevision) return;
+        workingRaid.replaceChildren(new Option('Raids unavailable',''));
+        workingRaid.disabled = true;
+        if (error.status === 401) raidError(error);
+      });
     }
     if (view === 'detail') {
       const [data, chars] = await Promise.all([raidRequest('/' + id), raidRequest('characters')]);
@@ -1014,7 +1037,7 @@ async function openRaidView(view, id, navigate = true) {
       if (!characters.length) byId('raidList').append(raidElement('p', 'Save your first character to reuse it on sign-ups.'));
       return;
     }
-    const { raids } = await raidRequest(view === 'discover' ? '?discover=1' : '');
+    const { raids } = view === 'discover' ? await raidRequest('?discover=1') : await loadWorkingRaids(revision);
     if (revision !== raidRevision) return;
     if (view === 'new') {
       raidForm.hidden = false;
@@ -1060,7 +1083,45 @@ function workspaceSteps(view) {
   return strip;
 }
 
+const workspaceViews = ['readiness','roster','tonight'];
+const workingRaid = byId('workingRaid');
+const workingRaidKey = 'solstice.workingRaid';
 let workspaceGoal;
+try { workspaceGoal = sessionStorage.getItem(workingRaidKey); } catch {}
+
+function setWorkingRaid(id) {
+  workspaceGoal = id;
+  try { sessionStorage.setItem(workingRaidKey,id); } catch {}
+}
+workingRaid.addEventListener('change',()=>{
+  if (!workingRaid.value) return;
+  setWorkingRaid(workingRaid.value);
+  openRaidView(workspaceViews.includes(raidView) ? raidView : 'readiness');
+});
+
+async function loadWorkingRaids(revision) {
+  const result = await raidRequest();
+  if (revision !== raidRevision) return result;
+  const events = result.raids.filter(raid=>raid.state !== 'Cancelled');
+  if (!events.length) {
+    workingRaid.replaceChildren(new Option('No raids available',''));
+    workingRaid.disabled = true;
+    return result;
+  }
+  const next = [...events].reverse().find(raid=>Date.parse(raid.starts_at) >= Date.now());
+  const selected = events.find(raid=>raid.id === workspaceGoal) ?? next ?? events[0];
+  workingRaid.replaceChildren(...events.map(raid=>{
+    const label = raid.title+' · '+raidDate(raid.starts_at);
+    const option = new Option(label,raid.id);
+    option.title = label;
+    return option;
+  }));
+  workingRaid.value = selected.id;
+  workingRaid.title = workingRaid.selectedOptions[0].text;
+  workingRaid.disabled = false;
+  setWorkingRaid(selected.id);
+  return result;
+}
 const prepCategories = ${JSON.stringify(prepCategories)};
 ${schedulePrep.toString()}
 ${renderTonight.toString()}
@@ -1068,13 +1129,11 @@ ${renderArmory.toString()}
 ${renderArmoryProfile.toString()}
 
 async function openRaidWorkspace(view, revision) {
-  const { raids } = await raidRequest();
+  await loadWorkingRaids(revision);
   if (revision !== raidRevision) return;
   const root = byId('raidList');
-  const events = raids.filter(raid => raid.state !== 'Cancelled');
-  const upcoming = events.filter(raid => Date.parse(raid.starts_at) >= Date.now()).sort((a,b)=>a.starts_at.localeCompare(b.starts_at));
   root.append(workspaceSteps(view));
-  if (!events.length) {
+  if (!workingRaid.value) {
     const empty = raidElement('section',null,'raid-card workspace-empty');
     empty.append(raidElement('p','Guild workspace','eyebrow'),raidElement('h3','Set your first raid goal'),
       raidElement('p','Create a raid to track readiness, build a roster and plan your preparation.'));
@@ -1086,31 +1145,15 @@ async function openRaidWorkspace(view, revision) {
     actions.append(create,discover); empty.append(actions); root.append(empty);
     return;
   }
-  const toolbar = raidElement('label','Raid goal','workspace-goal-select');
-  const picker = raidElement('select');
-  for (const event of events) picker.add(new Option(event.title+' · '+raidDate(event.starts_at),event.id));
-  picker.value = events.some(event=>event.id === workspaceGoal) ? workspaceGoal : (upcoming[0] ?? events[0]).id;
-  toolbar.append(picker);
-  root.append(toolbar);
   const content = raidElement('div');
   root.append(content);
-  async function selectGoal() {
-    workspaceGoal = picker.value;
-    const id = picker.value;
-    content.replaceChildren(raidElement('p','Loading raid goal…'));
-    try {
-      const data = await raidRequest('/'+id + (view === 'roster' ? '?armory=1' : view === 'tonight' ? '?prep=1' : ''));
-      if (revision !== raidRevision || id !== picker.value) return;
-      content.replaceChildren();
-      if (view === 'readiness') renderReadinessWorkspace(content,data);
-      else if (view === 'roster') renderRosterWorkspace(content,data);
-      else renderTonight(content,data);
-    } catch (error) {
-      if (revision === raidRevision && id === picker.value) content.replaceChildren(raidElement('p',error.message));
-    }
-  }
-  picker.addEventListener('change',selectGoal);
-  await selectGoal();
+  content.append(raidElement('p','Loading working raid…'));
+  const data = await raidRequest('/'+workspaceGoal + (view === 'roster' ? '?armory=1' : view === 'tonight' ? '?prep=1' : ''));
+  if (revision !== raidRevision) return;
+  content.replaceChildren();
+  if (view === 'readiness') renderReadinessWorkspace(content,data);
+  else if (view === 'roster') renderRosterWorkspace(content,data);
+  else renderTonight(content,data);
 }
 
 function renderReadinessWorkspace(root,{event,roster}) {
@@ -1131,7 +1174,9 @@ function renderReadinessWorkspace(root,{event,roster}) {
   const plan = raidElement('button','Plan tonight’s preparation');
   plan.addEventListener('click',()=>openRaidView('tonight'));
   const actions = raidElement('div',null,'raid-actions');
-  actions.append(inspect,plan); intro.append(actions);
+  const details = raidElement('button','Open raid details');
+  details.addEventListener('click',()=>openRaidView('detail',event.id));
+  actions.append(inspect,plan,details); intro.append(actions);
   const issue = raidElement('div');
   const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
   issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+(access === 1 ? ' raider needs raid access.' : ' raiders need raid access.') :
@@ -1230,13 +1275,82 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
   draw();
 }
 
+const raidDatePicker = byId('raidDatePicker');
+const raidHour = byId('raidHour');
+for (let hour = 1; hour <= 12; hour++) {
+  const option = new Option(hour,hour,hour === 7,hour === 7);
+  raidHour.add(option);
+}
+const raidDayLabel = new Intl.DateTimeFormat(undefined,{dateStyle:'full'});
+const raidMonthLabel = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'});
+let selectedRaidDay;
+let raidMonth;
+
+function localRaidDay(date) {
+  return new Date(date.getFullYear(),date.getMonth(),date.getDate());
+}
+
+function drawRaidCalendar() {
+  const today = localRaidDay(new Date());
+  byId('raidCalendarMonth').textContent = raidMonthLabel.format(raidMonth);
+  byId('raidPreviousMonth').disabled = raidMonth <= new Date(today.getFullYear(),today.getMonth(),1);
+  const days = byId('raidCalendarDays');
+  days.replaceChildren();
+  for (let gap = 0; gap < raidMonth.getDay(); gap++) days.append(raidElement('span'));
+  const last = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+1,0).getDate();
+  for (let day = 1; day <= last; day++) {
+    const date = new Date(raidMonth.getFullYear(),raidMonth.getMonth(),day);
+    const button = raidElement('button',day);
+    button.type = 'button';
+    button.disabled = date < today;
+    button.setAttribute('aria-label',raidDayLabel.format(date));
+    button.setAttribute('aria-pressed',String(+date === +selectedRaidDay));
+    if (+date === +today) button.setAttribute('aria-current','date');
+    button.addEventListener('click',()=>{
+      selectedRaidDay = date;
+      byId('raidSelectedDate').textContent = raidDayLabel.format(date);
+      raidDatePicker.open = false;
+      byId('raidSelectedDate').focus();
+      drawRaidCalendar();
+    });
+    days.append(button);
+  }
+}
+for (const [id,offset] of [['raidPreviousMonth',-1],['raidNextMonth',1]]) {
+  byId(id).addEventListener('click',()=>{
+    raidMonth = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+offset,1);
+    drawRaidCalendar();
+    if (byId(id).disabled) byId('raidNextMonth').focus();
+  });
+}
+raidForm.addEventListener('reset',()=>{
+  selectedRaidDay = undefined;
+  byId('raidSelectedDate').textContent = 'Choose a date';
+  raidDatePicker.open = false;
+});
+raidDatePicker.addEventListener('toggle',()=>{
+  if (!raidDatePicker.open) return;
+  const date = selectedRaidDay ?? new Date();
+  raidMonth = new Date(date.getFullYear(),date.getMonth(),1);
+  drawRaidCalendar();
+});
+
+function raidStartTime() {
+  if (!selectedRaidDay || !byId('raidMinute').checkValidity()) return null;
+  const hours = Number(raidHour.value)%12 + (byId('raidPeriod').value === 'PM' ? 12 : 0);
+  const minutes = Number(byId('raidMinute').value);
+  const date = new Date(selectedRaidDay);
+  date.setHours(hours,minutes,0,0);
+  return date.getHours() === hours && date.getMinutes() === minutes ? date : null;
+}
+
 function setWizardStep(step) {
   wizardStep = step;
   for (const node of raidForm.querySelectorAll('[data-step]')) node.hidden = Number(node.dataset.step) !== step;
   [...raidForm.querySelectorAll('.raid-steps span')].forEach((node, index) => node.setAttribute('aria-current',index === step ? 'step' : 'false'));
   byId('raidNext').hidden = step === 2;
   byId('raidSubmit').hidden = step !== 2;
-  byId('raidTimezone').textContent = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  byId('raidTimezone').textContent = 'Your local time · '+Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (step === 2) {
     const data = new FormData(raidForm);
     byId('raidReview').replaceChildren(raidElement('h3',data.get('title')),raidElement('p',raidDate(data.get('startsAt'))+' · '+data.get('size')+' players'),raidElement('p',data.get('notes')));
@@ -1301,19 +1415,25 @@ function renderRaid({ event, organizer, roster, mine }) {
   byId('raidMessage').textContent = event.notes;
   const config = event.settings ?? {};
   const controls = byId('raidControls');
-  controls.replaceChildren(raidElement('strong', event.state));
+  const status = raidElement('span',event.state,'raid-state');
+  status.dataset.state = event.state;
   const calendar = raidElement('button','Add to calendar');
+  calendar.type = 'button';
   calendar.addEventListener('click', () => downloadRaidCalendar(event));
-  controls.append(calendar);
+  const actions = raidElement('div',null,'raid-control-buttons');
+  actions.append(calendar);
+  controls.replaceChildren(status,actions);
   if (organizer) {
     for (const state of [event.state === 'Open' ? 'Locked' : 'Open', 'Cancelled']) {
       if (event.state === state) continue;
-      const button = raidElement('button', { Open:'Reopen sign-ups', Locked:'Lock sign-ups', Cancelled:'Cancel raid' }[state]);
+      const button = raidElement('button',{ Open:'Reopen sign-ups', Locked:'Lock sign-ups', Cancelled:'Cancel raid' }[state],
+        state === 'Cancelled' ? 'raid-control-danger' : undefined);
+      button.type = 'button';
       button.addEventListener('click', () => {
         if (state === 'Cancelled' && !window.confirm('Cancel this raid and close sign-ups?')) return;
         changeRaid(event.id, { action:'state', state });
       });
-      controls.append(button);
+      actions.append(button);
     }
   }
   signupForm.hidden = event.state !== 'Open';
@@ -1441,9 +1561,17 @@ for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventL
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
   for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] input')) if (!field.reportValidity()) return;
-  if (wizardStep === 1 && !(+new Date(raidForm.elements.startsAt.value) > Date.now())) {
-    raidError(new Error('Choose a future start time.'));
-    return;
+  if (wizardStep === 1) {
+    const first = raidStartTime();
+    if (!first || +first <= Date.now()) {
+      raidError(new Error(selectedRaidDay ? 'Choose a valid future start time.' : 'Choose a raid date.'));
+      if (!selectedRaidDay) {
+        raidDatePicker.open = true;
+        byId('raidSelectedDate').focus();
+      } else raidHour.focus();
+      return;
+    }
+    raidForm.elements.startsAt.value = first.toISOString();
   }
   if (wizardStep === 1 && roleSlotFields.reduce((sum, field) => sum + Number(field.value), 0) !== Number(raidForm.elements.size.value)) {
     raidError(new Error('Role slots must add up to the raid size.'));
@@ -1457,7 +1585,12 @@ raidForm.addEventListener('submit', async event => {
   event.preventDefault();
   if (wizardStep !== 2) return;
   const data = Object.fromEntries(new FormData(raidForm));
-  const first = new Date(data.startsAt);
+  const first = raidStartTime();
+  if (!first || +first <= Date.now()) {
+    setWizardStep(1);
+    raidError(new Error('Choose a valid future start time.'));
+    return;
+  }
   data.startsAt = first.toISOString();
   data.dates = Array.from({length:Number(data.weeks)}, (_, index) => {
     const date = new Date(first);
@@ -1468,7 +1601,12 @@ raidForm.addEventListener('submit', async event => {
   for (const flag of ['review','waitlist','listed']) data[flag] = data[flag] === 'on';
   const button = byId('raidSubmit');
   button.disabled = true;
-  try { const { id } = await raidRequest('',data); await openRaidView('detail',id); }
+  try {
+    const { id } = await raidRequest('',data);
+    setWorkingRaid(id);
+    raidForm.reset();
+    await openRaidView('readiness');
+  }
   catch (error) { raidError(error); }
   finally { button.disabled = false; }
 });

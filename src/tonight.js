@@ -3,7 +3,7 @@ export function renderTonight(root,{event,organizer,roster,prep}) {
   const setup = raidElement('section',null,'raid-card');
   setup.append(raidElement('p','Raid preparation','eyebrow'),raidElement('h3','Prepare for '+event.title),
     raidElement('p','Set attendance and time, then schedule the preparation tasks that fit.'));
-  const controls = raidElement('div',null,'raid-actions');
+  const controls = raidElement('div',null,'raid-actions prep-setup-controls');
   function field(parent,title,tag) {
     const label = raidElement('label',title);
     const control = raidElement(tag);

@@ -187,12 +187,11 @@ body { border-top: 3px solid var(--gold); }
 .workspace-steps button { text-align: left; padding: 12px; }
 .workspace-steps small, .workspace-player small { display: block; color: var(--muted); }
 .guild-app :is(.workspace-steps button, .workspace-player)[aria-current=true] { background: #303626; border-color: #807c50; color: var(--gold); }
-.workspace-goal-select { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin: 16px 0; }
-.workspace-goal-select select { max-width: 100%; min-width: 0; }
+
 .guild-app .workspace-goal { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 24px; align-items: start; padding: clamp(18px, 3vw, 36px); background: linear-gradient(125deg, #202a20, #2a3323); }
 .workspace-goal > :last-child { border-inline-start: 1px solid var(--line); padding-inline-start: 24px; }
 .workspace-goal h3 { margin: 10px 0; font-size: clamp(22px, 3vw, 34px); }
-.workspace-goal .raid-primary { margin-top: 12px; }
+.workspace-goal .raid-actions { margin-top: 16px; }
 .workspace-metrics { margin: 20px 0; }
 .workspace-activity .raid-row { flex-wrap: wrap; }
 .workspace-roster { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
@@ -262,11 +261,24 @@ body { border-top: 0; }
 .guild-app button:hover { border-color: var(--accent); }
 .guild-app :is(input:not([type=checkbox]),select,textarea,.filters summary) { background: #121d1f; }
 .guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,#1c2b30,transparent 55%),var(--night); }
+.guild-app .raid-actions { align-items: center; }
+.guild-app :where(.raid-shell) :is(button, a.raid-primary) {
+  min-height: 40px;
+  padding: 8px 12px;
+  line-height: 1.35;
+}
+.guild-app :where(.raid-shell) button {
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 650;
+}
+.guild-app :where(.raid-shell) button:where(:hover:not(:disabled)) { background: var(--hover); }
+.guild-app :where(.raid-shell) a.raid-primary { display: inline-flex; align-items: center; }
 .guild-app .raid-sidebar { padding: 24px 16px; background: #151e20; }
 .raid-sidebar nav { display: block; padding: 0; background: transparent; border: 0; }
 .raid-nav-group + .raid-nav-group { margin-top: 24px; }
 .raid-nav-group .eyebrow { padding: 0 12px 5px; color: var(--muted); letter-spacing: .1em; }
-.guild-app .raid-sidebar button { display: flex; align-items: center; gap: 11px; border: 1px solid transparent; font-size: 14px; font-weight: 550; margin: 4px 0; padding: 10px 12px; }
+.guild-app .raid-sidebar button { background: transparent; display: flex; align-items: center; gap: 11px; border: 1px solid transparent; font-size: 14px; font-weight: 550; margin: 4px 0; padding: 10px 12px; }
 .raid-sidebar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .guild-app .raid-sidebar button:hover { background: var(--hover); }
 .guild-app .raid-sidebar button[aria-current=true] { background: #22383c; color: var(--accent); border-color: #3b6064; box-shadow: inset 3px 0 var(--accent); }
@@ -324,4 +336,51 @@ body { border-top: 0; }
   .raid-nav-group .eyebrow { width: 100%; }
   .guild-app .raid-sidebar button { width: auto; padding: 6px 8px; }
   .guild-app .workspace-steps { grid-template-columns: 1fr; }
+}
+
+.raid-schedule { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 16px; margin: 12px 0 6px; }
+.raid-schedule fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
+.raid-schedule legend { font-weight: 650; padding: 0; margin-bottom: 6px; }
+#raidSelectedDate { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #121d1f; }
+.raid-calendar { padding: 10px; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.raid-calendar-month { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
+.raid-calendar-month button { padding: 3px 12px; font-size: 20px; line-height: 1.2; }
+.raid-calendar-week, .raid-calendar-days { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); gap: 3px; text-align: center; }
+.raid-calendar-week { margin-bottom: 4px; font-size: 11px; color: var(--muted); }
+.raid-calendar-days button { min-height: 34px; padding: 3px 0; border-color: transparent; background: transparent; font-variant-numeric: tabular-nums; }
+.raid-calendar-days button[aria-current=date] { border-color: var(--line); }
+.raid-calendar-days button[aria-pressed=true] { background: var(--accent); color: var(--night); }
+.raid-time-controls { display: flex; gap: 6px; align-items: center; }
+.raid-time-controls input { width: 4.5em; }
+@media (max-width: 620px) {
+  .raid-schedule { grid-template-columns: 1fr; }
+}
+
+.armory-search { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)) auto; gap: 12px; align-items: end; margin-top: 14px; }
+.raid-form.armory-search label { margin: 0; }
+.armory-search .raid-primary { min-height: 40px; }
+@media (max-width: 540px) {
+  .armory-search { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .armory-search .raid-primary { grid-column: 1 / -1; justify-self: start; }
+}
+
+.raid-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; margin: 14px 0 12px; }
+.raid-control-buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.raid-state { display: inline-flex; align-items: center; gap: 7px; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line); background: var(--surface); color: var(--muted); font-size: 12px; font-weight: 700; }
+.raid-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.raid-state[data-state="Open"] { color: var(--accent); }
+.raid-state[data-state="Locked"] { color: var(--gold); }
+.raid-state[data-state="Cancelled"] { color: #ffb4ad; }
+.guild-app .raid-control-danger { color: #ffb4ad; border-color: #845050; }
+.guild-app .raid-control-danger:hover { background: #382427; border-color: #ffb4ad; }
+
+
+.guild-app .prep-setup-controls { align-items: end; gap: 12px; }
+.prep-setup-controls label { display: grid; gap: 5px; margin: 0; }
+.prep-setup-controls :is(input,select) { min-height: 40px; }
+
+.working-raid { display: grid; gap: 5px; min-width: 0; margin: 6px 0 12px; padding-inline: 4px; color: var(--muted); font-size: 12px; }
+.working-raid select { width: 100%; min-width: 0; color: var(--ink); text-overflow: ellipsis; }
+@media (max-width: 760px) {
+  .working-raid { width: 100%; max-width: 360px; }
 }

@@ -36,7 +36,7 @@ export function renderArmoryProfile(character) {
 export async function renderArmory(root) {
   const card = raidElement('section',null,'raid-card armory-card');
   card.append(raidElement('p','Blizzard Armory','eyebrow'),raidElement('h3','Link a character'),
-    raidElement('p','Search by first name and surname. A link associates this character with your Discord account for raid sign-ups.'));
+    raidElement('p','Enter your character’s first and last name. A link associates this character with your Discord account for raid sign-ups.'));
   const content = raidElement('div');
   card.append(content); root.append(card);
   try {
@@ -57,19 +57,29 @@ export async function renderArmory(root) {
       row.append(title,unlink); content.append(row);
     }
     if (!configured) { content.append(raidElement('p','Armory lookup requires Blizzard API credentials from your guild administrator.')); return; }
-    const form = raidElement('form',null,'raid-form raid-actions');
-    const label = raidElement('label','Character name');
-    const name = raidElement('input');
-    name.placeholder = 'First name Surname'; name.required = true; name.maxLength = 61;
-    label.append(name);
+    const form = raidElement('form',null,'raid-form armory-search');
+    function nameField(title, example) {
+      const label = raidElement('label',title);
+      const field = raidElement('input');
+      field.placeholder = example;
+      field.required = true;
+      field.maxLength = 30;
+      field.autocomplete = 'off';
+      label.append(field);
+      form.append(label);
+      return field;
+    }
+    const firstName = nameField('First name','Astra');
+    const lastName = nameField('Last name','Mortis');
     const search = raidElement('button','Search Armory','raid-primary');
     const results = raidElement('div');
     results.setAttribute('aria-live','polite');
-    form.append(label,search); content.append(form,results);
+    form.append(search); content.append(form,results);
     form.addEventListener('submit',async event=>{
       event.preventDefault(); search.disabled = true; results.replaceChildren();
       try {
-        const {character} = await armoryRequest('?name='+encodeURIComponent(name.value));
+        const name = firstName.value.trim()+' '+lastName.value.trim();
+        const {character} = await armoryRequest('?name='+encodeURIComponent(name));
         results.append(renderArmoryProfile(character));
         const roleLabel = raidElement('label','Raid role ');
         const role = raidElement('select');

@@ -92,7 +92,7 @@ export async function armoryApi(request, env, url, member) {
     if (query !== null) {
       if (!configured) return reply({ error: 'The guild administrator needs to configure Blizzard API credentials.' }, 503);
       const slug = profileSlug(query);
-      if (!slug) return reply({ error: 'Enter your character’s first name and surname.' }, 400);
+      if (!slug) return reply({ error: 'Enter your character’s first and last name.' }, 400);
       const character = await loadCharacter(env, slug);
       return character ? reply({ character }) : reply({ error: 'Character not found. Check the full name and make sure the level 10+ character has logged out of WoW.' }, 404);
     }
