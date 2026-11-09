@@ -429,3 +429,27 @@ body { border-top: 0; }
 .armory-confirm-actions { margin-top: 14px; }
 .armory-confirm-actions .raid-primary { flex: 1; }
 .guild-app .armory-confirm-feedback { color: var(--sale); }
+
+/* Shared translucent surfaces over the warm workspace background. */
+:root {
+  --glass-panel: color-mix(in srgb, var(--container) 78%, transparent);
+  --glass-nav: color-mix(in srgb, var(--container) 60%, transparent);
+}
+.guild-app > main {
+  background: radial-gradient(ellipse at 90% 0%, var(--hover), transparent 65%), var(--night);
+}
+.guild-app .raid-shell { background: transparent; }
+.guild-topbar, .guild-app .raid-sidebar, .site-header, footer, .guild-app footer {
+  background: var(--glass-nav);
+}
+.guild-app :is(.raid-card,.raid-stats>div,.board,.categories,.recipe-card),
+.news-card, .empty, .editor-grid > * {
+  background: var(--glass-panel);
+}
+.guild-app .workspace-goal {
+  background: linear-gradient(130deg, var(--glass-panel), color-mix(in srgb, var(--hover) 72%, transparent));
+}
+.guild-app :is(.auction-toolbar,.toolbar,th,.hero-stats div) {
+  background: color-mix(in srgb, var(--raised) 78%, transparent);
+}
+.guild-app .armory-confirm { background: var(--panel); }
