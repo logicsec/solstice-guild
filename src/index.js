@@ -2,7 +2,7 @@ import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
 import { renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
-import { articlePage, cmsPage, publicHome, solsticeLockup } from './home.js';
+import { articlePage, cmsPage, publicHome, solsticeFavicon, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
@@ -198,6 +198,7 @@ async function raidApi(request, db, url, user) {
 const page = String.raw`<!doctype html>
 <html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Solstice Guild</title>
+${solsticeFavicon}
 <style>
 :root{color-scheme:dark;--bg:#111112;--panel:#1a1817;--raised:#24211f;--line:#423b35;--muted:#bdb4aa;--ink:#f9f6f2;--gold:#ffbd0a}
 *{box-sizing:border-box}
