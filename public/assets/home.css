@@ -26,7 +26,7 @@ nav a:hover, .text-link:hover { color: var(--gold); }
 .button.discord:hover, .button.outline:hover { border-color: var(--gold); }
 .button.gold { color: #23190a; background: linear-gradient(110deg,#f6d58e,#d99e47); border-color: #f7db9f; }
 .button.gold:hover { background: #ffe1a0; }
-.hero { min-height: min(720px, 85vh); display: grid; align-items: center; background: linear-gradient(90deg,#09110ef0 0%,#0b1612bb 36%,#09151133 78%),linear-gradient(0deg,#101814 0%,transparent 30%),url('/assets/solstice-dawn.webp') center 47% / cover no-repeat, #263c30; border-bottom: 1px solid var(--line); }
+.hero { min-height: min(720px, 85vh); display: grid; align-items: center; background: linear-gradient(90deg,#09110ef0 0%,#0b1612bb 36%,#09151133 78%),linear-gradient(0deg,#101814 0%,transparent 30%),url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, #263c30; border-bottom: 1px solid var(--line); }
 .hero-inner { width: min(100% - 9vw, 1240px); margin: auto; display: grid; grid-template-columns: 1fr minmax(270px, 375px); gap: clamp(28px, 8vw, 130px); align-items: center; padding: 80px 0; }
 .eyebrow { font-size: 11px; letter-spacing: .19em; text-transform: uppercase; color: var(--gold); font-weight: 750; }
 .sun-dot { display: inline-block; margin-right: 6px; width: 7px; height: 7px; transform: rotate(45deg); background: var(--gold); box-shadow: 0 0 12px #ffcf83; }
@@ -97,7 +97,7 @@ footer { border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted
 .guild-app > main { background: #141b15; border-inline-color: var(--line); }
 .guild-app .masthead, .guild-app .guild-nav, .guild-app footer { background: linear-gradient(110deg,#241d13,#131c16 74%); }
 .guild-app .masthead strong, .guild-app h1, .guild-app h2 { font-family: Georgia, serif; }
-.guild-app .hero { min-height: auto; background: linear-gradient(90deg,#101713ee,#17211ab5),url('/assets/solstice-dawn.webp') center 45% / cover; }
+.guild-app .hero { min-height: auto; background: linear-gradient(90deg,#101713ee,#17211ab5),url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 45% / cover; }
 .guild-app .hero h1 { font-size: clamp(30px,5vw,50px); }
 .guild-app .hero-stats, .guild-app .hero-stats div { background: #1a2118; }
 .guild-app button, .guild-app input, .guild-app select { border-color: var(--line); }
@@ -146,7 +146,7 @@ body { border-top: 3px solid var(--gold); }
 .panel-content h3 { font:700 21px Georgia,serif; margin:5px 0; }
 .panel-content li { padding:8px 0; }
 .guild-panel:has(#preview-raids:checked) .preview-raids, .guild-panel:has(#preview-market:checked) .preview-market, .guild-panel:has(#preview-crafts:checked) .preview-crafts { display:block; }
-.paths { background:linear-gradient(90deg,#12130fe8,#171b15ed),url('/assets/solstice-dawn.webp') center 65% / cover; }
+.paths { background:linear-gradient(90deg,#12130fe8,#171b15ed),url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 65% / cover; }
 .path-grid article, .news-card, .empty, .editor-grid > * { background:#1a1d17; border-color:var(--line); }
 .medallion { background:#26251b; box-shadow:inset 0 0 0 4px #c8a56d1f; }
 .guild-app { --bg:#11120f; --panel:#1a1d17; --raised:#23241b; --line:#a38e6548; background:#11120f; }

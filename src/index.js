@@ -223,7 +223,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=085eefe7812f"></head><body class="guild-app"><main>
 <header class="masthead">
 <svg class="crest" viewBox="0 0 96 96" aria-hidden="true"><rect x="2" y="2" width="92" height="92" rx="18" fill="#0c0b09" stroke="currentColor" stroke-width="2"/><circle cx="48" cy="48" r="15" fill="currentColor"/><path d="M48 17v10m0 42v10M17 48h10m42 0h10M26 26l7 7m30 30 7 7M26 70l7-7m30-30 7-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
 <div><strong>Solstice</strong><small>World of Warcraft: Forever</small></div></header>
