@@ -17,3 +17,7 @@ migrations_dir = "migrations"
 [vars]
 DISCORD_CLIENT_ID = "REPLACE_WITH_YOUR_DISCORD_APPLICATION_ID"
 DISCORD_GUILD_ID = "REPLACE_WITH_YOUR_SOLSTICE_SERVER_ID"
+CMS_ADMIN_DISCORD_IDS = ""
+
+[assets]
+directory = "./public"

@@ -68,3 +68,9 @@ The migrations create a fresh database. The existing hosted site's records and C
 - [Cloudflare D1 migrations](https://developers.cloudflare.com/d1/reference/migrations/)
 - [Cloudflare GitHub Actions](https://developers.cloudflare.com/workers/ci-cd/external-cicd/github-actions/)
 - [Discord OAuth2](https://docs.discord.com/developers/topics/oauth2)
+
+## Guild Chronicle
+
+The homepage and published articles are public. Guild Hall, market data and raid tools still require Discord login. To enable the article editor, set `CMS_ADMIN_DISCORD_IDS` to a comma-separated list of Discord **user** IDs in the Komodo stack environment. With Developer Mode enabled, right-click your Discord profile and select **Copy User ID**. This is separate from the Discord server ID.
+
+Redeploy the stack to apply the migration and environment setting. Sign in, then select **Article editor** on the homepage or go to `/cms`. Drafts are visible only in the editor. Publishing adds the article to the homepage and gives it a shareable link. Saving a published article as a draft takes it offline. Articles support plain text with blank lines between paragraphs.

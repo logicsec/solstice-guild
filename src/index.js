@@ -1,4 +1,5 @@
-import { authReady, discordAuth, sessionFor } from './auth.js';
+import { articlePage, cmsPage, publicHome } from './home.js';
+import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
   ['weapon', 'Weapons', 'weapons'],
@@ -41,7 +42,7 @@ async function raidApi(request, db, url, user) {
   const post = request.method === 'POST';
   let input = {};
   if (post) {
-    if (request.headers.get('Origin') !== url.origin || !request.headers.get('Content-Type')?.startsWith('application/json')) {
+    if (!sameOriginWrite(request, url) || !request.headers.get('Content-Type')?.startsWith('application/json')) {
       return reply({ error: 'Invalid request origin.' }, 403);
     }
     try { input = await request.json(); } catch { return reply({ error: 'Invalid form.' }, 400); }
@@ -222,11 +223,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-</head><body><main>
+<link rel="stylesheet" href="/assets/home.css"></head><body class="guild-app"><main>
 <header class="masthead">
 <svg class="crest" viewBox="0 0 96 96" aria-hidden="true"><rect x="2" y="2" width="92" height="92" rx="18" fill="#0c0b09" stroke="currentColor" stroke-width="2"/><circle cx="48" cy="48" r="15" fill="currentColor"/><path d="M48 17v10m0 42v10M17 48h10m42 0h10M26 26l7 7m30 30 7 7M26 70l7-7m30-30 7-7" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
 <div><strong>Solstice</strong><small>World of Warcraft: Forever</small></div></header>
-<nav class="guild-nav" aria-label="Guild tools"><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav>
+<nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -1192,7 +1193,7 @@ byId('copyRaid').addEventListener('click',async()=>{
 });
 function writeRoute(tool, view, raid) {
   const url = new URL('/',location.origin);
-  if (tool !== 'auction') url.searchParams.set('tool', tool);
+  url.searchParams.set('tool', tool);
   if (tool === 'raid' && view && view !== 'signups' && !raid) url.searchParams.set('view',view);
   if (raid) url.searchParams.set('raid',raid);
   if (url.href !== location.href) history.pushState(null,'',url);
@@ -1236,12 +1237,6 @@ document.addEventListener('visibilitychange', () => {
 loadNames();
 </script></main></body></html>`;
 
-function loginPage(message, next) {
-  return `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sign in · Solstice Guild</title><style>
-  :root{color-scheme:dark}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(ellipse at 60% 0%,#332615,#101011 60%);color:#f8f5eb;font:16px system-ui}
-  main{margin:16px;max-width:420px;padding:34px;border:1px solid #5a4729;border-radius:12px;background:#181717}strong{color:#ffbd0a;letter-spacing:.13em}h1{margin:.5em 0}p{color:#c8bfb0}a{display:inline-block;margin-top:8px;padding:10px 16px;background:#5865f2;border-radius:5px;color:white;font-weight:700;text-decoration:none}</style><main><strong>SOLSTICE GUILD</strong><h1>Guild sign-in</h1><p>${message}</p><a href="/auth/discord?next=${encodeURIComponent(next)}">Continue with Discord</a></main></html>`;
-}
-
 const market = 'forever.normal.alliance.us';
 const professions = professionTiles.map(([name]) => name);
 const categories = new Set(auctionCategories.flatMap(([id, , alternate]) => alternate ? [id, alternate] : [id]));
@@ -1258,23 +1253,23 @@ export default {
     let session;
     try { session = await sessionFor(request, env); }
     catch { return new Response('Guild session storage is unavailable.', { status: 503 }); }
-    if (!session) {
-      if (pathname !== '/') return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
-      const params = new URLSearchParams(url.search);
-      const login = params.get('login');
-      params.delete('login');
-      const next = params.size ? '/?' + params : '/';
-      const message = login === 'membership' ? 'Your Discord account must belong to the Solstice server.' :
-        login === 'expired' ? 'Your sign-in expired. Try again.' :
-        login === 'unavailable' ? 'Discord sign-in is temporarily unavailable.' : 'Sign in with a Discord account that belongs to the Solstice server.';
-      return new Response(loginPage(message, next), { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' } });
+    try {
+      if (pathname === '/cms') return await cmsPage(request, env, url, session);
+      const article = pathname.match(/^\/chronicle\/([0-9a-f-]{36})$/);
+      if (article && request.method === 'GET') return await articlePage(env, article[1], session);
+      if (pathname === '/' && (!session || !url.searchParams.has('tool') || url.searchParams.has('login'))) {
+        return await publicHome(env, url, session);
+      }
+    } catch {
+      return new Response('Guild Chronicle storage is unavailable. Check that migrations have run.', { status: 503 });
     }
+    if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
       try { return await raidApi(request, env.DB, url, session.discord_id); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }
     }
-    if (pathname === '/') return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'no-referrer' } });
+    if (pathname === '/') return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'same-origin' } });
     let upstream;
     if (pathname === '/prices') upstream = 'https://api.ahledger.com/v1/pricetable/' + market;
     const category = pathname.split('/').at(-1);

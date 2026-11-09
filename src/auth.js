@@ -50,11 +50,16 @@ export async function sessionFor(request, env) {
     .bind(await hash(token), Date.now()).first();
 }
 
+export function sameOriginWrite(request, url) {
+  const origin = request.headers.get('Origin');
+  return origin === url.origin || ((origin === null || origin === 'null') && request.headers.get('Sec-Fetch-Site') === 'same-origin');
+}
+
 export async function discordAuth(request, env, url) {
   const callback = url.origin + '/auth/discord/callback';
   if (url.pathname === '/auth/logout') {
     if (request.method !== 'POST') return errorPage('Method not allowed.', 405);
-    if (request.headers.get('Origin') !== url.origin) return errorPage('Invalid origin.', 403);
+    if (!sameOriginWrite(request, url)) return errorPage('Invalid origin.', 403);
     const token = cookie(request, sessionCookie);
     if (/^[a-f0-9]{64}$/.test(token ?? '')) {
       await env.DB.prepare('DELETE FROM discord_sessions WHERE token_hash = ?').bind(await hash(token)).run();

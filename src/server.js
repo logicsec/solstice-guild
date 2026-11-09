@@ -1,3 +1,4 @@
+import { createReadStream } from 'node:fs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -5,7 +6,7 @@ import worker from './index.js';
 import { authReady } from './auth.js';
 import { openSqlite } from './sqlite.js';
 
-const { PUBLIC_ORIGIN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID } = process.env;
+const { PUBLIC_ORIGIN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS } = process.env;
 const origin = new URL(PUBLIC_ORIGIN ?? 'https://solsticeguild.net');
 if (origin.protocol !== 'https:' || origin.href !== origin.origin + '/' || origin.username || origin.password) {
   throw new Error('PUBLIC_ORIGIN must be an HTTPS origin with no path.');
@@ -14,7 +15,8 @@ if (!/^\d+$/.test(DISCORD_CLIENT_ID ?? '') || !authReady({ DB: true, DISCORD_CLI
   throw new Error('Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and DISCORD_GUILD_ID.');
 }
 const DB = openSqlite(process.env.SQLITE_PATH ?? '/data/solstice.sqlite');
-const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID };
+const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS };
+const assets = new Map([['/assets/home.css', ['home.css', 'text/css; charset=utf-8']], ['/assets/solstice-dawn.webp', ['solstice-dawn.webp', 'image/webp']]]);
 const server = createServer(async (req, res) => {
   if (req.method === 'GET' && req.url === '/healthz') {
     res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store' }).end('ok');
@@ -23,6 +25,14 @@ const server = createServer(async (req, res) => {
   try {
     // Derive OAuth and same-origin checks from trusted configuration, never a proxy header.
     const url = new URL(origin.origin + (req.url?.startsWith('/') ? req.url : '/'));
+    const asset = assets.get(url.pathname);
+    if (asset && (req.method === 'GET' || req.method === 'HEAD')) {
+      res.setHeader('Content-Type', asset[1]);
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      if (req.method === 'HEAD') res.end();
+      else await pipeline(createReadStream(new URL('../public/assets/' + asset[0], import.meta.url)), res);
+      return;
+    }
     const headers = new Headers();
     for (let i = 0; i < req.rawHeaders.length; i += 2) headers.append(req.rawHeaders[i], req.rawHeaders[i + 1]);
     const method = req.method ?? 'GET';
@@ -32,7 +42,7 @@ const server = createServer(async (req, res) => {
       const chunks = [];
       for await (const chunk of req.iterator({ destroyOnReturn: false })) {
         bytes += chunk.length;
-        if (bytes > 32768) {
+        if (bytes > 131072) {
           res.writeHead(413, { Connection: 'close' }).end('Request too large');
           return;
         }

@@ -22,11 +22,11 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     },
     async batch(statements) { return Promise.all(statements.map(statement => statement.run())); },
   };
-  const env = { DB, DISCORD_CLIENT_ID: '10', DISCORD_CLIENT_SECRET: 'test', DISCORD_GUILD_ID: '20' };
+  const env = { DB, DISCORD_CLIENT_ID: '10', DISCORD_CLIENT_SECRET: 'test', DISCORD_GUILD_ID: '20', CMS_ADMIN_DISCORD_IDS: '30' };
   const origin = 'https://solsticeguild.net';
   const send = (path, options) => worker.fetch(new Request(origin + path, options), env);
   const invite = '/?tool=raid&raid=00000000-0000-4000-8000-000000000001';
-  assert.match(await (await send(invite)).text(), /Continue with Discord/);
+  assert.match(await (await send(invite)).text(), /Sign in with Discord/);
   assert.equal((await send('/prices')).status, 401);
   assert.equal((await send('/api/raids', { headers: { 'oai-authenticated-user-id': 'fake' } })).status, 401);
 
@@ -79,7 +79,22 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(detail.roster[0].status, 'Pending');
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' }, member)).status, 403);
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' })).status, 200);
-  assert.equal((await post('/auth/logout', {})).status, 303);
+  assert.equal((await send('/cms', { headers: { Cookie: member } })).status, 403);
+  const article = new URLSearchParams({title:'First & Dawn', summary:'A guild update', body:'<script>unsafe</script>', action:'draft'});
+  const save = () => send('/cms', { method:'POST', headers:{ Cookie:cookie, Origin:origin }, body:article });
+  assert.equal((await save()).status, 303);
+  assert.doesNotMatch(await (await send('/')).text(), /First &amp; Dawn/);
+  const articleId = db.prepare('SELECT id FROM articles').get().id;
+  assert.equal((await send('/chronicle/' + articleId)).status, 404);
+  article.set('id',articleId);
+  article.set('action','publish');
+  assert.equal((await save()).status, 303);
+  assert.match(await (await send('/')).text(), /First &amp; Dawn/);
+  const published = await (await send('/chronicle/' + articleId)).text();
+  assert.match(published, /&lt;script&gt;unsafe/);
+  assert.doesNotMatch(published, /<script>unsafe/);
+  assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'https://bad.example','Sec-Fetch-Site':'cross-site'}})).status,403);
+  assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'same-origin'}})).status,303);
   assert.equal((await send('/api/session', options)).status, 401);
   db.close();
 });
