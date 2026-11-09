@@ -13,7 +13,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=da8a68438d96"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title><link rel="stylesheet" href="/assets/home.css?v=070924b38e38"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="/?tool=raid">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -36,26 +36,25 @@ export async function publicHome(env, url, session) {
   const { results } = await env.DB.prepare('SELECT id, title, summary, published_at FROM articles WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 12').bind().all();
   const cards = results.map(article => `<article class="news-card"><p class="eyebrow">${dateLabel(article.published_at)}</p><h3><a href="/chronicle/${escape(article.id)}">${escape(article.title)}</a></h3><p>${escape(article.summary)}</p><a class="text-link" href="/chronicle/${escape(article.id)}">Read article <span aria-hidden="true">→</span></a></article>`).join('');
   return html(shell('Home', `<main class="guild-home">
-  <section class="home-banner" aria-labelledby="home-title"><div class="home-banner-content">
+  <section class="home-banner" aria-labelledby="home-title"><div class="home-banner-content"><div class="home-banner-copy">
     <p class="eyebrow">World of Warcraft: Forever <span>·</span> US Normal Alliance</p>
     <h1 id="home-title">Solstice</h1>
     <p class="home-intro">An Alliance guild for the people you want beside you in Azeroth.</p>
     ${notice ? '<p class="notice" role="status">' + escape(notice) + '</p>' : ''}
     <a class="button outline" href="#chronicle">Read the Chronicle <span aria-hidden="true">↓</span></a>
-  </div></section>
-  <div class="home-journal" id="chronicle">
-    <section class="chronicle" aria-labelledby="chronicle-title">
-      <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
-      <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
-      <div class="news-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
-    </section>
+    </div>
     <aside class="home-about" aria-labelledby="about-title">
       ${solsticeMark}
       <p class="eyebrow">Alliance guild</p><h2 id="about-title">Life in Solstice</h2>
       <p>We raid together, help each other get ready, and share what we learn along the way.</p>
       <dl><div><dt>Game</dt><dd>WoW Forever</dd></div><div><dt>Server</dt><dd>US Normal</dd></div><div><dt>Faction</dt><dd>Alliance</dd></div></dl>
     </aside>
-  </div>
+  </div></section>
+  <section class="chronicle home-journal" id="chronicle" aria-labelledby="chronicle-title">
+      <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
+      <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
+      <div class="news-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
+  </section>
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
 

@@ -204,63 +204,78 @@ body { border-top: 3px solid var(--gold); }
 }
 
 /* Shared Solstice surfaces and navigation. */
+/* Edit these seven swatches to try a different palette. */
 :root {
-  --night: #101719;
-  --ink: #edf4f3;
-  --muted: #abbdbf;
-  --line: #35464a;
-  --gold: #e4bb7d;
-  --accent: #86d8d2;
-  --surface: #192527;
-  --hover: #243638;
+  --surface: #22251E;
+  --ink: #F4F0E6;
+  --container: #30382A;
+  --deep-accent: #8D744B;
+  --accent: #E6BC76;
+  --gold: #D6C09B;
+  --sale: #FE704D;
+  --night: var(--surface);
+  --muted: color-mix(in srgb, var(--ink) 78%, var(--surface));
+  --line: color-mix(in srgb, var(--ink) 26%, var(--container));
+  --hover: color-mix(in srgb, var(--deep-accent) 30%, var(--container));
+  --field: color-mix(in srgb, var(--surface) 72%, black);
   font-family: system-ui, "Segoe UI", sans-serif;
 }
 body { border-top: 0; }
-.site-header, footer { background: #151e20; }
+.site-header:has(+ .guild-home) {
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  background: transparent;
+  border-bottom-color: transparent;
+}
+.site-header:has(+ .guild-home) .discord {
+  background: color-mix(in srgb, var(--surface) 55%, transparent);
+  border-color: color-mix(in srgb, var(--ink) 38%, transparent);
+}
+.site-header, footer { background: var(--container); }
 .button, .news-card, .empty, .editor-grid > * { border-radius: 12px; }
-.site-header .discord, .button.outline { background: #1b282b; border-color: var(--line); }
+.site-header .discord, .button.outline { background: var(--container); border-color: var(--line); }
 .site-header .discord:hover, .button.outline:hover { border-color: var(--accent); }
 .home-banner {
   display: grid;
   align-items: end;
   min-height: clamp(390px, 51vw, 630px);
-  background: linear-gradient(90deg,#101719 0%,#101719a6 41%,transparent 90%),
-    linear-gradient(0deg,#101719 0%,transparent 62%),
-    url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, #223236;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--night) 80%, transparent), transparent 27%),
+    linear-gradient(90deg,var(--night) 0%,color-mix(in srgb, var(--night) 68%, transparent) 41%,transparent 90%),
+    linear-gradient(0deg,var(--night) 0%,transparent 62%),
+    url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, var(--container);
 }
-.home-banner-content { width: min(100% - 9vw, 1240px); margin-inline: auto; padding: 60px 0 clamp(45px,7vw,95px); }
+.home-banner-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,360px); align-items: end; gap: clamp(20px,4vw,56px); width: min(100% - 9vw, 1240px); margin-inline: auto; padding: 112px 0 clamp(45px,7vw,95px); }
 .home-banner h1 { font: 650 clamp(70px,12vw,140px)/.95 Georgia,serif; letter-spacing: -.065em; margin: 14px 0 20px; }
 .home-intro { max-width: 32ch; font-size: clamp(18px,2vw,24px); color: var(--ink); margin-bottom: 24px; }
-.home-journal { display: grid; grid-template-columns: minmax(0,2fr) minmax(260px,1fr); gap: clamp(20px,4vw,56px); width: min(100% - 9vw,1240px); margin: 0 auto; padding: 28px 0 72px; }
-.home-journal .chronicle { width: 100%; padding: 0; }
-.home-about { align-self: start; padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: var(--surface); }
+.home-journal { padding: 28px 0 72px; }
+.home-about { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: color-mix(in srgb, var(--container) 92%, transparent); }
 .home-about svg { width: 34px; float: right; }
 .home-about h2 { margin: 4px 0 8px; font: 650 27px/1.2 Georgia,serif; }
 .home-about > p:not(.eyebrow), .home-about dt { color: var(--muted); }
 .home-about dl { margin: 16px 0 0; }
 .home-about dl div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding: 8px 0; }
 .home-about dd { margin: 0; }
-.news-card, .empty, .editor-grid > * { background: var(--surface); }
+.news-card, .empty, .editor-grid > * { background: var(--container); }
 .guild-app {
   --bg: var(--night);
-  --panel: var(--surface);
-  --raised: #223033;
-  --line: #35464a;
+  --panel: var(--container);
+  --raised: var(--hover);
   font: 14px/1.55 system-ui, "Segoe UI", sans-serif;
 }
 .guild-app > main { max-width: none; border: 0; background: var(--night); }
-.guild-topbar { display: flex; align-items: center; background: #151e20; border-bottom: 1px solid var(--line); }
+.guild-topbar { display: flex; align-items: center; background: var(--container); border-bottom: 1px solid var(--line); }
 .guild-app .masthead, .guild-app .guild-nav { background: transparent; border: 0; }
 .guild-app .masthead { flex: 0 0 248px; padding: 12px 24px; }
 .guild-app .guild-nav { flex: 1; min-width: 0; padding: 10px clamp(12px,3vw,36px); }
 .guild-nav summary { color: var(--accent); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
 .guild-nav details > div { padding: 5px; border-radius: 10px; }
 .guild-nav details button { border-radius: 7px; }
-.guild-nav details button[aria-pressed=true], .guild-app .categories button[aria-pressed=true] { background: #254043; color: var(--accent); box-shadow: none; border-color: #45696b; }
+.guild-nav details button[aria-pressed=true], .guild-app .categories button[aria-pressed=true] { background: var(--hover); color: var(--accent); box-shadow: none; border-color: var(--deep-accent); }
 .guild-app :is(button,input,select,textarea) { border-radius: 8px; }
 .guild-app button:hover { border-color: var(--accent); }
-.guild-app :is(input:not([type=checkbox]),select,textarea,.filters summary) { background: #121d1f; }
-.guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,#1c2b30,transparent 55%),var(--night); }
+.guild-app :is(input:not([type=checkbox]),select,textarea,.filters summary) { background: var(--field); }
+.guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,var(--container),transparent 55%),var(--night); }
 .guild-app .raid-actions { align-items: center; }
 .guild-app :where(.raid-shell) :is(button, a.raid-primary) {
   min-height: 40px;
@@ -274,40 +289,40 @@ body { border-top: 0; }
 }
 .guild-app :where(.raid-shell) button:where(:hover:not(:disabled)) { background: var(--hover); }
 .guild-app :where(.raid-shell) a.raid-primary { display: inline-flex; align-items: center; }
-.guild-app .raid-sidebar { padding: 24px 16px; background: #151e20; }
+.guild-app .raid-sidebar { padding: 24px 16px; background: var(--container); }
 .raid-sidebar nav { display: block; padding: 0; background: transparent; border: 0; }
 .raid-nav-group + .raid-nav-group { margin-top: 24px; }
 .raid-nav-group .eyebrow { padding: 0 12px 5px; color: var(--muted); letter-spacing: .1em; }
 .guild-app .raid-sidebar button { background: transparent; display: flex; align-items: center; gap: 11px; border: 1px solid transparent; font-size: 14px; font-weight: 550; margin: 4px 0; padding: 10px 12px; }
 .raid-sidebar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .guild-app .raid-sidebar button:hover { background: var(--hover); }
-.guild-app .raid-sidebar button[aria-current=true] { background: #22383c; color: var(--accent); border-color: #3b6064; box-shadow: inset 3px 0 var(--accent); }
+.guild-app .raid-sidebar button[aria-current=true] { background: var(--hover); color: var(--accent); border-color: var(--deep-accent); box-shadow: inset 3px 0 var(--accent); }
 .raid-content { padding: clamp(18px,3vw,42px); }
 .guild-app .raid-heading h2 { font: 720 clamp(27px,3vw,36px)/1.1 system-ui,sans-serif; letter-spacing: -.035em; margin-bottom: 7px; }
 .guild-app .raid-shell p { color: var(--muted); }
 .guild-app .raid-shell .eyebrow { color: var(--accent); }
 .guild-app :is(.raid-card,.raid-stats>div,.board,.recipe-card) { border-radius: 13px; }
-.guild-app .raid-primary, .guild-app .search-button { background: #99dfd7; border: 1px solid #99dfd7; color: #102526; border-radius: 9px; }
-.guild-app :is(.raid-primary,.search-button):hover { background: #bbf3ed; }
+.guild-app .raid-primary, .guild-app .search-button { background: var(--accent); border: 1px solid var(--accent); color: var(--surface); border-radius: 9px; }
+.guild-app :is(.raid-primary,.search-button):hover { background: color-mix(in srgb, var(--accent) 78%, var(--ink)); }
 .guild-app .workspace-steps { grid-template-columns: repeat(3,minmax(0,1fr)); }
-.guild-app .workspace-steps button, .guild-app .workspace-player { background: #172224; border-color: var(--line); }
-.guild-app :is(.workspace-steps button,.workspace-player)[aria-current=true] { background: #243d40; color: var(--accent); border-color: #4e7779; }
-.guild-app .workspace-goal { background: linear-gradient(130deg,#1b2b30,#233d40); }
+.guild-app .workspace-steps button, .guild-app .workspace-player { background: var(--container); border-color: var(--line); }
+.guild-app :is(.workspace-steps button,.workspace-player)[aria-current=true] { background: var(--hover); color: var(--accent); border-color: var(--deep-accent); }
+.guild-app .workspace-goal { background: linear-gradient(130deg,var(--container),var(--hover)); }
 .guild-app .workspace-empty { padding: clamp(25px,5vw,60px); margin-top: 20px; text-align: center; border-style: dashed; }
 .workspace-empty .raid-actions { justify-content: center; }
 .workspace-empty h3 { margin-top: 8px; font-size: 22px; }
-.guild-app .readiness-details { background: #142022; border-radius: 9px; }
-.guild-app .hero { background: radial-gradient(ellipse at 100% 0%,#28434b,#142023 70%); border-color: var(--line); }
+.guild-app .readiness-details { background: var(--field); border-radius: 9px; }
+.guild-app .hero { background: radial-gradient(ellipse at 100% 0%,var(--hover),var(--container) 70%); border-color: var(--line); }
 .guild-app :is(.auction-toolbar,.toolbar,.filters>div,th,.hero-stats div,.categories button,.profession-grid button) { background: var(--raised); }
 .guild-app .hero-stats { border-color: var(--line); background: var(--line); }
-.guild-app tbody tr:nth-child(even) { background: #1c2b2e; }
-.guild-app tbody tr:hover { background: #263b3f; }
-.guild-app .profession-grid button[aria-pressed=true] { background: #254043; color: var(--accent); }
-.guild-app .profession-grid svg { background: #182f33; color: var(--accent); border-color: var(--line); }
-.guild-app footer { background: #151e20; }
+.guild-app tbody tr:nth-child(even) { background: var(--container); }
+.guild-app tbody tr:hover { background: var(--hover); }
+.guild-app .profession-grid button[aria-pressed=true] { background: var(--hover); color: var(--accent); }
+.guild-app .profession-grid svg { background: var(--container); color: var(--accent); border-color: var(--line); }
+.guild-app footer { background: var(--container); }
 .armory-inspector { margin-top: 12px; }
 .armory-profile { margin: 12px 0; }
-.armory-profile img { display: block; width: 100%; max-height: 300px; object-fit: contain; background: #142023; border-radius: 10px; }
+.armory-profile img { display: block; width: 100%; max-height: 300px; object-fit: contain; background: var(--container); border-radius: 10px; }
 .armory-profile details, .prep-activity { padding: 10px 0; border-top: 1px solid var(--line); }
 .armory-item { display: grid; gap: 2px; padding: 8px; }
 .armory-item [data-quality="RARE"] { color: #80b8ff; }
@@ -319,14 +334,14 @@ body { border-top: 0; }
 .prep-player, .prep-results > details { margin-top: 18px; border-top: 1px solid var(--line); padding-top: 14px; }
 .prep-player label { margin-top: 8px; }
 .prep-timeline { display: flex; min-height: 13px; gap: 2px; margin: 14px 0; overflow: hidden; border-radius: 5px; }
-.prep-task { background: #83cfc4; }
-.prep-group { background: #91aaff; }
-.prep-free { background: repeating-linear-gradient(135deg,#2d3e43 0 4px,#192527 4px 8px); }
+.prep-task { background: var(--accent); }
+.prep-group { background: var(--gold); }
+.prep-free { background: repeating-linear-gradient(135deg,var(--line) 0 4px,var(--surface) 4px 8px); }
 .prep-handoff textarea { display: block; width: 100%; margin: 10px 0; color: inherit; border: 1px solid var(--line); padding: 10px; }
 .prep-handoff > :is(button,small) { margin-top: 10px; display: block; }
 @media (max-width: 760px) {
-  .home-journal { grid-template-columns: 1fr; }
-  .home-banner { background-position: center, center, 62% center; }
+  .home-banner-content { grid-template-columns: 1fr; }
+  .home-banner { background-position: center, center, center, 62% center; }
   .guild-topbar { flex-wrap: wrap; }
   .guild-app .masthead { flex: 1 1 100%; }
   .guild-app .raid-shell { grid-template-columns: 1fr; }
@@ -341,7 +356,7 @@ body { border-top: 0; }
 .raid-schedule { display: grid; grid-template-columns: minmax(0,1fr) auto; align-items: start; gap: 16px; margin: 12px 0 6px; }
 .raid-schedule fieldset { min-width: 0; border: 0; margin: 0; padding: 0; }
 .raid-schedule legend { font-weight: 650; padding: 0; margin-bottom: 6px; }
-#raidSelectedDate { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: #121d1f; }
+#raidSelectedDate { min-height: 40px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); }
 .raid-calendar { padding: 10px; margin-top: 8px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
 .raid-calendar-month { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 8px; }
 .raid-calendar-month button { padding: 3px 12px; font-size: 20px; line-height: 1.2; }
@@ -349,7 +364,7 @@ body { border-top: 0; }
 .raid-calendar-week { margin-bottom: 4px; font-size: 11px; color: var(--muted); }
 .raid-calendar-days button { min-height: 34px; padding: 3px 0; border-color: transparent; background: transparent; font-variant-numeric: tabular-nums; }
 .raid-calendar-days button[aria-current=date] { border-color: var(--line); }
-.raid-calendar-days button[aria-pressed=true] { background: var(--accent); color: var(--night); }
+.raid-calendar-days button[aria-pressed=true] { background: var(--accent); color: var(--surface); }
 .raid-time-controls { display: flex; gap: 6px; align-items: center; }
 .raid-time-controls input { width: 4.5em; }
 @media (max-width: 620px) {
@@ -370,9 +385,9 @@ body { border-top: 0; }
 .raid-state::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .raid-state[data-state="Open"] { color: var(--accent); }
 .raid-state[data-state="Locked"] { color: var(--gold); }
-.raid-state[data-state="Cancelled"] { color: #ffb4ad; }
-.guild-app .raid-control-danger { color: #ffb4ad; border-color: #845050; }
-.guild-app .raid-control-danger:hover { background: #382427; border-color: #ffb4ad; }
+.raid-state[data-state="Cancelled"] { color: var(--sale); }
+.guild-app .raid-control-danger { color: var(--sale); border-color: color-mix(in srgb, var(--sale) 50%, var(--container)); }
+.guild-app .raid-control-danger:hover { background: color-mix(in srgb, var(--sale) 15%, var(--container)); border-color: var(--sale); }
 
 
 .guild-app .prep-setup-controls { align-items: end; gap: 12px; }
@@ -384,3 +399,9 @@ body { border-top: 0; }
 @media (max-width: 760px) {
   .working-raid { width: 100%; max-width: 360px; }
 }
+
+.button.gold { background: var(--accent); border-color: var(--accent); color: var(--surface); }
+.button.gold:hover { background: color-mix(in srgb, var(--accent) 78%, var(--ink)); }
+.guild-app :is(.raid-form label input,.raid-form label select,.raid-form label textarea), .editor-grid input:not([type=hidden]), .editor-grid textarea { background: var(--field); }
+.guild-app .price.is-sale { color: var(--sale); }
+.guild-app .raid-steps span[aria-current=step] { color: var(--accent); border-color: var(--accent); }

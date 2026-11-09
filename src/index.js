@@ -258,7 +258,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=da8a68438d96"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=070924b38e38"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -760,7 +760,7 @@ function render() {
     });
     row.insertCell().append(button);
     for (const value of [item.min, item.median, item.week, item.month]) row.insertCell().textContent = money(value);
-    row.cells[1].className = 'price';
+    row.cells[1].className = discount(item) > 0 ? 'price is-sale' : 'price';
     row.insertCell().textContent = item.quantity == null ? '—' : format.format(item.quantity);
   }
   byId('count').textContent = format.format(matches.length) + ' items · Page ' + (pageIndex + 1) + ' of ' + totalPages;
