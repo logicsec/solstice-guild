@@ -1,7 +1,7 @@
-import { armoryApi, linkedRosterProfiles } from './armory.js';
+import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
-import { renderArmory, renderArmoryProfile } from './armory-client.js';
+import { renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
 import { articlePage, cmsPage, publicHome, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
@@ -33,7 +33,7 @@ const professionTiles = [
   ['Cooking', 'M4 11h16l-2 8H6zM3 11h18M8 8c-2-2 2-2 0-4m5 4c-2-2 2-2 0-4'],
 ];
 
-const raidClasses = ['Druid', 'Hunter', 'Mage', 'Paladin', 'Priest', 'Rogue', 'Warlock', 'Warrior'];
+const raidClasses = ['Druid', 'Hunter', 'Mage', 'Paladin', 'Priest', 'Rogue', 'Shaman', 'Warlock', 'Warrior'];
 const raidRoles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
 const readinessChecks = [['access','Raid access'],['gear','Gear'],['enchants','Enchants'],['supplies','Supplies']];
 const readinessValues = ['Unreviewed', 'Ready', 'Blocked', 'Not applicable'];
@@ -58,9 +58,9 @@ async function raidApi(request, db, url, user) {
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
-      const linked = await db.prepare('SELECT name, class_name, role FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
+      const linked = await db.prepare('SELECT name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
       const names = new Set(linked.results.map(row=>row.name.toLowerCase()));
-      return reply({ characters: result.results, signupCharacters: [...linked.results.map(row=>({...row,spec:''})),
+      return reply({ characters: result.results, signupCharacters: [...linked.results,
         ...result.results.filter(row=>!names.has(row.name.toLowerCase()))] });
     }
     const name = clean(input.name, 30);
@@ -258,7 +258,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=070924b38e38"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=857ba05faecb"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><a href="/">Home</a><details id="guildMenu"><summary>Guild tools</summary><div><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div></details><span id="currentTool">Auction House</span><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1125,6 +1125,8 @@ async function loadWorkingRaids(revision) {
 const prepCategories = ${JSON.stringify(prepCategories)};
 ${schedulePrep.toString()}
 ${renderTonight.toString()}
+const armorySpecs = ${JSON.stringify(armorySpecs)};
+${renderArmoryConfirmation.toString()}
 ${renderArmory.toString()}
 ${renderArmoryProfile.toString()}
 

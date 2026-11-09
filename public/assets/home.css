@@ -206,12 +206,12 @@ body { border-top: 3px solid var(--gold); }
 /* Shared Solstice surfaces and navigation. */
 /* Edit these seven swatches to try a different palette. */
 :root {
-  --surface: #22251E;
+  --surface: #241E19;
   --ink: #F4F0E6;
-  --container: #30382A;
-  --deep-accent: #8D744B;
-  --accent: #E6BC76;
-  --gold: #D6C09B;
+  --container: #352A22;
+  --deep-accent: #99603C;
+  --accent: #E7B16A;
+  --gold: #D8B58F;
   --sale: #FE704D;
   --night: var(--surface);
   --muted: color-mix(in srgb, var(--ink) 78%, var(--surface));
@@ -405,3 +405,27 @@ body { border-top: 0; }
 .guild-app :is(.raid-form label input,.raid-form label select,.raid-form label textarea), .editor-grid input:not([type=hidden]), .editor-grid textarea { background: var(--field); }
 .guild-app .price.is-sale { color: var(--sale); }
 .guild-app .raid-steps span[aria-current=step] { color: var(--accent); border-color: var(--accent); }
+
+.guild-app .armory-confirm { width: min(460px, calc(100% - 28px)); max-height: calc(100dvh - 32px); margin: auto; overflow: auto; border-radius: 15px; padding: 20px; background: var(--panel); }
+.armory-confirm::backdrop { background: #0009; }
+.armory-confirm-header, .armory-confirm-summary, .armory-confirm-actions { display: flex; align-items: center; gap: 12px; }
+.armory-confirm-header { justify-content: space-between; margin-bottom: 12px; }
+.guild-app .armory-confirm-close { border-color: transparent; background: transparent; font-size: 19px; }
+.armory-confirm-summary { background: var(--field); border-radius: 10px; padding: 14px; }
+.armory-confirm-portrait { width: 56px; height: 56px; flex: none; display: grid; place-items: center; overflow: hidden; border-radius: 9px; background: var(--hover); color: var(--gold); font-weight: 750; }
+.armory-confirm-portrait img { width: 100%; height: 100%; object-fit: cover; }
+.armory-confirm-badges { display: flex; gap: 6px; margin: 6px 0; }
+.armory-confirm-badges span { border: 1px solid var(--line); border-radius: 6px; padding: 2px 7px; font-size: 12px; }
+.guild-app .armory-confirm-guild { color: var(--gold); }
+.armory-confirm-form { float: none; margin-top: 14px; }
+.armory-specs { border: 0; padding: 0; margin: 0 0 12px; }
+.armory-specs legend { margin-bottom: 6px; font-weight: 650; }
+.armory-spec-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
+.armory-spec { display: flex; align-items: center; gap: 8px; margin: 0; padding: 8px; border: 1px solid var(--line); border-radius: 8px; cursor: pointer; }
+.armory-spec:has(input:checked) { border-color: var(--accent); background: var(--hover); }
+.armory-spec input { margin: 0; accent-color: var(--accent); }
+.armory-spec small { display: block; }
+.armory-confirm-form > label { display: flex; align-items: center; gap: 8px; }
+.armory-confirm-actions { margin-top: 14px; }
+.armory-confirm-actions .raid-primary { flex: 1; }
+.guild-app .armory-confirm-feedback { color: var(--sale); }

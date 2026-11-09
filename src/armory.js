@@ -1,6 +1,17 @@
 import { sameOriginWrite } from './auth.js';
 
 const roles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
+export const armorySpecs = {
+  Druid: [['Balance','Ranged DPS'],['Feral Combat','Melee DPS'],['Restoration','Healer']],
+  Hunter: [['Beast Mastery','Ranged DPS'],['Marksmanship','Ranged DPS'],['Survival','Ranged DPS']],
+  Mage: [['Arcane','Ranged DPS'],['Fire','Ranged DPS'],['Frost','Ranged DPS']],
+  Paladin: [['Holy','Healer'],['Protection','Tank'],['Retribution','Melee DPS']],
+  Priest: [['Discipline','Healer'],['Holy','Healer'],['Shadow','Ranged DPS']],
+  Rogue: [['Assassination','Melee DPS'],['Combat','Melee DPS'],['Subtlety','Melee DPS']],
+  Shaman: [['Elemental','Ranged DPS'],['Enhancement','Melee DPS'],['Restoration','Healer']],
+  Warlock: [['Affliction','Ranged DPS'],['Demonology','Ranged DPS'],['Destruction','Ranged DPS']],
+  Warrior: [['Arms','Melee DPS'],['Fury','Melee DPS'],['Protection','Tank']],
+};
 let tokenCache;
 
 function localized(value) {
@@ -62,7 +73,7 @@ async function loadCharacter(env, slug) {
       })).filter(entry => entry.name);
   }
   const renders = Array.isArray(media?.assets) ? media.assets : [];
-  const render = ['main-raw','main','inset'].map(key=>renders.find(asset=>asset.key === key)?.value).find(value=>
+  const mediaUrl = keys => keys.map(key=>renders.find(asset=>asset.key === key)?.value).find(value=>
     typeof value === 'string' && /^https:\/\/render(?:-[a-z]+)?\.worldofwarcraft\.com\//i.test(value));
   const gear = Array.isArray(equipment?.equipped_items) ? equipment.equipped_items.map(item=>({
     slot: localized(item.slot?.name ?? item.slot?.type),
@@ -79,7 +90,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, render: render ?? null,
+    professions, gear, render: mediaUrl(['main-raw','main','inset']) ?? null, avatar: mediaUrl(['avatar']) ?? null,
   };
 }
 
@@ -96,7 +107,7 @@ export async function armoryApi(request, env, url, member) {
       const character = await loadCharacter(env, slug);
       return character ? reply({ character }) : reply({ error: 'Character not found. Check the full name and make sure the level 10+ character has logged out of WoW.' }, 404);
     }
-    const result = await db.prepare('SELECT slug, name, class_name, role FROM armory_links WHERE member = ? ORDER BY name').bind(member).all();
+    const result = await db.prepare('SELECT slug, name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(member).all();
     return reply({ configured, characters: result.results });
 
   }
@@ -117,9 +128,12 @@ export async function armoryApi(request, env, url, member) {
   if (!roles.includes(role)) return reply({ error: 'Select a raid role.' }, 400);
   const character = await loadCharacter(env, slug);
   if (!character) return reply({ error: 'Character not found in the Armory.' }, 404);
-  const result = await db.prepare(`INSERT INTO armory_links (slug, member, role, name, class_name) VALUES (?,?,?,?,?)
-    ON CONFLICT(slug) DO UPDATE SET role = excluded.role, name = excluded.name, class_name = excluded.class_name
-    WHERE armory_links.member = excluded.member`).bind(slug, member, role, character.name, character.className).run();
+  const spec = input.spec ?? '';
+  const specs = Object.hasOwn(armorySpecs,character.className) ? armorySpecs[character.className] : [];
+  if (spec !== '' && !specs.some(([name])=>name === spec)) return reply({ error:'Select a specialization for this class.' },400);
+  const result = await db.prepare(`INSERT INTO armory_links (slug, member, role, name, class_name, spec) VALUES (?,?,?,?,?,?)
+    ON CONFLICT(slug) DO UPDATE SET role = excluded.role, name = excluded.name, class_name = excluded.class_name, spec = excluded.spec
+    WHERE armory_links.member = excluded.member`).bind(slug, member, role, character.name, character.className, spec).run();
   if (!result.meta.changes) return reply({ error: 'This character is already linked to another Discord account.' }, 409);
   return reply({ ok: true });
 }

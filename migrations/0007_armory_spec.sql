@@ -1,0 +1,1 @@
+ALTER TABLE armory_links ADD COLUMN spec TEXT NOT NULL DEFAULT '';

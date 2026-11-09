@@ -44,7 +44,7 @@ export async function renderArmory(root) {
     for (const entry of characters) {
       const row = raidElement('div',null,'raid-row');
       const title = raidElement('div');
-      title.append(raidElement('strong',entry.name),raidElement('small',entry.class_name+' · '+entry.role));
+      title.append(raidElement('strong',entry.name),raidElement('small',[entry.class_name,entry.spec,entry.role].filter(Boolean).join(' · ')));
       const unlink = raidElement('button','Unlink');
       unlink.addEventListener('click',async()=>{
         unlink.disabled = true;
@@ -80,24 +80,97 @@ export async function renderArmory(root) {
       try {
         const name = firstName.value.trim()+' '+lastName.value.trim();
         const {character} = await armoryRequest('?name='+encodeURIComponent(name));
-        results.append(renderArmoryProfile(character));
-        const roleLabel = raidElement('label','Raid role ');
-        const role = raidElement('select');
-        for (const value of raidRoles) role.add(new Option(value,value));
-        roleLabel.append(role);
-        const link = raidElement('button','Link to Discord','raid-primary');
-        link.addEventListener('click',async()=>{
-          link.disabled = true;
-          try {
-            await armoryRequest('',{action:'link',slug:character.slug,role:role.value});
-            if (card.isConnected) await openRaidView('characters',null,false);
-          } catch (error) { raidError(error); }
-          finally { link.disabled = false; }
-        });
-        const actions = raidElement('div',null,'raid-actions');
-        actions.append(roleLabel,link); results.append(actions);
+        if (card.isConnected) renderArmoryConfirmation(card,character,search);
       } catch (error) { results.append(raidElement('p',error.message)); }
       finally { search.disabled = false; }
     });
   } catch (error) { content.append(raidElement('p',error.message)); }
+}
+
+export function renderArmoryConfirmation(card,character,search) {
+  const dialog = raidElement('dialog',null,'armory-confirm');
+  dialog.setAttribute('aria-labelledby','armory-confirm-title');
+  const header = raidElement('header',null,'armory-confirm-header');
+  const heading = raidElement('div');
+  const title = raidElement('h2','Character found');
+  title.id = 'armory-confirm-title';
+  heading.append(title,raidElement('p','Confirm the details to add this character.'));
+  const close = raidElement('button','×','armory-confirm-close');
+  close.type = 'button';
+  close.setAttribute('aria-label','Close character confirmation');
+  close.addEventListener('click',()=>dialog.close());
+  header.append(heading,close);
+
+  const summary = raidElement('div',null,'armory-confirm-summary');
+  const portrait = raidElement('div',null,'armory-confirm-portrait');
+  const initials = character.name.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase();
+  portrait.textContent = initials;
+  if (character.avatar) {
+    const image = raidElement('img');
+    image.alt = '';
+    image.addEventListener('load',()=>portrait.replaceChildren(image));
+    image.src = character.avatar;
+  }
+  const identity = raidElement('div');
+  identity.append(raidElement('h3',character.name),raidElement('p',[
+    character.ruleset,character.level != null && 'Level '+character.level,
+  ].filter(Boolean).join(' · ')));
+  const badges = raidElement('div',null,'armory-confirm-badges');
+  for (const label of [character.className,character.faction].filter(Boolean)) badges.append(raidElement('span',label));
+  identity.append(badges);
+  if (character.guild) identity.append(raidElement('p','‹'+character.guild+'›','armory-confirm-guild'));
+  summary.append(portrait,identity);
+
+  const form = raidElement('form',null,'armory-confirm-form');
+  const roleLabel = raidElement('label','Raid role');
+  const role = raidElement('select');
+  for (const value of raidRoles) role.add(new Option(value,value));
+  role.value = 'Ranged DPS';
+  roleLabel.append(role);
+  const specs = Object.hasOwn(armorySpecs,character.className) ? armorySpecs[character.className] : [];
+  if (specs.length) {
+    const fieldset = raidElement('fieldset',null,'armory-specs');
+    const choices = raidElement('div',null,'armory-spec-grid');
+    fieldset.append(raidElement('legend','Primary specialization'),choices);
+    for (const [index,[name,defaultRole]] of specs.entries()) {
+      const label = raidElement('label',null,'armory-spec');
+      const input = raidElement('input');
+      Object.assign(input,{type:'radio',name:'spec',value:name,checked:index===0});
+      input.addEventListener('change',()=>{ role.value = defaultRole; });
+      const text = raidElement('span');
+      text.append(raidElement('strong',name),raidElement('small',defaultRole));
+      label.append(input,text);
+      choices.append(label);
+    }
+    role.value = specs[0][1];
+    form.append(fieldset);
+  }
+  const feedback = raidElement('p',null,'armory-confirm-feedback');
+  feedback.setAttribute('role','status');
+  const actions = raidElement('div',null,'armory-confirm-actions');
+  const add = raidElement('button','Add character','raid-primary');
+  const back = raidElement('button','Back');
+  back.type = 'button';
+  back.addEventListener('click',()=>dialog.close());
+  actions.append(add,back);
+  form.append(roleLabel,feedback,actions);
+  dialog.append(header,summary,form);
+  dialog.addEventListener('close',()=>{
+    dialog.remove();
+    if (search.isConnected) search.focus();
+  });
+  dialog.addEventListener('cancel',event=>{ if (add.disabled) event.preventDefault(); });
+  form.addEventListener('submit',async event=>{
+    event.preventDefault();
+    add.disabled = back.disabled = close.disabled = true;
+    feedback.textContent = '';
+    try {
+      await armoryRequest('',{action:'link',slug:character.slug,role:role.value,spec:new FormData(form).get('spec') ?? ''});
+      dialog.close();
+      if (card.isConnected) await openRaidView('characters',null,false);
+    } catch (error) { feedback.textContent = error.message; }
+    finally { add.disabled = back.disabled = close.disabled = false; }
+  });
+  card.append(dialog);
+  dialog.showModal();
 }
