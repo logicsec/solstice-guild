@@ -206,13 +206,13 @@ body { border-top: 3px solid var(--gold); }
 /* Shared Solstice surfaces and navigation. */
 /* Edit these seven swatches to try a different palette. */
 :root {
-  --surface: #241E19;
-  --ink: #F4F0E6;
-  --container: #352A22;
-  --deep-accent: #99603C;
-  --accent: #E7B16A;
-  --gold: #D8B58F;
-  --sale: #FE704D;
+  --surface: #1D191C;
+  --ink: #FFF1E7;
+  --container: #3B2128;
+  --deep-accent: #AD4837;
+  --accent: #FF9A57;
+  --gold: #FFC296;
+  --sale: #FF8588;
   --night: var(--surface);
   --muted: color-mix(in srgb, var(--ink) 78%, var(--surface));
   --line: color-mix(in srgb, var(--ink) 26%, var(--container));
