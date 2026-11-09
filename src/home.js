@@ -17,11 +17,11 @@ export function canEditArticles(env, session) {
   return Boolean(session && (env.CMS_ADMIN_DISCORD_IDS ?? '').split(',').map(id => id.trim()).includes(session.discord_id));
 }
 
-function shell(title, body, { session, editor, next = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=aff2c6d9772a"></head><body>
+function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=43b121777f24"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
-  <nav aria-label="Main navigation"><a class="journal-link" href="/#chronicle">Chronicle</a>${editor ? '<a href="/cms">Article editor</a>' : ''}
-  ${session ? '<a class="button discord" href="/?tool=raid">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
+  <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
+  ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
   ${body}
   <footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
   </body></html>`;
@@ -63,10 +63,10 @@ export async function publicHome(env, url, session) {
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
 
-export async function publicRaidPage(db, id, roles) {
+export async function publicRaidPage(db, id, roles, session) {
   const next = '/raid/' + id;
   const respond = (title, body, status) => {
-    const response = html(shell(title, body, { next }),status);
+    const response = html(shell(title, body, { next, session, raidView:true, hall:'/?tool=raid&view=detail&raid='+id }),status);
     response.headers.set('X-Robots-Tag','noindex, nofollow');
     return response;
   };
@@ -94,12 +94,12 @@ export async function publicRaidPage(db, id, roles) {
       <p class="eyebrow">Solstice raid · Guest view</p><h1>${escape(raid.title)}</h1>
       <p><time datetime="${escape(raid.starts_at)}">${escape(date)} Eastern</time> · ${escape(raid.state)}</p>
       <p>${roster.length} of ${escape(raid.size)} slots filled</p>
-      <p>Anyone with the link can view this roster. Solstice Discord members can sign in to RSVP.</p>
+      <p>Anyone with the link can view this roster. Solstice Discord members can RSVP in the Guild Hall.</p>
     </div></section>
     <section class="chronicle home-journal" aria-labelledby="raid-composition">
       <p class="eyebrow">Raid overview</p><h2 id="raid-composition">Raid composition</h2>
       <dl class="news-grid public-raid-composition">${composition}</dl>
-      <h2>Confirmed roster</h2>
+      <h2 class="public-raid-roster-heading">Confirmed roster</h2>
       ${rows ? `<div class="news-card public-raid-table"><table aria-label="Confirmed raid roster">
         <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
         <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}

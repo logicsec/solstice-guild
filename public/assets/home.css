@@ -552,3 +552,14 @@ body:has(> .guild-home) { background: var(--surface); }
 .public-raid-table table { width: 100%; border-collapse: collapse; text-align: start; }
 .public-raid-table :is(th,td) { padding: 10px 14px; text-align: start; white-space: nowrap; }
 .public-raid-table tr + tr, .public-raid-table tbody { border-top: 1px solid var(--line); }
+
+body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+.public-raid { flex: 1; --home-width: min(83vw,1320px); }
+.public-raid .home-journal { padding-block: clamp(24px,3vw,42px) clamp(40px,5vw,72px); }
+.public-raid-roster-heading { margin-bottom: 14px; }
+.public-raid-table { margin-top: 0; }
+.public-raid-table :is(th,td) { padding: 12px 20px; }
+@media (max-width: 760px) {
+  .public-raid { --home-width: 92vw; }
+  .public-raid-table :is(th,td) { padding-inline: 12px; }
+}

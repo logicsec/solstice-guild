@@ -265,7 +265,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=aff2c6d9772a"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=43b121777f24"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1678,8 +1678,10 @@ async function copyRaidInvite(button,field) {
 byId('copyReadinessInvite').addEventListener('click',()=>copyRaidInvite(byId('copyReadinessInvite'),byId('readinessInviteLink')));
 byId('copyRaid').addEventListener('click',()=>copyRaidInvite(byId('copyRaid'),byId('raidLink')));
 function writeRoute(tool, view, raid) {
-  const url = new URL(raid ? raidInviteUrl(raid) : '/',location.origin);
-  if (!raid) {
+  const url = new URL('/',location.origin);
+  if (raid) {
+    url.search = new URLSearchParams({tool:'raid',view:'detail',raid});
+  } else {
     url.searchParams.set('tool',tool);
     if (tool === 'raid' && view && view !== 'signups') url.searchParams.set('view',view);
   }
@@ -1687,10 +1689,9 @@ function writeRoute(tool, view, raid) {
 }
 function route() {
   const params = new URLSearchParams(location.search);
-  const raidPath = location.pathname.match(/^\/raid\/([0-9a-f-]{36})$/);
   const tool = params.get('tool');
-  if (raidPath || tool === 'raid') {
-    const id = raidPath?.[1] ?? params.get('raid');
+  if (tool === 'raid') {
+    const id = params.get('raid');
     const view = params.get('view');
     openRaidView(id ? 'detail' : ['readiness','roster','tonight','calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
   } else {
@@ -1743,8 +1744,9 @@ export default {
     catch { return new Response('Guild session storage is unavailable.', { status: 503 }); }
     const raidPath = pathname.match(/^\/raid\/([0-9a-f-]{36})$/);
     const legacyRaidId = pathname === '/' && url.searchParams.get('tool') === 'raid' ? url.searchParams.get('raid') : null;
-    if (request.method === 'GET' && !session && (raidPath || (/^[0-9a-f-]{36}$/.test(legacyRaidId ?? '') && !url.searchParams.has('login')))) {
-      try { return await publicRaidPage(env.DB, raidPath?.[1] ?? legacyRaidId, raidRoles); }
+    const memberDetail = session && url.searchParams.get('view') === 'detail';
+    if (request.method === 'GET' && (raidPath || (/^[0-9a-f-]{36}$/.test(legacyRaidId ?? '') && !memberDetail && !url.searchParams.has('login')))) {
+      try { return await publicRaidPage(env.DB, raidPath?.[1] ?? legacyRaidId, raidRoles, session); }
       catch { return new Response('Raid storage is unavailable.', { status: 503 }); }
     }
     try {
@@ -1767,7 +1769,7 @@ export default {
       try { return await raidApi(request, env.DB, url, session.discord_id); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }
     }
-    if (pathname === '/' || (raidPath && request.method === 'GET')) return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'same-origin' } });
+    if (pathname === '/') return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'same-origin' } });
     let upstream;
     if (pathname === '/prices') upstream = 'https://api.ahledger.com/v1/pricetable/' + market;
     const category = pathname.split('/').at(-1);

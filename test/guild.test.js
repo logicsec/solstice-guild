@@ -73,7 +73,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(success.headers.get('location'), invite);
   const cookie = success.headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
   const options = { headers: { Cookie: cookie } };
-  const page = await (await send(invite, options)).text();
+  const page = await (await send('/?tool=raid&view=detail&raid=00000000-0000-4000-8000-000000000001', options)).text();
   assert.match(page, /Guild tools/);
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
@@ -89,7 +89,14 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const raid = '/api/raids/' + id;
   const publicPath = '/raid/' + id;
   assert.equal((await signIn(publicPath)).headers.get('location'),publicPath);
-  assert.match(await (await send(publicPath,options)).text(),/Invite link/);
+  for (const path of [publicPath,'/?tool=raid&raid='+id]) {
+    const memberPage = await (await send(path,options)).text();
+    assert.match(memberPage,/Confirmed roster/);
+    assert.match(memberPage,/view=detail&amp;raid=/);
+    assert.match(memberPage,/>Guild Hall</);
+    assert.doesNotMatch(memberPage,/Chronicle|Sign in with Discord|Save RSVP/);
+  }
+  assert.match(await (await send('/?tool=raid&view=detail&raid='+id,options)).text(),/Invite link/);
   assert.equal((await send(raid)).status,401);
   assert.equal((await post(raid,{action:'delete'},'')).status,401);
   assert.equal((await post(raid, { action: 'signup', character: 'Astra Mortis', className: 'Mage', role: 'Ranged DPS', status: 'Going' }, member)).status, 200);
@@ -108,6 +115,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(pendingPublic.headers.get('x-robots-tag'),/noindex/);
   const pendingPage = await pendingPublic.text();
   assert.match(pendingPage,/No players have been confirmed/);
+  assert.doesNotMatch(pendingPage,/Chronicle|>Guild Hall</);
   assert.doesNotMatch(pendingPage,/Astra Mortis/);
   assert.match(pendingPage,new RegExp('next='+encodeURIComponent(publicPath)));
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' }, member)).status, 403);
