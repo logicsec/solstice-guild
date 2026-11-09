@@ -1,0 +1,1 @@
+{"name":"solstice-guild","private":true,"type":"module","scripts":{"check":"node --test","dev":"npx wrangler@4 dev","deploy":"npx wrangler@4 deploy"},"engines":{"node":">=22.13"}}
