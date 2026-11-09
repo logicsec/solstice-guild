@@ -1,6 +1,6 @@
 # Solstice Guild
 
-A Discord-gated single-page app for World of Warcraft: Forever, US Normal Alliance. The Cloudflare Worker serves the SPA, proxies the market data, and stores raid records in D1. Navigation and browser history stay inside the SPA. GitHub stores the source and can deploy it through the included manual workflow.
+A Discord-gated single-page app for World of Warcraft: Forever, US Normal Alliance. The app serves the SPA, proxies market data, and stores raid records in SQLite on Komodo or D1 on Cloudflare Workers. Navigation and browser history stay inside the SPA. GitHub stores the source and can deploy it through the included manual workflow.
 
 ## Included
 
@@ -11,7 +11,27 @@ A Discord-gated single-page app for World of Warcraft: Forever, US Normal Allian
 
 For sign-ups, create a raid and select **Copy link**. Share that URL with guildmates. Discord sign-in brings them back to that exact raid. A link-only raid is excluded from discovery. A signed-in member of the configured Discord server who has its URL can view it and RSVP. One Discord account can RSVP with one character per raid. The organizer controls approvals and assignments.
 
-## Set up production
+## Deploy with Komodo
+
+Create a **Stack** on the Docker server that should run Solstice. Set its source to Git, repository to `logicsec/solstice-guild`, branch to `main`, and Compose file to `compose.yaml`. Enable **Build** on deploy so updates rebuild the image. The Compose project uses a named volume for SQLite, so keep the same stack/project name across deployments.
+
+Set these in the stack's environment. Store the client secret in Komodo's secret variables and reference it from the stack environment.
+
+```dotenv
+PUBLIC_ORIGIN=https://solsticeguild.net
+DISCORD_CLIENT_ID=your_application_id
+DISCORD_GUILD_ID=your_solstice_discord_server_id
+DISCORD_CLIENT_SECRET=your_client_secret
+SOLSTICE_PORT=3000
+```
+
+Register `https://solsticeguild.net/auth/discord/callback` in the Discord application's OAuth2 redirect settings. Deploy the stack and route HTTPS for `solsticeguild.net` to the app through your existing reverse proxy or tunnel. With a proxy running directly on the same host, use `http://127.0.0.1:3000`. If the proxy runs in a container, attach the service to the proxy's Docker network and use `http://solstice:3000`, or configure a host address the proxy can reach. The default host port binds to loopback. If you change `SOLSTICE_BIND_IP`, limit access to the proxy or private network.
+
+The container applies SQLite migrations on startup. Its health endpoint is `/healthz`. Back up the named volume using a SQLite-consistent backup or stop the stack first. This is a single-instance deployment. Existing Cloudflare D1 data is separate and is not imported by this stack.
+
+[Komodo Compose stack documentation](https://komo.do/docs/deploy/compose)
+
+## Alternative deployment with Cloudflare Workers
 
 1. Extract this package and push its contents to the root of your GitHub repository.
 2. Add `solsticeguild.net` as a zone in the Cloudflare account that will host the Worker. Review any existing DNS record for the root domain before attaching the Worker custom domain.

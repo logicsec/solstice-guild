@@ -1,0 +1,5 @@
+.git
+.env*
+.dev.vars*
+node_modules
+.wrangler
