@@ -268,10 +268,10 @@ body { border-top: 0; }
 .guild-app .masthead, .guild-app .guild-nav { background: transparent; border: 0; }
 .guild-app .masthead { flex: 0 0 248px; padding: 12px 24px; }
 .guild-app .guild-nav { flex: 1; min-width: 0; padding: 10px clamp(12px,3vw,36px); }
-.guild-nav summary { color: var(--accent); background: var(--surface); border: 1px solid var(--line); border-radius: 8px; }
-.guild-nav details > div { padding: 5px; border-radius: 10px; }
-.guild-nav details button { border-radius: 7px; }
-.guild-nav details button[aria-pressed=true], .guild-app .categories button[aria-pressed=true] { background: var(--hover); color: var(--accent); box-shadow: none; border-color: var(--deep-accent); }
+.guild-nav-items { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.guild-app .guild-nav-items :is(a,button) { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 11px; border: 1px solid transparent; border-radius: 8px; color: var(--ink); font: inherit; font-weight: 600; white-space: nowrap; }
+.guild-app .guild-nav-items :is(a,button):hover { background: var(--hover); }
+.guild-app .guild-nav-items button[aria-pressed=true], .guild-app .categories button[aria-pressed=true] { background: var(--hover); color: var(--accent); box-shadow: none; border-color: var(--deep-accent); }
 .guild-app :is(button,input,select,textarea) { border-radius: 8px; }
 .guild-app button:hover { border-color: var(--accent); }
 .guild-app :is(input:not([type=checkbox]),select,textarea,.filters summary) { background: var(--field); }
