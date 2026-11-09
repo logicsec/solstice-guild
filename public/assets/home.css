@@ -1,11 +1,14 @@
+@import url("https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&display=swap");
+
 :root {
+  --site-font: "Lato", system-ui, "Segoe UI", sans-serif;
   color-scheme: dark;
   --ink: #fff3d7;
   --muted: #d7d7c8;
   --gold: #f4c979;
   --night: #101814;
   --line: #f4c97946;
-  font: 16px/1.6 system-ui, sans-serif;
+  font: 16px/1.6 var(--site-font);
   color: var(--ink);
   background: var(--night);
 }
@@ -21,7 +24,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 nav, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 nav a:not(.button) { font-size: 14px; }
 nav a:hover, .text-link:hover { color: var(--gold); }
-.button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 16px; min-height: 42px; border: 1px solid var(--line); border-radius: 4px; font: 700 14px/1.25 system-ui, sans-serif; cursor: pointer; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 16px; min-height: 42px; border: 1px solid var(--line); border-radius: 4px; font: 700 14px/1.25 var(--site-font); cursor: pointer; }
 .button.discord, .button.outline { color: var(--ink); background: #111b17e8; }
 .button.discord:hover, .button.outline:hover { border-color: var(--gold); }
 .button.gold { color: #23190a; background: linear-gradient(110deg,#f6d58e,#d99e47); border-color: #f7db9f; }
@@ -30,28 +33,28 @@ nav a:hover, .text-link:hover { color: var(--gold); }
 .hero-inner { width: min(100% - 9vw, 1240px); margin: auto; display: grid; grid-template-columns: 1fr minmax(270px, 375px); gap: clamp(28px, 8vw, 130px); align-items: center; padding: 80px 0; }
 .eyebrow { font-size: 11px; letter-spacing: .19em; text-transform: uppercase; color: var(--gold); font-weight: 750; }
 .sun-dot { display: inline-block; margin-right: 6px; width: 7px; height: 7px; transform: rotate(45deg); background: var(--gold); box-shadow: 0 0 12px #ffcf83; }
-.hero h1 { font: 700 clamp(65px, 10vw, 142px)/.94 Georgia, serif; letter-spacing: -.045em; margin: 16px 0 12px; text-shadow: 0 3px 35px #080d08; }
-.hero-lede { font: italic clamp(23px, 4vw, 39px)/1.2 Georgia, serif; color: #f8d99d; }
+.hero h1 { font: 700 clamp(65px, 10vw, 142px)/.94 var(--site-font); letter-spacing: -.045em; margin: 16px 0 12px; text-shadow: 0 3px 35px #080d08; }
+.hero-lede { font: italic clamp(23px, 4vw, 39px)/1.2 var(--site-font); color: #f8d99d; }
 .hero-description { color: var(--muted); margin: 17px 0 26px; max-width: 42ch; font-size: 17px; }
 .notice { margin-bottom: 16px; color: #ffe3a0; }
 .guild-panel { background: linear-gradient(145deg,#14251def,#101813f5); border: 1px solid #eac37d70; border-radius: 8px; padding: 26px; box-shadow: 0 25px 50px #071009aa; }
-.guild-panel h2, .chronicle h2 { font: 700 clamp(25px, 4vw, 43px)/1.15 Georgia, serif; margin-top: 6px; }
+.guild-panel h2, .chronicle h2 { font: 700 clamp(25px, 4vw, 43px)/1.15 var(--site-font); margin-top: 6px; }
 .guild-panel h2 { font-size: 29px; }
 .guild-panel ul { list-style: none; margin: 16px 0 0; padding: 0; }
 .guild-panel li { display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--line); padding: 12px 0; }
-.guild-panel li span { color: var(--gold); font: 700 16px Georgia, serif; }
+.guild-panel li span { color: var(--gold); font: 700 16px var(--site-font); }
 .guild-panel li small { display: block; color: var(--muted); font-size: 13px; }
 .chronicle { width: min(100% - 9vw, 1240px); margin: auto; padding: 54px 0 72px; scroll-margin-top: 18px; }
 .section-intro { color: var(--muted); margin-top: 9px; }
 .news-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 14px; margin-top: 23px; }
 .news-card, .empty { border: 1px solid var(--line); border-radius: 6px; background: #17221a; padding: 20px; }
-.news-card h3 { font: 700 24px/1.2 Georgia, serif; margin: 6px 0 8px; }
+.news-card h3 { font: 700 24px/1.2 var(--site-font); margin: 6px 0 8px; }
 .news-card p:not(.eyebrow), .empty { color: var(--muted); }
 .text-link { display: inline-block; color: var(--gold); font-weight: 700; margin-top: 12px; }
 footer { border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted); font-size: 13px; flex-wrap: wrap; }
 .article-page { width: min(91vw, 820px); margin: auto; padding: 50px 0 70px; min-height: 70vh; }
 .article-page .eyebrow { margin-top: 14px; }
-.article-page h1 { font: 700 clamp(33px,6vw,61px)/1.1 Georgia, serif; margin: 8px 0 15px; }
+.article-page h1 { font: 700 clamp(33px,6vw,61px)/1.1 var(--site-font); margin: 8px 0 15px; }
 .article-summary { color: var(--muted); font-size: 19px; }
 .article-body { margin-top: 25px; overflow-wrap: anywhere; }
 .article-body p + p { margin-top: 1em; }
@@ -78,11 +81,11 @@ footer { border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted
 .site-header, footer { background: linear-gradient(110deg,#19170f,#101713 70%); }
 .guild-panel { background: linear-gradient(145deg,#292218ef,#101813f5); }
 .paths { text-align:center; padding:54px 5vw 48px; border-bottom:1px solid var(--line); background:radial-gradient(ellipse at 50% 0%,#49312065,transparent 70%),linear-gradient(180deg,#1e1911,#131712); }
-.paths h2 { font:700 clamp(25px,4vw,43px)/1.15 Georgia,serif; margin:7px 0 24px; }
+.paths h2 { font:700 clamp(25px,4vw,43px)/1.15 var(--site-font); margin:7px 0 24px; }
 .path-grid { max-width:1000px; margin:auto; display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr)); gap:18px; }
 .path-grid article { border:1px solid var(--line); border-radius:6px; padding:21px 18px; background:linear-gradient(145deg,#282013aa,#172018); }
-.medallion { display:grid; place-items:center; width:54px; height:54px; margin:0 auto 12px; color:#ffdf9a; font:25px Georgia,serif; border:1px solid #ba8844; border-radius:50%; background:radial-gradient(circle,#8f4e26,#2f2318 75%); box-shadow:inset 0 0 0 4px #e6b26722,0 0 24px #b670272e; }
-.path-grid h3 { font:700 21px Georgia,serif; margin-bottom:7px; }
+.medallion { display:grid; place-items:center; width:54px; height:54px; margin:0 auto 12px; color:#ffdf9a; font:25px var(--site-font); border:1px solid #ba8844; border-radius:50%; background:radial-gradient(circle,#8f4e26,#2f2318 75%); box-shadow:inset 0 0 0 4px #e6b26722,0 0 24px #b670272e; }
+.path-grid h3 { font:700 21px var(--site-font); margin-bottom:7px; }
 .path-grid p { color:var(--muted); font-size:14px; }
 
 /* Shared palette for the authenticated guild tools. */
@@ -96,7 +99,7 @@ footer { border-top: 1px solid var(--line); border-bottom: 0; color: var(--muted
 }
 .guild-app > main { background: #141b15; border-inline-color: var(--line); }
 .guild-app .masthead, .guild-app .guild-nav, .guild-app footer { background: linear-gradient(110deg,#241d13,#131c16 74%); }
-.guild-app .masthead strong, .guild-app h1, .guild-app h2 { font-family: Georgia, serif; }
+.guild-app h1, .guild-app h2 { font-family: var(--site-font); }
 .guild-app .hero { min-height: auto; background: linear-gradient(90deg,#101713ee,#17211ab5),url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 45% / cover; }
 .guild-app .hero h1 { font-size: clamp(30px,5vw,50px); }
 .guild-app .hero-stats, .guild-app .hero-stats div { background: #1a2118; }
@@ -143,7 +146,7 @@ body { border-top: 3px solid var(--gold); }
 .panel-tabs input:checked + label { color:var(--gold); border-color:var(--gold); background:#2d291d; }
 .panel-tabs input:focus-visible + label { outline:2px solid var(--gold); outline-offset:-2px; }
 .panel-content { display:none; min-height:295px; padding:16px 18px 20px; }
-.panel-content h3 { font:700 21px Georgia,serif; margin:5px 0; }
+.panel-content h3 { font:700 21px var(--site-font); margin:5px 0; }
 .panel-content li { padding:8px 0; }
 .guild-panel:has(#preview-raids:checked) .preview-raids, .guild-panel:has(#preview-market:checked) .preview-market, .guild-panel:has(#preview-crafts:checked) .preview-crafts { display:block; }
 .paths { background:linear-gradient(90deg,#12130fe8,#171b15ed),url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 65% / cover; }
@@ -220,7 +223,7 @@ body { border-top: 3px solid var(--gold); }
   --line: color-mix(in srgb, var(--ink) 26%, var(--container));
   --hover: color-mix(in srgb, var(--deep-accent) 30%, var(--container));
   --field: color-mix(in srgb, var(--surface) 72%, black);
-  font-family: system-ui, "Segoe UI", sans-serif;
+  font-family: var(--site-font);
 }
 body { border-top: 0; }
 .site-header:has(+ .guild-home) {
@@ -254,7 +257,7 @@ body { border-top: 0; }
     url('/assets/solstice-dawn.webp?v=d2a294332fd4') center 47% / cover no-repeat, var(--container);
 }
 .home-banner-content { display: grid; grid-template-columns: minmax(0,1fr) minmax(260px,29%); align-items: end; gap: clamp(20px,4vw,56px); width: var(--home-width); margin-inline: auto; padding: 112px 0 clamp(48px,5.5vw,88px); }
-.home-banner h1 { font: 650 clamp(66px,9.5vw,144px)/.95 Georgia,serif; letter-spacing: -.065em; margin: 14px 0 20px; }
+.home-banner h1 { font: 650 clamp(66px,9.5vw,144px)/.95 var(--site-font); letter-spacing: -.065em; margin: 14px 0 20px; }
 .home-intro { max-width: 32ch; font-size: clamp(18px,2vw,24px); color: var(--ink); margin-bottom: 24px; }
 .home-journal { width: var(--home-width); padding: 23px 0 58px; }
 .home-journal .news-grid { margin-top: 18px; }
@@ -280,7 +283,7 @@ body { border-top: 0; }
   pointer-events: none;
 }
 .home-about svg { width: 34px; float: right; filter: drop-shadow(0 0 8px #e3ac5c70); }
-.home-about h2 { margin: 4px 0 8px; font: 650 27px/1.2 Georgia,serif; }
+.home-about h2 { margin: 4px 0 8px; font: 650 27px/1.2 var(--site-font); }
 .home-about > p:not(.eyebrow), .home-about dt { color: var(--muted); }
 .home-about dl { margin: 16px 0 0; }
 .home-about dl div { display: flex; justify-content: space-between; gap: 10px; border-top: 1px solid var(--line); padding: 8px 0; }
@@ -290,7 +293,7 @@ body { border-top: 0; }
   --bg: var(--night);
   --panel: var(--container);
   --raised: var(--hover);
-  font: 14px/1.55 system-ui, "Segoe UI", sans-serif;
+  font: 14px/1.55 var(--site-font);
 }
 .guild-app > main { max-width: none; border: 0; background: var(--night); }
 .guild-topbar { display: flex; align-items: center; background: var(--container); border-bottom: 1px solid var(--line); }
@@ -327,7 +330,7 @@ body { border-top: 0; }
 .guild-app .raid-sidebar button:hover { background: var(--hover); }
 .guild-app .raid-sidebar button[aria-current=true] { background: var(--hover); color: var(--accent); border-color: var(--deep-accent); box-shadow: inset 3px 0 var(--accent); }
 .raid-content { padding: clamp(18px,3vw,42px); }
-.guild-app .raid-heading h2 { font: 720 clamp(27px,3vw,36px)/1.1 system-ui,sans-serif; letter-spacing: -.035em; margin-bottom: 7px; }
+.guild-app .raid-heading h2 { font: 720 clamp(27px,3vw,36px)/1.1 var(--site-font); letter-spacing: -.035em; margin-bottom: 7px; }
 .guild-app .raid-shell p { color: var(--muted); }
 .guild-app .raid-shell .eyebrow { color: var(--accent); }
 .guild-app :is(.raid-card,.raid-stats>div,.board,.recipe-card) { border-radius: 13px; }

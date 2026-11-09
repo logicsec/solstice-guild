@@ -196,7 +196,7 @@ const page = String.raw`<!doctype html>
 <style>
 :root{color-scheme:dark;--bg:#111112;--panel:#1a1817;--raised:#24211f;--line:#423b35;--muted:#bdb4aa;--ink:#f9f6f2;--gold:#ffbd0a}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--site-font)}
 main{max-width:1280px;margin:auto;min-height:100vh;background:#191817;border-inline:1px solid #292725}
 h1,h2,p{margin:0}h2{font-size:18px}a{color:var(--gold)}small,footer,p{color:var(--muted)}
 button,input,select{font:inherit;color:inherit;background:#181615;border:1px solid var(--line);border-radius:3px;padding:8px 11px}
@@ -258,7 +258,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=8869c5971942"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=7f424a018361"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
