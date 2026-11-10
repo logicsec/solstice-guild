@@ -321,7 +321,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,var(--container),transparent 55%),var(--night); }
 .guild-app .raid-actions { align-items: center; }
 .guild-app :where(.raid-shell) :is(button, a.raid-primary) {
-  min-height: 40px;
+  min-height: 64px;
   padding: 8px 12px;
   line-height: 1.35;
 }
