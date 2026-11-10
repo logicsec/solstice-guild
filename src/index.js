@@ -261,6 +261,8 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .hero-stats{display:flex;gap:1px;border:1px solid #5b4931;background:#5b4931;border-radius:4px;overflow:hidden}
 .hero-stats div{padding:9px 13px;background:#181615;min-width:105px}.hero-stats span{display:block;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.hero-stats strong{color:var(--ink);font-size:15px;white-space:nowrap}
 .board{margin:16px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:4px}
+.guild-app #auctionPanel{margin-bottom:24px}
+.guild-app #marketFooter{padding:20px 24px;gap:12px 24px}
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
 #searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
 #vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
