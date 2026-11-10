@@ -876,6 +876,8 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .character-talent-detail { margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
 .guild-app .character-talents .raid-actions button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
 
-.guild-app .profession-progress-rank { grid-column: 1 / -1; margin: 0; color: var(--gold); }
+.guild-app .profession-progress-rank { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 8px; }
+.profession-progress-rank .eyebrow { margin: 0; color: var(--gold); }
+.profession-progress-rank small { color: var(--muted); }
 .character-talent-tooltip { width: max-content; max-width: min(280px, calc(100vw - 16px)); }
 .character-talent-tooltip .character-tooltip-level { margin-bottom: 4px; }

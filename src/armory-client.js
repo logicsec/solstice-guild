@@ -166,8 +166,15 @@ export function renderArmoryProfile(character) {
     }
     if (!ranks.length) details.append(raidElement('small','Skill Level Unavailable'));
     const skillCap = Math.max(0,...ranks.map(rank=>rank.maxSkill ?? 0));
-    const professionRank = ({75:'Apprentice',150:'Journeyman',225:'Expert',300:'Artisan'})[skillCap];
-    if (professionRank) card.append(raidElement('p',professionRank,'eyebrow profession-progress-rank'));
+    const professionRanks = {75:'Apprentice',150:'Journeyman',225:'Expert',300:'Artisan'};
+    const professionRank = professionRanks[skillCap];
+    if (professionRank) {
+      const nextRank = professionRanks[skillCap+75];
+      const heading = raidElement('div',null,'profession-progress-rank');
+      heading.append(raidElement('span',professionRank,'eyebrow'),
+        raidElement('small',nextRank ? 'Next Rank: '+nextRank : 'Highest Rank'));
+      card.append(heading);
+    }
     card.append(icon,details);
     professions.append(card);
   }
