@@ -230,7 +230,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(await (await send('/')).text(), /First &amp; Dawn/);
   const published = await (await send('/chronicle/' + articleId)).text();
   assert.match(published, /Recent posts/);
-  assert.match(published, /Raid recaps<\/span><span>1/);
+  assert.match(published, /Raid Recaps<\/span><span>1/);
   assert.match(await (await send('/?category=Raid%20recaps')).text(), /First &amp; Dawn/);
   assert.doesNotMatch(await (await send('/?category=Guides')).text(), /First &amp; Dawn/);
   assert.match(published, /Published by <strong>[^<]+<\/strong>/);
