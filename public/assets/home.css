@@ -516,7 +516,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .armory-confirm { background: var(--panel); }
 
 /* Shared charcoal surfaces with copper accents. */
-.guild-app, body:has(> .guild-home) {
+.guild-app, body:has(> :is(.guild-home,.editor)) {
   --surface: #151719;
   --night: var(--surface);
   --container: #202326;
@@ -631,3 +631,31 @@ body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex;
 .editor-content:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
 .editor-content ul { list-style: disc; padding-inline-start: 1.5em; }
 .editor-content li { border: 0; padding: 0; }
+
+body:has(> .editor) {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: radial-gradient(ellipse at 84% 0%, #27272a, transparent 58%), var(--surface);
+}
+body:has(> .editor) :is(.site-header, footer) { background: transparent; }
+body:has(> .editor) .site-header .discord { background: var(--glass-panel); }
+.editor { flex: 1; margin-block: 0; padding-block: clamp(24px, 4vw, 48px); }
+.editor .eyebrow { margin: 0; }
+.editor h1 { font-size: clamp(28px, 4vw, 38px); margin: 6px 0 18px; }
+.editor-grid { align-items: start; gap: 16px; }
+.editor-grid h2 { font-size: 18px; margin-bottom: 12px; }
+.editor-grid label { margin: 10px 0 6px; font-size: 13px; font-weight: 650; }
+.editor-grid :is(input:not([type=hidden]), textarea, .editor-content) { border-radius: 8px; }
+.editor-grid textarea { resize: vertical; }
+.editor-tools:not([hidden]) { padding: 6px; margin-bottom: 6px; background: var(--hover); border: 1px solid var(--line); border-radius: 8px; }
+.editor-tools button { min-height: 30px; font-size: 12px; font-weight: 650; }
+.editor-tools button:hover { border-color: var(--accent); }
+.editor-content { min-height: 14rem; font-size: 14px; line-height: 1.6; }
+.editor-content > :first-child { margin-top: 0; }
+.editor-grid .editor-note { margin-top: 10px; color: var(--muted); font-size: 12px; }
+.editor-grid .actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.editor-grid .button { min-height: 36px; padding: 6px 12px; border-radius: 8px; font-size: 13px; }
+.editor-grid .button.outline { background: var(--field); }
+.editor-grid .button.gold { background: color-mix(in srgb, var(--copper) 66%, var(--gold)); border-color: transparent; }
+.editor-grid .button.gold:hover { background: color-mix(in srgb, var(--gold) 75%, var(--ink)); }
