@@ -20,7 +20,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=b876512c5d16"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=f4a20d4b4b78"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -40,8 +40,17 @@ export async function publicHome(env, url, session) {
   params.delete('login');
   const next = params.has('tool') || params.has('raid') ? '/?' + params : '/?tool=raid';
   const notice = { membership: 'Use a Discord account that belongs to the Solstice server.', expired: 'Your sign-in expired. Please try again.', unavailable: 'Discord sign-in is temporarily unavailable.' }[login];
-  const { results } = await env.DB.prepare('SELECT id, title, summary, published_at FROM articles WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 12').bind().all();
-  const cards = results.map(article => `<article class="news-card"><p class="eyebrow">${dateLabel(article.published_at)}</p><h3><a href="/chronicle/${escape(article.id)}">${escape(article.title)}</a></h3><p>${escape(article.summary)}</p><a class="text-link" href="/chronicle/${escape(article.id)}">Read article <span aria-hidden="true">→</span></a></article>`).join('');
+  const { results } = await env.DB.prepare('SELECT id, title, summary, published_at, body, body_format FROM articles WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 12').bind().all();
+  const cards = results.map(article => {
+    const link = '/chronicle/' + escape(article.id);
+    const { cover } = articleContent(article);
+    return `<article class="news-card chronicle-card"><a class="chronicle-card-link" href="${link}">
+      ${cover ? `<div class="chronicle-card-cover">${cover}</div>` : ''}
+      <time class="eyebrow" datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time>
+      <h3>${escape(article.title)}</h3>
+      ${article.summary ? `<p>${escape(article.summary)}</p>` : ''}
+    </a></article>`;
+  }).join('');
   return html(shell('Home', `<main class="guild-home">
   <section class="home-banner" aria-labelledby="home-title"><div class="home-banner-content"><div class="home-banner-copy">
     <p class="eyebrow">World of Warcraft: Forever <span>·</span> US Normal Alliance</p>
@@ -60,7 +69,7 @@ export async function publicHome(env, url, session) {
   <section class="chronicle home-journal" id="chronicle" aria-labelledby="chronicle-title">
       <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
       <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
-      <div class="news-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
+      <div class="news-grid chronicle-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
   </section>
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
@@ -122,14 +131,21 @@ export async function publicRaidPage(db, id, roles, session, requested) {
   </main>`);
 }
 
+function articleContent(article) {
+  const content = articleMarkup(article.body, article.body_format, escape);
+  const cover = content.match(/<img [^>]+>/)?.[0] ?? '';
+  return { cover, content: cover ? content.replace(cover, '') : content };
+}
+
 export async function articlePage(env, id, session) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND published_at IS NOT NULL').bind(id).first();
   if (!article) return html(shell('Article unavailable', '<main class="article-page chronicle-article"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
-  const content = articleMarkup(article.body, article.body_format, escape);
+  const { cover, content } = articleContent(article);
   const byline = article.publisher_name ? `<span>Published by <strong>${escape(article.publisher_name)}</strong></span>` : '';
   return html(shell(article.title, `<main class="article-page chronicle-article">
     <a class="text-link" href="/#chronicle">← Back to the Chronicle</a>
     <article>
+      ${cover ? `<div class="chronicle-article-cover">${cover}</div>` : ''}
       <header class="chronicle-article-header">
         <p class="eyebrow">Guild Chronicle</p>
         <h1>${escape(article.title)}</h1>
@@ -148,6 +164,12 @@ export async function cmsPage(request, env, url, session) {
     const data = await request.formData();
     const id = String(data.get('id') ?? '');
     const action = String(data.get('action') ?? '');
+    if (action === 'delete') {
+      if (!id) return new Response('Article unavailable.', { status: 404 });
+      const result = await env.DB.prepare('DELETE FROM articles WHERE id = ?').bind(id).run();
+      if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
+      return new Response(null, { status: 303, headers: { Location: '/cms', 'Cache-Control': 'no-store' } });
+    }
     const title = String(data.get('title') ?? '').trim();
     const summary = String(data.get('summary') ?? '').trim();
     const body = String(data.get('body') ?? '').trim();
@@ -193,6 +215,15 @@ export async function cmsPage(request, env, url, session) {
   <p id="articleImageStatus" class="editor-note" role="status"></p>
   <textarea id="articleBody" required name="body" maxlength="16000" rows="13">${escape(article?.body)}</textarea>
   <p class="editor-note">Saving as a draft takes a published article offline.</p>
-  <div class="actions"><button class="button gold" name="action" value="publish">Publish article</button><button class="button outline" name="action" value="draft">Save as draft</button></div></form>
+  <div class="actions"><button class="button gold" name="action" value="publish">Publish article</button><button class="button outline" name="action" value="draft">Save as draft</button>${article ? '<button type="button" class="button editor-delete" id="openArticleDelete">Delete article</button>' : ''}</div></form>
+  ${article ? `<dialog id="articleDelete" class="editor-delete-dialog" aria-labelledby="articleDeleteTitle">
+    <h2 id="articleDeleteTitle">Delete this article?</h2>
+    <p>“${escape(article.title)}” will be permanently removed.</p>
+    <form method="post" action="/cms" class="actions">
+      <input type="hidden" name="id" value="${escape(article.id)}">
+      <button class="button outline" type="button" id="cancelArticleDelete" autofocus>Cancel</button>
+      <button class="button editor-delete" name="action" value="delete">Delete article</button>
+    </form>
+  </dialog>` : ''}
   <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})();</script></main>`, { session, editor: true }));
 }
