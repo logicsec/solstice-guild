@@ -306,7 +306,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=8ff22bb1d6a3"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=9a59ee97acb8"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -360,10 +360,19 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Roster</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Roster</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
+<div id="raidDashboardControls" class="raid-dashboard-controls raid-card" hidden>
+<label class="working-raid">Working Raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label>
+<nav class="raid-dashboard-tabs" aria-label="Raid Dashboard Views">
+<button type="button" data-raid-tab="readiness">Readiness</button>
+<button type="button" data-raid-tab="roster">Roster</button>
+<button type="button" data-raid-tab="tonight">Tonight</button>
+<button type="button" data-raid-tab="loot">Loot</button>
+</nav>
+</div>
 <div id="readinessInvite" class="readiness-invite" role="group" aria-label="Raid invite" hidden><input id="readinessInviteLink" type="text" readonly aria-label="Raid invite link"><button id="copyReadinessInvite" type="button" aria-label="Copy raid link">Copy</button></div>
 <div id="raidList"></div>
 <form id="characterForm" class="raid-card raid-form" hidden>
@@ -1067,13 +1076,14 @@ function raidError(error) {
 function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
-  for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildCharacters:'Guild Roster', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
-  byId('raidSubtitle').textContent = {
-    readiness:'See which raid requirements are met and which still need attention.',
-    roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
-    tonight:'Plan the evening around raid blockers, available players, and the work that fits.',
-    loot:'View loot reserves for your working raid.',
+  const dashboard = workspaceViews.includes(view);
+  for (const node of document.querySelectorAll('[data-raid-view]')) {
+    node.setAttribute('aria-current',String(node.dataset.raidView === (dashboard ? 'readiness' : view)));
+  }
+  for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
+  byId('raidDashboardControls').hidden = !dashboard;
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildCharacters:'Guild Roster', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidSubtitle').textContent = dashboard ? 'Choose a working raid to see its readiness, roster, preparation, and loot.' : {
     guildDashboard:'See the guild’s class, role, and profession coverage.',
     guildCharacters:'Browse characters saved or linked by guild members.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
@@ -1081,7 +1091,6 @@ function raidReset(view, id) {
   byId('raidSignIn').hidden = true;
   const guildView = view === 'guildDashboard' || view === 'guildCharacters';
   byId('newRaid').hidden = view === 'new' || guildView;
-  workingRaid.closest('label').hidden = guildView;
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
   characterForm.hidden = true;
@@ -1147,10 +1156,10 @@ async function openRaidView(view, id, navigate = true) {
       hero.append(intro,crest,totals);
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
       const roleIcons = {Tank:'⛨',Healer:'✚','Melee DPS':'⚔','Ranged DPS':'◎'};
-      for (const [kind,title,entries,total,empty] of [
-        ['class','Class Composition',data.classes,data.total,'No characters added yet.'],
-        ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),data.total,'No roles assigned yet.'],
-        ['profession','Profession Coverage',data.professions,data.reviewed,'No profession data available.'],
+      for (const [kind,title,entries,empty] of [
+        ['class','Class Composition',data.classes,'No characters added yet.'],
+        ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),'No roles assigned yet.'],
+        ['profession','Profession Coverage',data.professions,'No profession data available.'],
       ]) {
         const tile = raidElement('section',null,'raid-card guild-dashboard-tile');
         tile.dataset.kind = kind;
@@ -1163,15 +1172,9 @@ async function openRaidView(view, id, navigate = true) {
           const icon = kind === 'class' ? characterIcons(name) : kind === 'profession' ? professionIcon(name) :
             raidElement('span',roleIcons[name],'guild-dashboard-role-icon');
           icon.setAttribute('aria-hidden','true');
-          const details = raidElement('div',null,'guild-dashboard-entry-body');
-          const caption = raidElement('div');
-          caption.append(raidElement('strong',name),raidElement('span',String(count)));
-          const bar = raidElement('progress');
-          bar.max = Math.max(1,total);
-          bar.value = count;
-          bar.setAttribute('aria-label',name+' coverage');
-          details.append(caption,bar);
-          row.append(icon,details);
+          const countBadge = raidElement('span',String(count),'guild-dashboard-count');
+          countBadge.setAttribute('aria-label',count+(count === 1 ? ' character' : ' characters'));
+          row.append(icon,raidElement('strong',name),countBadge);
           rows.append(row);
         }
         if (entries.length) tile.append(rows);
@@ -1296,22 +1299,6 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
-function workspaceSteps(view) {
-  const strip = raidElement('div',null,'workspace-steps raid-card');
-  for (const [target,title,sub] of [
-    ['readiness','See readiness','Start with the raid goal'],
-    ['roster','Find the blockers','Inspect a character'],
-    ['tonight','Plan useful work','Build tonight’s assignments'],
-  ]) {
-    const step = raidElement('button');
-    step.setAttribute('aria-current', String(view === target));
-    step.append(raidElement('strong',title),raidElement('small',sub));
-    step.addEventListener('click',()=>openRaidView(target));
-    strip.append(step);
-  }
-  return strip;
-}
-
 const workspaceViews = ['readiness','roster','tonight','loot'];
 const workingRaid = byId('workingRaid');
 const workingRaidKey = 'solstice.workingRaid';
@@ -1368,7 +1355,6 @@ async function openRaidWorkspace(view, revision) {
   await loadWorkingRaids(revision);
   if (revision !== raidRevision) return;
   const root = byId('raidList');
-  if (view !== 'loot') root.append(workspaceSteps(view));
   if (!workingRaid.value) {
     const empty = raidElement('section',null,'raid-card workspace-empty');
     empty.append(raidElement('p','Guild workspace','eyebrow'),raidElement('h3','Set your first raid goal'),
@@ -1390,7 +1376,6 @@ async function openRaidWorkspace(view, revision) {
   if (view === 'readiness') renderReadinessWorkspace(content,data);
   else if (view === 'roster') renderRosterWorkspace(content,data);
   else if (view === 'loot') {
-    byId('raidSubtitle').textContent = data.event.title + ' · ' + raidDate(data.event.starts_at);
     content.classList.add('raid-card');
     renderRaidReserves(content,data);
   } else renderTonight(content,data);
@@ -1847,6 +1832,7 @@ for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch'])
 }
 byId('raidTab').addEventListener('click',()=>openRaidView('guildDashboard'));
 for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
+for (const node of document.querySelectorAll('[data-raid-tab]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidTab));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
   for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] :is(input,select)')) if (!field.reportValidity()) return;
