@@ -23,7 +23,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=92e40b457fae"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=931c999ace7a"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -123,22 +123,30 @@ export async function publicRaidPage(db, id, roles, session, requested) {
       <p>${roster.length} of ${escape(raid.size)} slots filled</p>
       <p>Anyone with the link can view this roster. Solstice Discord members can RSVP in the Guild Hall.</p>
     </div></section>
-    <section class="chronicle home-journal" aria-labelledby="raid-composition">
-      <p class="eyebrow">Raid overview</p><h2 id="raid-composition">Raid composition</h2>
-      <dl class="news-grid public-raid-composition">${composition}</dl>
-      <h2 class="public-raid-roster-heading">Confirmed roster</h2>
-      ${rows ? `<div class="news-card public-raid-table"><table aria-label="Confirmed raid roster">
-        <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
-        <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
-      <h2 id="loot-reserves" class="public-raid-roster-heading">Loot reserves</h2>
-      <p>${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Coming soon'} · ${raid.reserve_limit} per player</p>
-      ${reserveRows ? `<div class="news-card public-raid-table"><table aria-label="Raid loot reserves">
-        <thead><tr><th scope="col">Character</th><th scope="col">Reserved items</th></tr></thead>
-        <tbody>${reserveRows}</tbody></table></div>` : '<p class="empty">No reserves recorded yet.</p>'}
-      ${requested ? '<p role="status">Guest request sent for organizer approval.</p>' : ''}
-      <p>Automatic raid loot and reserve selection are coming soon.</p>
-      ${external}
-    </section>
+    <div class="chronicle home-journal public-raid-sections">
+      <section class="public-raid-section" aria-labelledby="raid-composition">
+        <h2 id="raid-composition">Raid Composition</h2>
+        <dl class="news-grid public-raid-composition">${composition}</dl>
+      </section>
+      <section class="public-raid-section" aria-labelledby="confirmed-roster">
+        <h2 id="confirmed-roster">Confirmed Roster</h2>
+        ${rows ? `<div class="news-card public-raid-table"><table aria-labelledby="confirmed-roster">
+          <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
+          <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
+      </section>
+      <section class="public-raid-section" aria-labelledby="loot-reserves">
+        <h2 id="loot-reserves">Loot Reserves</h2>
+        <div class="news-card public-raid-reserve-info">
+          <p class="public-raid-reserve-status">${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Coming Soon'} · ${raid.reserve_limit} per player</p>
+          <p>Automatic raid loot and reserve selection are coming soon.</p>
+          ${requested ? '<p role="status">Guest request sent for organizer approval.</p>' : ''}
+          ${external}
+        </div>
+        ${reserveRows ? `<div class="news-card public-raid-table"><table aria-label="Raid loot reserves">
+          <thead><tr><th scope="col">Character</th><th scope="col">Reserved items</th></tr></thead>
+          <tbody>${reserveRows}</tbody></table></div>` : ''}
+      </section>
+    </div>
   </main>`);
 }
 
