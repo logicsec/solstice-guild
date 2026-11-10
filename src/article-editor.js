@@ -83,10 +83,6 @@ export function startArticleEditor() {
       return;
     }
     if (uploading) return;
-    if (image.size > 1536 * 1024) {
-      imageStatus.textContent = 'Image is too large. The limit is 1.5 MB.';
-      return;
-    }
     const range = window.getSelection().getRangeAt(0).cloneRange();
     uploading = true;
     imageStatus.textContent = 'Adding image…';
