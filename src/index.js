@@ -222,9 +222,11 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .masthead{display:flex;align-items:center;gap:11px;padding:12px 22px;background:var(--raised);border-bottom:1px solid #100f0f}
 .crest{width:37px;flex:none;color:var(--gold)}.masthead strong{display:block;text-transform:uppercase;font-size:17px;letter-spacing:.12em;line-height:1.1}
 .masthead small{font-size:10px;text-transform:uppercase;letter-spacing:.13em}
-nav{display:flex;background:#211f1f;border-bottom:1px solid #080808;padding-inline:14px}
-nav button{border:0;border-radius:0;border-inline-end:1px solid #111;padding:9px 15px;background:transparent;font-weight:700;font-size:13px}
-nav [aria-pressed=true]{color:var(--gold);box-shadow:inset 0 -2px var(--gold);background:#181717}
+.guild-nav{display:flex;background:#211f1f;border-bottom:1px solid #080808;padding-inline:14px}
+.guild-nav button{border:0;border-radius:0;border-inline-end:1px solid #111;padding:9px 15px;background:transparent;font-weight:700;font-size:13px}
+.guild-nav [aria-pressed=true]{color:var(--gold);box-shadow:inset 0 -2px var(--gold);background:#181717}
+.character-review-tabs button{background:transparent;border:1px solid transparent;padding:7px 12px;font-weight:700}
+.character-review-tabs button:hover{background:var(--hover);border-color:var(--line)}
 .hero{position:relative;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:30px 24px;border-bottom:1px solid #534020;background:radial-gradient(ellipse at 90% -40%,#645026 0%,transparent 67%),linear-gradient(115deg,#242526,#121312 72%);isolation:isolate;overflow:hidden}
 .hero::before{content:"";position:absolute;inset:0;z-index:-1;background:repeating-linear-gradient(132deg,transparent 0 23px,#ffffff08 24px,transparent 25px 36px);mask-image:linear-gradient(90deg,transparent 25%,#000)}
 .eyebrow{color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
@@ -276,7 +278,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=17054464263a"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=0ded0ea551c8"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1419,15 +1421,22 @@ function readinessOf(player) {
   return 'Ready';
 }
 
-function reviewCharacter(event, player, organizer, saveReview = update => changeRaid(event.id,update)) {
-  const details = raidElement('details', null, 'readiness-details');
-  details.append(raidElement('summary','Character Checks'));
-  if (player.reviewed_at) details.append(raidElement('p','Reviewed '+raidDate(player.reviewed_at)));
+function reviewCharacter(event, player, organizer, saveReview = update => changeRaid(event.id,update), full = false) {
+  const details = raidElement(full ? 'section' : 'details', null, 'readiness-details');
+  details.append(raidElement(full ? 'h3' : 'summary','Character Checks'));
+  if (!full && player.reviewed_at) details.append(raidElement('p','Reviewed '+raidDate(player.reviewed_at)));
+  const guidance = {
+    access:'Confirm attunements and any entry requirements.',
+    gear:'Review equipment and item level for the assigned role.',
+    enchants:'Check applicable slots for the expected enchants.',
+    supplies:'Confirm the player has the consumables needed for this raid.',
+  };
   const grid = raidElement('div',null,'readiness-checks');
   if (!organizer) {
     for (const [key, title] of readinessChecks) {
       const item = raidElement('div');
       item.append(raidElement('small',title),raidElement('strong',player.readiness?.[key] ?? 'Unreviewed'));
+      if (full) item.append(raidElement('p',guidance[key]));
       grid.append(item);
     }
     details.append(grid);
@@ -1440,15 +1449,21 @@ function reviewCharacter(event, player, organizer, saveReview = update => change
     const select = raidElement('select');
     for (const value of readinessValues) select.add(new Option(value,value));
     select.value = player.readiness?.[key] ?? 'Unreviewed';
+    if (full) label.append(raidElement('small',guidance[key]));
     label.append(select); grid.append(label);
     return [key,select];
   });
-  const note = raidElement('input');
+  const note = raidElement(full ? 'textarea' : 'input');
+  if (full) note.rows = 3;
   note.placeholder = 'Shared readiness note'; note.maxLength = 400; note.value = player.readiness_note ?? '';
   note.setAttribute('aria-label','Shared readiness note for '+player.character);
   const save = raidElement('button','Save Review','raid-primary');
   const actions = raidElement('div',null,'raid-actions');
-  actions.append(note,save);
+  if (full) {
+    const noteLabel = raidElement('label','Shared Readiness Note');
+    noteLabel.append(note);
+    actions.append(noteLabel,save);
+  } else actions.append(note,save);
   const feedback = raidElement('p');
   feedback.setAttribute('role','status');
   form.append(grid,actions,feedback);
