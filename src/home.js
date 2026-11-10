@@ -7,7 +7,7 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
 })[char]);
 const articleCategories = ['Guild news', 'Raid recaps', 'Guides', 'Events'];
 const categoryLink = category => '/?category=' + encodeURIComponent(category) + '#chronicle';
-const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(date));
+const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'America/New_York' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
 export const solsticeMark = '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70"><path d="M30 3C23 9 13 12 5 12c-1 23 3 38 25 54 22-16 26-31 25-54-8 0-18-3-25-9Z" fill="#0c1b31" stroke="#d4a85d" stroke-width="3.5"/><g fill="#edbb65"><path d="m30 13 3 19h-6Zm-14 8 10 13-5 3Zm28 0-5 16-5-3ZM8 30l13 8-2 4Zm44 0-11 12-2-4Z"/><path d="M20 44a10 10 0 0 1 20 0Zm-7 4c10-5 24-5 34 0l-2 3c-11-4-19-4-30 0Z"/></g></svg>';
 const faviconSvg = solsticeMark.replace(
