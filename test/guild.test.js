@@ -228,6 +228,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await save()).status, 303);
   assert.match(await (await send('/')).text(), /First &amp; Dawn/);
   const published = await (await send('/chronicle/' + articleId)).text();
+  assert.match(published, /Published by <strong>[^<]+<\/strong>/);
+  assert.match(published, /class="article-page chronicle-article"/);
   assert.match(published, /&lt;script&gt;unsafe/);
   assert.doesNotMatch(published, /<script>unsafe/);
   article.set('body_format','rich');
