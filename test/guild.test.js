@@ -105,7 +105,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send('/api/raid-characters?guild=1')).status,401);
   assert.equal((await post('/api/raid-characters',{name:'Guild Tester',className:'Priest',spec:'Holy',role:'Healer'},member)).status,200);
   const directory = await (await send('/api/raid-characters?guild=1',options)).json();
-  assert.deepEqual(directory.characters,[{name:'Guild Tester',class_name:'Priest',spec:'Holy',role:'Healer',armory_linked:0,armorySlug:null}]);
+  assert.deepEqual(directory.characters,[{name:'Guild Tester',class_name:'Priest',spec:'Holy',role:'Healer',armory_linked:0,armorySlug:null,level:null}]);
   const ownCharacters = await (await send('/api/raid-characters',options)).json();
   assert.deepEqual(ownCharacters.signupCharacters,[]);
   const raid = '/api/raids/' + id;
@@ -153,7 +153,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);
   const linkedDirectory = await (await send('/api/raid-characters?guild=1',options)).json();
-  assert.ok(linkedDirectory.characters.some(character=>character.name === 'Astra Mortis' && character.armorySlug === 'astra-mortis'));
+  assert.ok(linkedDirectory.characters.some(character=>character.name === 'Astra Mortis' && character.armorySlug === 'astra-mortis' && character.level === 60));
   assert.ok(linkedDirectory.characters.every(character=>!Object.hasOwn(character,'member')));
   const linked = await (await send('/api/armory',{headers:{Cookie:member}})).json();
   assert.equal(linked.characters[0].spec,'Frost');

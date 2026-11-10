@@ -820,3 +820,12 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .public-raider-icons img { display: block; border: 1px solid var(--line); border-radius: 5px; }
 .public-raider-guild { color: var(--accent); font-size: 13px; overflow-wrap: anywhere; }
 .public-raider-group { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; color: var(--muted); font-size: 12px; }
+
+.guild-character-list { display: grid; gap: 7px; }
+.guild-app .guild-character-row { display: grid; grid-template-columns: 44px auto minmax(0,1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 7px 12px 7px 8px; text-align: start; background: var(--field); border: 1px solid var(--line); border-radius: 9px; }
+.guild-app .guild-character-row:hover { background: var(--hover); border-color: var(--accent); }
+.guild-character-level { display: grid; place-items: center; min-height: 36px; color: #d4a85d; text-shadow: 0 0 10px #e3ac5c99; font-size: 19px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.guild-character-level.is-unknown { color: var(--muted); text-shadow: none; }
+.guild-character-name { min-width: 0; overflow-wrap: anywhere; }
+.guild-character-name :is(strong,small) { display: block; }
+.guild-character-arrow { color: var(--accent); font-size: 20px; }

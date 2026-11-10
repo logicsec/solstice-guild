@@ -2,7 +2,7 @@ import { parseTable, scanVendorFlips } from './vendor-flips.js';
 import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
 import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
-import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
+import { armoryApi, armorySpecs, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
 import { characterIcons, openCharacterSheet, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
@@ -44,7 +44,8 @@ const readinessChecks = [['access','Raid access'],['gear','Gear'],['enchants','E
 const readinessValues = ['Unreviewed', 'Ready', 'Blocked', 'Not applicable'];
 const raidStatuses = ['Going', 'Tentative', 'Bench', 'Declined'];
 
-async function raidApi(request, db, url, user) {
+async function raidApi(request, env, url, user) {
+  const db = env.DB;
   const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
   if (!user) return reply({ error: 'Sign in to use Raid Planner.' }, 401);
   if (!db) return reply({ error: 'Raid storage is unavailable.' }, 503);
@@ -68,7 +69,10 @@ async function raidApi(request, db, url, user) {
           SELECT c.name, c.class_name, c.spec, c.role, 0, NULL FROM raid_characters c
           WHERE NOT EXISTS (SELECT 1 FROM armory_links a WHERE a.member = c.member AND a.name = c.name COLLATE NOCASE)
           ORDER BY name COLLATE NOCASE`).bind().all();
-        return reply({ characters:results });
+        const characters = await Promise.all(results.map(async character => ({
+          ...character, level:(await publicRosterProfile(env,character.armorySlug))?.level ?? null,
+        })));
+        return reply({ characters });
       }
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
       const linked = await db.prepare('SELECT name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
@@ -294,7 +298,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=9a986242d0d0"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=e448455cf767"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1066,7 +1070,7 @@ function raidReset(view, id) {
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
-  byId('newRaid').hidden = view === 'new';
+  byId('newRaid').hidden = view === 'new' || view === 'guildCharacters';
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
   characterForm.hidden = true;
@@ -1118,25 +1122,27 @@ async function openRaidView(view, id, navigate = true) {
       search.setAttribute('aria-label','Search guild characters');
       const filters = raidElement('div',null,'roster-filters');
       filters.append(search);
-      const rows = raidElement('div');
-      list.append(raidElement('h3','Guild Character Directory'),filters,rows);
+      const rows = raidElement('div',null,'guild-character-list');
+      list.append(filters,rows);
       const draw = () => {
         const query = search.value.trim().toLowerCase();
         rows.replaceChildren();
         for (const character of characters) {
           const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
           if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
-          const row = raidElement('div',null,'raid-row');
-          const identity = raidElement('div',null,'roster-character');
-          const info = raidElement('div');
-          info.append(raidElement('strong',character.name),raidElement('small',meta));
-          identity.append(characterIcons(character.class_name,character.spec),info);
-          const actions = raidElement('div',null,'raid-actions');
-          const open = raidElement('button','Open Character Sheet');
-          open.setAttribute('aria-label','Open character sheet for '+character.name);
-          open.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
-          actions.append(raidElement('small',character.armory_linked ? 'Armory linked' : 'Manually added'),open);
-          row.append(identity,actions);
+          const row = raidElement('button',null,'guild-character-row');
+          row.type = 'button';
+          row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+
+            (character.level == null ? '' : ', level '+character.level));
+          const level = raidElement('span',String(character.level ?? '—'),'guild-character-level');
+          level.title = character.level == null ? 'Level unavailable' : 'Level '+character.level;
+          if (character.level == null) level.classList.add('is-unknown');
+          const info = raidElement('span',null,'guild-character-name');
+          info.append(raidElement('strong',character.name),raidElement('small',character.role));
+          const arrow = raidElement('span','›','guild-character-arrow');
+          arrow.setAttribute('aria-hidden','true');
+          row.append(level,characterIcons(character.class_name,character.spec),info,arrow);
+          row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
           rows.append(row);
         }
         if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
@@ -1948,7 +1954,7 @@ export default {
     }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
-      try { return await raidApi(request, env.DB, url, session.discord_id); }
+      try { return await raidApi(request, env, url, session.discord_id); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }
     }
     if (pathname === '/') return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'same-origin' } });
