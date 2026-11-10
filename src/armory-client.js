@@ -164,27 +164,40 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.setAttribute('aria-labelledby',title.id);
   const heading = raidElement('div',null,'character-inspector-title');
   const identity = raidElement('div');
-  identity.append(title,raidElement('p',[player.class_name,player.spec,player.role].filter(Boolean).join(' · '),'inspector-meta'));
+  identity.append(raidElement('p','Character Profile','eyebrow'),title,raidElement('p',[player.class_name,player.spec,player.role].filter(Boolean).join(' · '),'inspector-meta'));
   const portrait = characterIcons(player.class_name,player.spec);
   portrait.classList.add('character-banner-portrait');
   heading.append(portrait,identity);
   const close = raidElement('button','Close');
   close.addEventListener('click',()=>dialog.close());
   const header = raidElement('header',null,'workspace-drawer-heading character-banner');
-  header.append(heading,close);
+  const facts = raidElement('dl',null,'character-banner-facts');
+  header.append(heading,close,facts);
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
   const checks = reviewCharacter(event,player,organizer,async update=>{
     await raidRequest('/'+event.id,update);
     dialog.close();
     if (raidView === 'roster' && workspaceGoal === event.id) await openRaidView('roster',null,false);
-  });
-  checks.open = true;
+  },true);
+  const review = raidElement('div',null,'character-raid-review');
+  const summary = raidElement('section',null,'raid-card raid-review-summary');
+  const readiness = readinessOf(player);
+  const ready = readinessChecks.filter(([key])=>player.readiness?.[key] === 'Ready').length;
+  const applicable = readinessChecks.filter(([key])=>player.readiness?.[key] !== 'Not applicable').length;
+  const state = raidElement('strong',readiness);
+  state.dataset.readiness = readiness;
+  summary.append(raidElement('p','Saved Raid Readiness','eyebrow'),raidElement('h3',event.title),state,
+    raidElement('p',(applicable ? ready+' of '+applicable+' applicable checks ready' : 'No applicable checks')+' · RSVP: '+player.status),
+    raidElement('small',player.reviewed_at ? 'Last reviewed '+raidDate(player.reviewed_at) : 'No review saved yet.'));
+  const evidence = raidElement('section',null,'raid-card raid-review-evidence');
+  evidence.append(raidElement('h3','Armory Evidence'),raidElement('p','Loading Armory data…'));
+  review.append(summary,checks,evidence);
   const professions = raidElement('div');
   professions.append(raidElement('p','Loading professions…'));
   const tabs = raidElement('nav',null,'character-review-tabs');
   tabs.setAttribute('aria-label','Character Sheet Sections');
-  const panels = [['Character',content],['Raid Review',checks],['Professions',professions]].map(([label,panel])=>{
+  const panels = [['Character',content],['Raid Review',review],['Professions',professions]].map(([label,panel])=>{
     const button = raidElement('button',label);
     button.type = 'button';
     tabs.append(button);
@@ -198,7 +211,7 @@ export function openCharacterSheet(player, event, organizer) {
     }
   }
   for (const {button,panel} of panels) button.addEventListener('click',()=>selectPanel(panel));
-  dialog.append(header,tabs,content,checks,professions);
+  dialog.append(header,tabs,content,review,professions);
   selectPanel(content);
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
@@ -218,13 +231,28 @@ export function openCharacterSheet(player, event, organizer) {
       image.src = character.portrait;
     }
     if (character.guild) identity.append(raidElement('p','<'+character.guild+'>','character-banner-guild'));
-    identity.append(raidElement('p',[
-      character.level != null ? 'Level '+character.level : '',character.race,character.faction,
-      character.itemLevel != null ? 'Item Level '+character.itemLevel : '',
-    ].filter(Boolean).join(' · '),'inspector-meta'));
+    const factsList = [
+      ['Level',character.level],['Race',character.race],['Faction',character.faction],['Item Level',character.itemLevel],
+    ];
+    for (const [label,value] of factsList) {
+      if (value == null || value === '') continue;
+      const row = raidElement('div');
+      row.append(raidElement('dt',label),raidElement('dd',String(value)));
+      facts.append(row);
+    }
+    const gear = character.gear;
+    const stats = raidElement('div',null,'raid-stats');
+    raidStats(stats,[
+      ['Item Level',character.itemLevel ?? 'Unavailable'],
+      ['Equipped Items',gear?.length ?? 'Unavailable'],
+      ['Items With Reported Enchants',gear?.filter(item=>item.enchants.length).length ?? 'Unavailable'],
+    ]);
+    evidence.replaceChildren(raidElement('h3','Armory Evidence'),stats,
+      raidElement('p','These figures come from Blizzard. Organizers set readiness for the selected raid.'));
   }).catch(error=>{
     content.replaceChildren(raidElement('p',error.message));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
+    evidence.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
   });
 }
 
@@ -294,7 +322,8 @@ export function renderArmoryConfirmation(card,character,search) {
   close.type = 'button';
   close.setAttribute('aria-label','Close character confirmation');
   close.addEventListener('click',()=>dialog.close());
-  header.append(heading,close);
+  const facts = raidElement('dl',null,'character-banner-facts');
+  header.append(heading,close,facts);
 
   const summary = raidElement('div',null,'armory-confirm-summary');
   const portrait = raidElement('div',null,'armory-confirm-portrait');
