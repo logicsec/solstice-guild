@@ -63,8 +63,10 @@ export function publicRosterProfile(env, slug) {
 }
 
 function parseProfessions(data) {
-  const groups = [data?.primaries, data?.secondaries, data?.professions].filter(Array.isArray);
-  return groups.length ? groups.flat().map(entry => ({
+  const groups = [['primary',data?.primaries],['secondary',data?.secondaries],[null,data?.professions]]
+    .filter(([,entries])=>Array.isArray(entries));
+  return groups.length ? groups.flatMap(([category,entries])=>entries.map(entry => ({
+    category,
     name: localized(entry.profession?.name ?? entry.name),
     skill: Number.isFinite(entry.skill_points) ? entry.skill_points : null,
     maxSkill: Number.isFinite(entry.max_skill_points) ? entry.max_skill_points : null,
@@ -73,7 +75,7 @@ function parseProfessions(data) {
       skill: Number.isFinite(tier.skill_points) ? tier.skill_points : null,
       maxSkill: Number.isFinite(tier.max_skill_points) ? tier.max_skill_points : null,
     })),
-  })).filter(entry => entry.name) : null;
+  }))).filter(entry => entry.name) : null;
 }
 
 export async function guildProfessionSummary(env, slugs) {

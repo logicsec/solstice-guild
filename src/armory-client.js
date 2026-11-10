@@ -145,7 +145,8 @@ export function renderArmoryProfile(character) {
   if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.','character-stat-card'));
   layout.append(attributes);
   root.append(layout);
-  const professions = raidElement('div',null,'character-professions');
+  const professions = raidElement('div',null,'character-profession-sections');
+  const groups = {primary:raidElement('div',null,'character-professions'),secondary:raidElement('div',null,'character-professions')};
   for (const entry of character.professions ?? []) {
     const card = raidElement('section',null,'raid-card profession-progress-card');
     const icon = professionIcon(entry.name);
@@ -176,9 +177,19 @@ export function renderArmoryProfile(character) {
       card.append(heading);
     }
     card.append(icon,details);
-    professions.append(card);
+    const category = entry.category ?? (['cooking','fishing','first aid'].includes(entry.name.toLowerCase()) ? 'secondary' : 'primary');
+    groups[category].append(card);
   }
   if (!character.professions?.length) professions.append(raidElement('p','No profession data available.','raid-card'));
+  else {
+    for (const [category,label] of [['primary','Primary Professions'],['secondary','Secondary Professions']]) {
+      const section = raidElement('section',null,'character-profession-section');
+      section.append(raidElement('h3',label));
+      const cards = groups[category];
+      section.append(cards.children.length ? cards : raidElement('p','No '+category+' professions reported.'));
+      professions.append(section);
+    }
+  }
   root.append(raidElement('small','Source: Blizzard Armory'));
   return { gearPanel:root, professions };
 }

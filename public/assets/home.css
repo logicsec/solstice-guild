@@ -745,6 +745,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .character-gear-right :is(.character-slot-button,.character-slot-empty) { flex-direction: row; text-align: start; }
 }
 
+.character-profession-sections { display: grid; gap: 20px; }
+.character-profession-section > h3 { margin: 0 0 8px; }
+.character-profession-section > p { margin: 0; color: var(--muted); }
 .character-professions { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(235px,100%),1fr)); align-items: start; gap: 10px; }
 .guild-app .profession-progress-card { display: grid; grid-template-columns: 42px minmax(0,1fr); align-items: center; gap: 10px; padding: 12px; }
 .profession-progress-icon { display: grid; place-items: center; width: 42px; height: 42px; border: 1px solid var(--line); border-radius: 7px; background: var(--field); color: var(--accent); overflow: hidden; }
