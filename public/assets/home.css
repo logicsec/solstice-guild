@@ -200,7 +200,18 @@ body { border-top: 3px solid var(--gold); }
 .workspace-roster { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; align-items: start; }
 .roster-filters { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-bottom: 12px; }
 .workspace-player { width: 100%; display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 1fr); gap: 10px; align-items: center; justify-items: start; text-align: left; padding: 12px; margin-bottom: 5px; overflow-wrap: anywhere; }
-.workspace-inspector > button { margin-top: 12px; }
+.guild-app .workspace-inspector { padding: clamp(14px,1.4vw,22px); }
+.inspector-identity { display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:8px 12px; margin-top:10px; }
+.inspector-character { min-width:0; }
+.inspector-identity .character-inspector-title { margin:0; }
+.inspector-identity h3 { font-size:18px; overflow-wrap:anywhere; }
+.inspector-meta { font-size:13px; margin-top:4px; }
+.inspector-status { white-space:nowrap; }
+.inspector-status[data-status="Pending"], .inspector-status[data-status="Waitlist"] { color:var(--gold); }
+.inspector-status[data-status="Going"] { color:#a6c99b; }
+.inspector-controls { display:grid; gap:10px; margin-top:16px; }
+.inspector-sheet { justify-self:start; }
+.inspector-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
 @media (max-width: 940px) {
   .guild-app .workspace-goal, .workspace-roster { grid-template-columns: 1fr; }
   .workspace-goal > :last-child { border-inline-start: 0; border-top: 1px solid var(--line); padding: 14px 0 0; }
