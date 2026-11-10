@@ -6,6 +6,7 @@ const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
 const articleCategories = ['Guild news', 'Raid recaps', 'Guides', 'Events'];
+const categoryLabel = category => category.replace(/\b[a-z]/gi, initial => initial.toUpperCase());
 const categoryLink = category => '/?category=' + encodeURIComponent(category) + '#chronicle';
 const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'America/New_York' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
@@ -52,7 +53,7 @@ export async function publicHome(env, url, session) {
     const { cover } = articleContent(article);
     return `<article class="news-card chronicle-card${index === 0 ? ' chronicle-feature' : ''}"><a class="chronicle-card-link" href="${link}">
       ${cover ? `<div class="chronicle-card-cover">${cover}</div>` : ''}
-      <div class="chronicle-card-copy"><p class="chronicle-card-meta"><span class="eyebrow">${escape(article.category)}</span> <time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
+      <div class="chronicle-card-copy"><p class="chronicle-card-meta"><span class="text-link">${escape(categoryLabel(article.category))}</span> <time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
       <h3>${escape(article.title)}</h3>
       ${article.summary ? `<p>${escape(article.summary)}</p>` : ''}
       ${index === 0 ? '<span class="text-link">Read article <span aria-hidden="true">→</span></span>' : ''}</div>
@@ -77,7 +78,7 @@ export async function publicHome(env, url, session) {
       <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
       <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
       <nav class="chronicle-filters" aria-label="Chronicle categories">
-        ${[null, ...articleCategories].map(label => `<a href="${label ? categoryLink(label) : '/#chronicle'}"${label === category ? ' aria-current="true"' : ''}>${escape(label ?? 'All posts')}</a>`).join('')}
+        ${[null, ...articleCategories].map(label => `<a href="${label ? categoryLink(label) : '/#chronicle'}"${label === category ? ' aria-current="true"' : ''}>${escape(categoryLabel(label ?? 'All Posts'))}</a>`).join('')}
       </nav>
       <div class="news-grid chronicle-grid">${cards || (category ? '<p class="empty">No posts in this category yet.</p>' : '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>')}</div>
   </section>
@@ -163,7 +164,7 @@ export async function articlePage(env, id, session) {
     <div class="chronicle-reading-layout"><article>
       ${cover ? `<div class="chronicle-article-cover">${cover}</div>` : ''}
       <header class="chronicle-article-header">
-        <a class="eyebrow text-link" href="${categoryLink(article.category)}">${escape(article.category)}</a>
+        <a class="text-link" href="${categoryLink(article.category)}">${escape(categoryLabel(article.category))}</a>
         <h1>${escape(article.title)}</h1>
         ${article.summary ? `<p class="article-summary">${escape(article.summary)}</p>` : ''}
         <p class="chronicle-article-meta">${byline}<time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
@@ -179,7 +180,7 @@ export async function articlePage(env, id, session) {
         </a></li>`;
       }).join('')}</ul></section>
       <section class="news-card"><h2>Categories</h2><ul>${articleCategories.map(category =>
-        `<li><a class="chronicle-category" href="${categoryLink(category)}"><span>${escape(category)}</span><span>${counts.find(row => row.category === category)?.total ?? 0}</span></a></li>`
+        `<li><a class="chronicle-category" href="${categoryLink(category)}"><span>${escape(categoryLabel(category))}</span><span>${counts.find(row => row.category === category)?.total ?? 0}</span></a></li>`
       ).join('')}</ul></section>
     </aside></div>
   </main>`, { session, editor: canEditArticles(env, session) }));
@@ -231,7 +232,7 @@ export async function cmsPage(request, env, url, session) {
   <label>Title<input required name="title" maxlength="110" value="${escape(article?.title)}"></label>
   <label for="articleCategory">Category</label>
   <select id="articleCategory" name="category">${articleCategories.map(category =>
-    `<option${category === (article?.category ?? 'Guild news') ? ' selected' : ''}>${escape(category)}</option>`
+    `<option value="${escape(category)}"${category === (article?.category ?? 'Guild news') ? ' selected' : ''}>${escape(categoryLabel(category))}</option>`
   ).join('')}</select>
   <label for="articleSummary">Summary</label><textarea id="articleSummary" name="summary" maxlength="240" rows="2">${escape(article?.summary)}</textarea>
   <input type="hidden" name="body_format" value="${escape(article?.body_format ?? 'plain')}">
