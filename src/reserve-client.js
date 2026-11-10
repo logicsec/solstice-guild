@@ -25,7 +25,7 @@ export function showReserveHistory(raidId, key, name) {
   }).catch(error=>body.replaceChildren(raidElement('p',error.message)));
 }
 
-export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pendingReserves,myReserveItems}) {
+export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pendingReserves,myReserveItems,lootItems}) {
   root.replaceChildren(raidElement('h3','Loot reserves'),
     raidElement('p',(event.reserves_locked ? 'Locked' : event.state === 'Cancelled' ? 'Closed' : 'Open')+' · '+event.reserve_limit+' per player'));
   const status = raidElement('p');
@@ -51,6 +51,30 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
     const lock = raidElement('button',event.reserves_locked ? 'Unlock reserves' : 'Lock reserves');
     lock.addEventListener('click',()=>save(lock,{action:'reserve-settings',locked:!event.reserves_locked}));
     settings.append(label,update,lock); root.append(settings);
+    const table = raidElement('details');
+    table.append(raidElement('summary','Manage raid loot table'));
+    if (!event.instance) {
+      const select = raidElement('select');
+      select.setAttribute('aria-label','Raid instance');
+      select.add(new Option('Choose a raid',''));
+      for (const [key,instance] of Object.entries(raidInstances)) {
+        if (instance.size === event.size) select.add(new Option(instance.name,key));
+      }
+      const attach = raidElement('button','Assign raid');
+      attach.addEventListener('click',()=>save(attach,{action:'reserve-instance',instance:select.value}));
+      table.append(raidElement('p','Assign this existing event to a raid type.'),select,attach);
+    } else {
+      const label = raidElement('label','Verified loot table · one item name per line');
+      const input = raidElement('textarea');
+      input.rows = 6;
+      input.value = lootItems.join('\n');
+      label.append(input);
+      const updateTable = raidElement('button','Save loot table');
+      updateTable.addEventListener('click',()=>save(updateTable,{action:'reserve-loot-table',
+        items:input.value.split(/\r?\n/).map(item=>item.trim()).filter(Boolean)}));
+      table.append(raidElement('p','This table is shared across raids of this type that you organize.'),label,updateTable);
+    }
+    root.append(table);
     if (pendingReserves.length) root.append(raidElement('h4','Guest requests awaiting review'));
     for (const request of pendingReserves) {
       const row = raidElement('div',null,'raid-row');
@@ -86,12 +110,21 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
   }
 
   const form = raidElement('form',null,'raid-form');
-  const label = raidElement('label','Item names (one per line)');
-  const items = raidElement('textarea');
-  items.rows = 3;
-  items.maxLength = 605;
-  items.placeholder = 'Leave blank to clear the picks';
-  label.append(items);
+  if (!lootItems.length) {
+    root.append(raidElement('p','Reserves open once the organizer loads the raid loot table.'));
+    return;
+  }
+  const picks = Array.from({length:event.reserve_limit},(_,i)=>{
+    const label = raidElement('label','Pick '+(i+1));
+    const select = raidElement('select');
+    select.add(new Option('No item',''));
+    for (const item of lootItems) select.add(new Option(item,item));
+    label.append(select);
+    return {label,select};
+  });
+  function loadItems(items) {
+    picks.forEach(({select},i)=>{ select.value = items[i] ?? ''; if (!select.value) select.selectedIndex = 0; });
+  }
   let player;
   let guest;
   if (organizer) {
@@ -109,20 +142,20 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
       guestLabel.hidden = Boolean(player.value);
       guest.required = !player.value;
       const key = player.value ? 'member:'+player.value : 'guest:'+guest.value.trim().replace(/\s+/g,' ').toLowerCase();
-      items.value = reserves.find(entry=>entry.key === key)?.items.join('\n') ?? '';
+      loadItems(reserves.find(entry=>entry.key === key)?.items ?? []);
     }
     player.addEventListener('change',loadPicks);
     guest.addEventListener('change',loadPicks);
     form.append(playerLabel,guestLabel);
     loadPicks();
   } else {
-    items.value = myReserveItems.join('\n');
+    loadItems(myReserveItems);
   }
   const submit = raidElement('button','Save reserves','raid-primary');
-  form.append(label,submit); root.append(form);
+  form.append(...picks.map(pick=>pick.label),submit); root.append(form);
   form.addEventListener('submit',e=>{
     e.preventDefault();
-    const data = {action:'reserve-picks',items:items.value.split(/\r?\n/).map(item=>item.trim()).filter(Boolean)};
+    const data = {action:'reserve-picks',items:picks.map(({select})=>select.value).filter(Boolean)};
     if (organizer) {
       if (player.value) data.member = player.value;
       else data.guest = guest.value;

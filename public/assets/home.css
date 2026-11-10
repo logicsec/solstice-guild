@@ -210,8 +210,9 @@ body { border-top: 3px solid var(--gold); }
 .inspector-status[data-status="Pending"], .inspector-status[data-status="Waitlist"] { color:var(--gold); }
 .inspector-status[data-status="Going"] { color:#a6c99b; }
 .inspector-controls { display:grid; gap:10px; margin-top:16px; }
-.inspector-sheet { justify-self:start; }
 .inspector-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.inspector-character-actions { display:flex; flex:1 1 auto; min-width:0; gap:8px; }
+.inspector-character-actions .inspector-sheet { margin-inline-start:auto; }
 @media (max-width: 940px) {
   .guild-app .workspace-goal, .workspace-roster { grid-template-columns: 1fr; }
   .workspace-goal > :last-child { border-inline-start: 0; border-top: 1px solid var(--line); padding: 14px 0 0; }
@@ -619,6 +620,6 @@ body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex;
 .character-item-tooltip span { display:block; font-size:12px; }
 .guest-reserve-form { display:grid; gap:10px; margin-top:16px; max-width:540px; }
 .guest-reserve-form label { display:grid; gap:4px; }
-.guest-reserve-form :is(input,textarea) { border:1px solid var(--line); border-radius:6px; padding:8px; color:var(--ink); background:var(--field); font:inherit; }
+.guest-reserve-form :is(input,textarea,select) { border:1px solid var(--line); border-radius:6px; padding:8px; color:var(--ink); background:var(--field); font:inherit; }
 .guest-reserve-form button { justify-self:start; }
 @media (prefers-reduced-motion: reduce) { .workspace-drawer[open] { animation: none; } }

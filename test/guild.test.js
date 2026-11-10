@@ -82,7 +82,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const post = (path, body, session = cookie) => send(path, {
     method: 'POST', headers: { Cookie: session, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
-  const created = await post('/api/raids', { title: 'Barrow Deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true });
+  const created = await post('/api/raids', { instance: 'barrow-deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true });
   assert.equal(created.status, 201);
   const { id } = await created.json();
   discordId = '31';
@@ -159,26 +159,34 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);
   }
   const picks = {action:'reserve-picks',items:['Staff of the Wild','Ember Ring']};
+  assert.equal((await post(raid,picks,member)).status,409);
+  const lootTable = {action:'reserve-loot-table',items:[...picks.items,'Copper Helm','Copper Sword','Other Sword','Replacement item']};
+  assert.equal((await post(raid,lootTable,member)).status,403);
+  assert.equal((await post(raid,lootTable)).status,200);
+  assert.equal((await post(raid,{...picks,items:['Not in table']},member)).status,409);
+  const lootPage = await (await send(publicPath)).text();
+  assert.match(lootPage,/<option value="Copper Sword">Copper Sword<\/option>/);
+  assert.doesNotMatch(lootPage,/<textarea name="items"/);
   assert.equal((await post(raid,{...picks,guest:'Guest Raider'},member)).status,403);
   assert.equal((await post(raid,{...picks,items:[...picks.items,'Third item']},member)).status,409);
   assert.equal((await post(raid,picks,member)).status,200);
   assert.equal((await post(raid,{action:'reserve-settings',limit:1})).status,409);
   assert.equal((await post(raid,{...picks,guest:'Guest Raider',items:['Copper Helm']})).status,200);
   const guestRequest = (character,items,requestOrigin=origin) => send(publicPath,{
-    method:'POST',headers:{Origin:requestOrigin},body:new URLSearchParams({character,items}),
+    method:'POST',headers:{Origin:requestOrigin},body:new URLSearchParams([['character',character],...items.split('\n').map(item=>['items',item])]),
   });
   assert.equal((await guestRequest('Public Pug','Copper Sword','https://other.example')).status,403);
   assert.equal((await guestRequest('Public Pug','One\nTwo\nThree')).status,409);
   assert.equal((await guestRequest('Public Pug','Copper Sword')).status,303);
   assert.equal((await guestRequest('PUBLIC PUG','Other Sword')).status,409);
-  assert.doesNotMatch(await (await send(publicPath)).text(),/Copper Sword/);
+  assert.doesNotMatch(await (await send(publicPath)).text(),/Public Pug/);
   const guestQueue = (await (await send(raid,options)).json()).pendingReserves;
   assert.equal(guestQueue[0].character,'Public Pug');
   assert.deepEqual((await (await send(raid,{headers:{Cookie:member}})).json()).pendingReserves,[]);
   const approve = {action:'reserve-review',key:guestQueue[0].key,approve:true};
   assert.equal((await post(raid,approve,member)).status,403);
   assert.equal((await post(raid,approve)).status,200);
-  assert.match(await (await send(publicPath)).text(),/Copper Sword/);
+  assert.match(await (await send(publicPath)).text(),/Public Pug<\/th><td>Copper Sword/);
   assert.equal((await post(raid,{action:'reserve-settings',locked:true},member)).status,403);
   assert.equal((await post(raid,{action:'reserve-settings',locked:true})).status,200);
   assert.equal((await post(raid,{...picks,items:[]},member)).status,409);
@@ -190,12 +198,14 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(publicReserves,/Staff of the Wild/);
   assert.match(publicReserves,/Guest Raider/);
   assert.doesNotMatch(publicReserves,/member:31|guest:guest raider/);
-  const second = await post('/api/raids',{title:'Second week',startsAt:new Date(Date.now()+8*86400000).toISOString(),size:10});
+  const second = await post('/api/raids',{instance:'hyjal-summit',startsAt:new Date(Date.now()+8*86400000).toISOString(),size:20});
   const secondRaid = '/api/raids/'+(await second.json()).id;
   assert.equal((await post(secondRaid,{action:'signup',character:'Astra Mortis',className:'Mage',role:'Ranged DPS',status:'Going'},member)).status,200);
+  assert.equal((await post(secondRaid,{...picks,items:['Staff of the Wild']},member)).status,409);
+  assert.equal((await post(secondRaid,{action:'reserve-loot-table',items:['Next week item']})).status,200);
   assert.equal((await post(secondRaid,{...picks,items:['Next week item']},member)).status,200);
   const history = await (await send(raid+'?reserveHistory=member%3A31',options)).json();
-  assert.deepEqual(history.history.map(entry=>entry.title),['Second week','Barrow Deeps']);
+  assert.deepEqual(history.history.map(entry=>entry.title),['Hyjal Summit','Barrow Deeps']);
   assert.equal((await send(raid+'?reserveHistory=guest%3Aguest%20raider',{headers:{Cookie:member}})).status,403);
   assert.equal((await post(raid,{action:'reserve-settings',locked:false})).status,200);
   assert.equal((await post(raid,{...picks,items:['Replacement item']},member)).status,200);

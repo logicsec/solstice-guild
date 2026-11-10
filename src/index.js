@@ -1,3 +1,4 @@
+import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
 import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
 import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
@@ -80,12 +81,13 @@ async function raidApi(request, db, url, user) {
       const result = await db.prepare('SELECT id, title, starts_at, size, state, (owner = ?) AS organizer FROM raids WHERE owner = ? OR id IN (SELECT raid_id FROM raid_signups WHERE member = ?) ORDER BY starts_at DESC LIMIT 100').bind(user, user, user).all();
       return reply({ raids: result.results });
     }
-    const title = clean(input.title, 80);
+    const instance = raidInstance(input.instance);
+    const title = instance?.name;
     const notes = clean(input.notes, 1000);
     const size = Number(input.size);
     const starts = new Date(input.startsAt);
-    if (!title || ![10,20,40].includes(size) || !Number.isFinite(+starts) || +starts <= Date.now()) {
-      return reply({ error: 'Enter a raid title, a future start time, and a valid size.' }, 400);
+    if (!instance || size !== instance.size || !Number.isFinite(+starts) || +starts <= Date.now()) {
+      return reply({ error: 'Choose a raid and a future start time.' }, 400);
     }
     const roles = Object.fromEntries(raidRoles.map(role => [role, Number(input.slots?.[role] ?? 0)]));
     const slotValues = Object.values(roles);
@@ -104,7 +106,7 @@ async function raidApi(request, db, url, user) {
       return reply({ error: 'Invalid repeat schedule.' }, 400);
     }
     const ids = dates.map(() => crypto.randomUUID());
-    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings) VALUES (?, ?, ?, ?, ?, ?, ?)').bind(ids[index], user, title, new Date(value).toISOString(), size, notes, settings));
+    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings, instance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ids[index], user, title, new Date(value).toISOString(), size, notes, settings,input.instance));
     if (statements.length === 1) await statements[0].run();
     else await db.batch(statements);
     return reply({ id: ids[0], count: ids.length }, 201);
@@ -127,8 +129,9 @@ async function raidApi(request, db, url, user) {
     const myReserveItems = reserveRows.find(row=>row.key === 'member:'+user)?.items ?? [];
     const reserves = organizer ? reserveRows : reserveRows.map(({key,...row})=>row);
     const { owner, ...event } = raid;
-    return reply({ event: { ...event, settings }, organizer, roster, prep, reserves, pendingReserves: organizer ? await pendingGuestReserves(db,id) : [], myReserveItems, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
+    return reply({ event: { ...event, settings }, organizer, roster, prep, reserves, lootItems: await raidLoot(db,raid), pendingReserves: organizer ? await pendingGuestReserves(db,id) : [], myReserveItems, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
   }
+  if (['reserve-instance','reserve-loot-table'].includes(input.action)) return changeRaidLoot(db,raid,user,input,reply);
   if (typeof input.action === 'string' && input.action.startsWith('reserve-')) return changeReserves(db,raid,user,input,reply);
   if (input.action === 'delete') {
     if (!organizer) return reply({ error: 'Only the raid organizer can delete this raid.' },403);
@@ -272,7 +275,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=24249f911efe"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=f888673bb62e"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -324,7 +327,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <h3>Add or update a character</h3><label>Name<input name="name" required maxlength="30"></label><label>Class<select name="className"></select></label><label>Specialization<input name="spec" maxlength="30" placeholder="Optional"></label><label>Role<select name="role"></select></label><button class="raid-primary">Save character</button></form>
 <form id="raidCreate" class="raid-card raid-form" hidden>
 <div class="raid-steps"><span>1 · Raid details</span><span>2 · Schedule &amp; roster</span><span>3 · Review</span></div>
-<div data-step="0"><label>Raid title<input name="title" required maxlength="80" placeholder="Barrow Deeps — Monday"></label><label>Notes<textarea name="notes" maxlength="1000" placeholder="Loot rules, voice chat, and what to bring"></textarea></label></div>
+<div data-step="0"><label>Raid<select name="instance" required><option value="">Choose a raid</option>${Object.entries(raidInstances).map(([key,raid])=>`<option value="${key}">${raid.name} · ${raid.size} players</option>`).join('')}</select></label><label>Notes<textarea name="notes" maxlength="1000" placeholder="Loot rules, voice chat, and what to bring"></textarea></label></div>
 <div data-step="1" hidden><div class="raid-schedule">
   <fieldset class="raid-date-field"><legend>Start date</legend>
     <details id="raidDatePicker"><summary id="raidSelectedDate">Choose a date</summary>
@@ -340,7 +343,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
     <select id="raidPeriod" aria-label="AM or PM"><option>AM</option><option selected>PM</option></select>
   </div></fieldset>
   <input type="hidden" name="startsAt">
-</div><small id="raidTimezone"></small><label>Raid size<select name="size"><option>10</option><option>20</option><option>40</option></select></label><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div></div>
+</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div></div>
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
@@ -943,7 +946,13 @@ function resetRoleSlots() {
   roleSlotFields[2].value = Math.floor(dps / 2);
   roleSlotFields[3].value = Math.ceil(dps / 2);
 }
-raidForm.elements.size.addEventListener('change', resetRoleSlots);
+const raidInstances = ${JSON.stringify(raidInstances)};
+raidForm.elements.instance.addEventListener('change',()=>{
+  const size = raidInstances[raidForm.elements.instance.value]?.size ?? 10;
+  raidForm.elements.size.value = size;
+  byId('raidSizeLabel').textContent = 'Raid size · '+size+' players';
+  resetRoleSlots();
+});
 const raidDate = value => new Date(value).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
 function raidElement(tag, text, className) {
   const node = document.createElement(tag);
@@ -1259,11 +1268,7 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
     const controls = raidElement('div',null,'inspector-controls');
     const checks = reviewCharacter(event,player,organizer);
     checks.open = !player.armorySlug;
-    if (player.armorySlug) {
-      const sheet = raidElement('button','Open character sheet','raid-primary inspector-sheet');
-      sheet.addEventListener('click',()=>openCharacterSheet(player));
-      controls.append(sheet);
-    } else {
+    if (!player.armorySlug) {
       controls.append(raidElement('p','Link this character in My characters to see their Armory gear.'));
     }
     controls.append(checks);
@@ -1273,11 +1278,18 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
     const manage = raidElement('button','Raid & assignments');
     manage.addEventListener('click',()=>openRaidView('detail',event.id));
     actions.append(manage);
+    const characterActions = raidElement('div',null,'inspector-character-actions');
     if (organizer) {
       const history = raidElement('button','Reserve history');
       history.addEventListener('click',()=>showReserveHistory(event.id,'member:'+player.member,player.character));
-      actions.append(history);
+      characterActions.append(history);
     }
+    if (player.armorySlug) {
+      const sheet = raidElement('button','Open character sheet','raid-primary inspector-sheet');
+      sheet.addEventListener('click',()=>openCharacterSheet(player));
+      characterActions.append(sheet);
+    }
+    if (characterActions.childElementCount) actions.append(characterActions);
     detail.append(actions);
   }
   function draw() {
@@ -1390,7 +1402,7 @@ function setWizardStep(step) {
   byId('raidTimezone').textContent = 'Your local time · '+Intl.DateTimeFormat().resolvedOptions().timeZone;
   if (step === 2) {
     const data = new FormData(raidForm);
-    byId('raidReview').replaceChildren(raidElement('h3',data.get('title')),raidElement('p',raidDate(data.get('startsAt'))+' · '+data.get('size')+' players'),raidElement('p',data.get('notes')));
+    byId('raidReview').replaceChildren(raidElement('h3',raidInstances[data.get('instance')]?.name),raidElement('p',raidDate(data.get('startsAt'))+' · '+data.get('size')+' players'),raidElement('p',data.get('notes')));
   }
 }
 const readinessChecks = ${JSON.stringify(readinessChecks)};
@@ -1617,7 +1629,7 @@ byId('raidTab').addEventListener('click',()=>openRaidView('readiness'));
 for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
-  for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] input')) if (!field.reportValidity()) return;
+  for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] :is(input,select)')) if (!field.reportValidity()) return;
   if (wizardStep === 1) {
     const first = raidStartTime();
     if (!first || +first <= Date.now()) {
