@@ -92,7 +92,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await signIn(publicPath)).headers.get('location'),publicPath);
   for (const path of [publicPath,'/?tool=raid&raid='+id]) {
     const memberPage = await (await send(path,options)).text();
-    assert.match(memberPage,/Confirmed roster/);
+    assert.match(memberPage,/Confirmed Roster/);
     assert.match(memberPage,/view=detail&amp;raid=/);
     assert.match(memberPage,/>Guild Hall</);
     assert.doesNotMatch(memberPage,/Chronicle|Sign in with Discord|Save RSVP/);
