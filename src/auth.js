@@ -1,6 +1,6 @@
 const sessionCookie = '__Host-solstice-session';
 const flowCookie = '__Host-solstice-oauth';
-const sessionSeconds = 8 * 60 * 60;
+const sessionSeconds = 24 * 60 * 60;
 const encoder = new TextEncoder();
 
 function randomToken() {

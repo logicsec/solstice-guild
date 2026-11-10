@@ -79,8 +79,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await signIn(invite)).headers.get('location'), '/?login=membership');
   isMember = true;
   assert.equal((await signIn('//bad.example/')).headers.get('location'), '/');
+  const loginStarted = Date.now();
   const success = await signIn(invite);
   assert.equal(success.headers.get('location'), invite);
+  assert.match(success.headers.getSetCookie().find(value=>value.startsWith('__Host-solstice-session=')), /; Max-Age=86400;/);
+  const latestExpiry = db.prepare('SELECT MAX(expires_at) AS expires_at FROM discord_sessions').get().expires_at;
+  assert.ok(latestExpiry >= loginStarted + 86400000 && latestExpiry <= Date.now() + 86400000);
+
   const cookie = success.headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
   const options = { headers: { Cookie: cookie } };
   const page = await (await send('/?tool=raid&view=detail&raid=00000000-0000-4000-8000-000000000001', options)).text();
