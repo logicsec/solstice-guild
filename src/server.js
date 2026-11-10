@@ -1,3 +1,4 @@
+import { maxArticleImageBytes } from './article-images.js';
 import { createReadStream } from 'node:fs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -42,11 +43,12 @@ const server = createServer(async (req, res) => {
     const method = req.method ?? 'GET';
     let body;
     if (method !== 'GET' && method !== 'HEAD') {
+      const limit = method === 'POST' && url.pathname === '/cms/images' ? maxArticleImageBytes : 131072;
       let bytes = 0;
       const chunks = [];
       for await (const chunk of req.iterator({ destroyOnReturn: false })) {
         bytes += chunk.length;
-        if (bytes > 131072) {
+        if (bytes > limit) {
           res.writeHead(413, { Connection: 'close' }).end('Request too large');
           return;
         }
