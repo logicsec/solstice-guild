@@ -1,3 +1,5 @@
+import { raidLogs } from './raid-logs.js';
+import { renderRaidLogs } from './raid-logs-client.js';
 import { foreverTalentLayout } from './forever-talent-layout.js';
 import { parseTable, scanVendorFlips } from './vendor-flips.js';
 import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
@@ -142,6 +144,7 @@ async function raidApi(request, env, url, user) {
   const raid = await db.prepare('SELECT * FROM raids WHERE id = ?').bind(id).first();
   if (!raid) return reply({ error: 'Raid not found.' }, 404);
   const organizer = raid.owner === user;
+  if ((!post && url.searchParams.has('logs')) || (post && input.action === 'logs-link')) return raidLogs(env,raid,url,input,organizer,reply);
   const settings = JSON.parse(raid.settings || '{}');
   if (!post) {
     if (url.searchParams.has('reserveHistory')) return reserveHistory(db,raid,user,url.searchParams.get('reserveHistory'),reply);
@@ -374,6 +377,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <button type="button" data-raid-tab="readiness">Readiness</button>
 <button type="button" data-raid-tab="roster">Roster</button>
 <button type="button" data-raid-tab="tonight">Tonight</button>
+<button type="button" data-raid-tab="logs">Logs</button>
 <button type="button" data-raid-tab="loot">Loot</button>
 </nav>
 </div>
@@ -1378,7 +1382,7 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
-const workspaceViews = ['readiness','roster','tonight','loot'];
+const workspaceViews = ['readiness','roster','tonight','loot','logs'];
 const workingRaid = byId('workingRaid');
 const workingRaidKey = 'solstice.workingRaid';
 let workspaceGoal;
@@ -1420,6 +1424,7 @@ async function loadWorkingRaids(revision) {
 const prepCategories = ${JSON.stringify(prepCategories)};
 ${schedulePrep.toString()}
 ${renderTonight.toString()}
+${renderRaidLogs.toString()}
 const armorySpecs = ${JSON.stringify(armorySpecs)};
 ${renderArmoryConfirmation.toString()}
 ${renderArmory.toString()}
@@ -1455,7 +1460,8 @@ async function openRaidWorkspace(view, revision) {
   const data = await raidRequest('/'+workspaceGoal + (view === 'roster' ? '?armory=1' : view === 'tonight' ? '?prep=1' : ''));
   if (revision !== raidRevision) return;
   content.replaceChildren();
-  if (view === 'readiness') renderReadinessWorkspace(content,data);
+  if (view === 'logs') await renderRaidLogs(content,data);
+  else if (view === 'readiness') renderReadinessWorkspace(content,data);
   else if (view === 'roster') renderRosterWorkspace(content,data);
   else if (view === 'loot') {
     content.classList.add('raid-card');
