@@ -23,12 +23,12 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=931c999ace7a"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=e8cfc6de6bcf"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
   ${body}
-  <footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
+  ${raidView ? '' : `<footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>`}
   </body></html>`;
 }
 function html(body, status = 200) {
@@ -117,7 +117,7 @@ export async function publicRaidPage(db, id, roles, session, requested) {
   }).join('');
   const rows = roster.map(player=>`<tr><th scope="row">${escape(player.character)}</th><td>${escape(player.class_name)}</td><td>${escape(player.role)}</td><td>${player.group_no == null ? 'Unassigned' : escape(player.group_no)}</td></tr>`).join('');
   return respond(raid.title,`<main class="guild-home public-raid">
-    <section class="home-banner public-raid-banner"><div class="home-banner-content">
+    <section class="home-banner public-raid-banner raid-banner" data-raid-instance="${escape(raid.instance)}"><div class="home-banner-content">
       <p class="eyebrow">Solstice raid · Guest view</p><h1>${escape(raid.title)}</h1>
       <p><time datetime="${escape(raid.starts_at)}">${escape(date)} Eastern</time> · ${escape(raid.state)}</p>
       <p>${roster.length} of ${escape(raid.size)} slots filled</p>

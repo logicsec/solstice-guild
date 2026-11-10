@@ -278,9 +278,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=931c999ace7a"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=e8cfc6de6bcf"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
+<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -1199,12 +1199,11 @@ function renderReadinessWorkspace(root,{event,roster}) {
   const blocked = going.filter(row=>readinessOf(row) === 'Blocked');
   const ready = going.filter(row=>readinessOf(row) === 'Ready');
   const access = going.filter(row=>row.readiness?.access === 'Blocked').length;
-  const goal = raidElement('section',null,'workspace-goal raid-card');
+  const goal = raidElement('section',null,'workspace-goal raid-card raid-banner');
+  goal.dataset.raidInstance = event.instance ?? '';
   const intro = raidElement('div');
-  intro.append(raidElement('p','Solstice raid goal','eyebrow'),raidElement('h3','Get ready for '+event.title),
-    raidElement('p',raidDate(event.starts_at)+' · '+event.size+' players'));
+  intro.append(raidElement('p','Solstice Raid Goal','eyebrow'),raidElement('h3','Get ready for '+event.title));
   const targets = event.settings?.roles;
-  if (targets) intro.append(raidElement('p',raidRoles.map(role=>targets[role]+' '+role.toLowerCase()).join(' · ')));
   if (event.settings?.requirements) intro.append(raidElement('p',event.settings.requirements));
   const inspect = raidElement('button','Inspect the raid team →','raid-primary');
   inspect.addEventListener('click',()=>openRaidView('roster'));
@@ -1217,14 +1216,22 @@ function renderReadinessWorkspace(root,{event,roster}) {
   byId('copyReadinessInvite').textContent = 'Copy';
   byId('readinessInvite').hidden = false;
   actions.append(inspect,plan,details); intro.append(actions);
-  const issue = raidElement('div');
+  const issue = raidElement('div',null,'workspace-goal-status');
   const status = blocked.length ? 'Known blockers' : !going.length || ready.length !== going.length ? 'Review needed' : 'Character checks met';
   issue.append(raidElement('p',status,'eyebrow'),raidElement('h3', access ? access+(access === 1 ? ' raider needs raid access.' : ' raiders need raid access.') :
     blocked.length ? blocked.length+(blocked.length === 1 ? ' raider has a known blocker.' : ' raiders have a known blocker.') : !going.length ? 'No confirmed raiders yet.' :
     ready.length !== going.length ? 'Some character checks are still unreviewed.' : 'All going raiders meet the reviewed checks.'),
     raidElement('p',ready.length+' of '+going.length+' confirmed raiders meet all character checks.'),
     raidElement('small','Readiness is based on organizer reviews. Team composition and shared supplies still need review.'));
-  goal.append(intro,issue);
+  const facts = raidElement('dl',null,'character-banner-facts');
+  const values = [['Scheduled',raidDate(event.starts_at)],['Group Size',event.size+' players']];
+  if (targets) values.push(['Role Targets',raidRoles.map(role=>targets[role]+' '+role.toLowerCase()).join(' · ')]);
+  for (const [label,value] of values) {
+    const fact = raidElement('div');
+    fact.append(raidElement('dt',label),raidElement('dd',value));
+    facts.append(fact);
+  }
+  goal.append(intro,issue,facts);
   const stats = raidElement('div',null,'raid-stats workspace-metrics');
   const checks = going.flatMap(row=>readinessChecks.map(([key])=>row.readiness?.[key])).filter(value=>value === 'Ready' || value === 'Blocked');
   const percent = checks.length ? Math.round(checks.filter(value=>value==='Ready').length/checks.length*100)+'%' : '—';

@@ -154,6 +154,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.equal(guest.status,200);
     const body = await guest.text();
     assert.match(body,/Barrow Deeps/);
+    assert.match(body,/data-raid-instance="barrow-deeps"/);
+    assert.doesNotMatch(body,/<footer>/);
     assert.match(body,/Astra Mortis/);
     assert.match(body,/Ranged DPS/);
     assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);
