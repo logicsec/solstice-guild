@@ -25,7 +25,7 @@ export function canEditArticles(env, session) {
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=eb6a168e6ab9"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
-  <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
+  <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
   ${body}
   <footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>
@@ -69,7 +69,7 @@ export async function publicHome(env, url, session) {
     </div>
     <aside class="home-about" aria-labelledby="about-title">
       ${solsticeMark}
-      <p class="eyebrow">Alliance guild</p><h2 id="about-title">Life in Solstice</h2>
+      <p class="eyebrow">Alliance guild</p><h2 id="about-title">Life In Solstice</h2>
       <p>We raid together, help each other get ready, and share what we learn along the way.</p>
       <dl><div><dt>Game</dt><dd>WoW Forever</dd></div><div><dt>Server</dt><dd>US Normal</dd></div><div><dt>Faction</dt><dd>Alliance</dd></div></dl>
     </aside>
@@ -150,7 +150,7 @@ function articleContent(article) {
 
 export async function articlePage(env, id, session) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND published_at IS NOT NULL').bind(id).first();
-  if (!article) return html(shell('Article unavailable', '<main class="article-page chronicle-article"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
+  if (!article) return html(shell('Article Unavailable', '<main class="article-page chronicle-article"><h1>Article Unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
   const [{ results: recent }, { results: counts }] = await Promise.all([
     env.DB.prepare(`SELECT id, title, published_at, body, body_format FROM articles
       WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 3`).bind().all(),
@@ -172,7 +172,7 @@ export async function articlePage(env, id, session) {
       <div class="article-body">${content}</div>
     </article>
     <aside class="chronicle-sidebar" aria-label="Explore the Chronicle">
-      <section class="news-card"><h2>Recent posts</h2><ul>${recent.map(post => {
+      <section class="news-card"><h2>Recent Posts</h2><ul>${recent.map(post => {
         const thumbnail = articleContent(post).cover;
         return `<li><a class="chronicle-recent" href="/chronicle/${escape(post.id)}"${post.id === id ? ' aria-current="page"' : ''}>
           ${thumbnail ? `<span class="chronicle-thumbnail">${thumbnail}</span>` : ''}
@@ -194,9 +194,9 @@ export async function cmsPage(request, env, url, session) {
     const id = String(data.get('id') ?? '');
     const action = String(data.get('action') ?? '');
     if (action === 'delete') {
-      if (!id) return new Response('Article unavailable.', { status: 404 });
+      if (!id) return new Response('Article Unavailable.', { status: 404 });
       const result = await env.DB.prepare('DELETE FROM articles WHERE id = ?').bind(id).run();
-      if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
+      if (!result.meta.changes) return new Response('Article Unavailable.', { status: 404 });
       return new Response(null, { status: 303, headers: { Location: '/cms', 'Cache-Control': 'no-store' } });
     }
     const title = String(data.get('title') ?? '').trim();
@@ -215,7 +215,7 @@ export async function cmsPage(request, env, url, session) {
         publisher_name = CASE WHEN ? AND published_at IS NULL THEN ? ELSE publisher_name END,
         published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?`)
         .bind(title, summary, body, format, category, Number(publishing), session.display_name, Number(publishing), now, now, id).run();
-      if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
+      if (!result.meta.changes) return new Response('Article Unavailable.', { status: 404 });
     } else {
       await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,category,publisher_name,published_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
         .bind(crypto.randomUUID(), title, summary, body, format, category, publishing ? session.display_name : null, publishing ? now : null, now).run();
@@ -225,10 +225,10 @@ export async function cmsPage(request, env, url, session) {
   if (request.method !== 'GET') return new Response('Method not allowed.', { status: 405 });
   const id = url.searchParams.get('edit');
   const article = id ? await env.DB.prepare('SELECT * FROM articles WHERE id = ?').bind(id).first() : null;
-  if (id && !article) return new Response('Article unavailable.', { status: 404 });
+  if (id && !article) return new Response('Article Unavailable.', { status: 404 });
   const { results } = await env.DB.prepare('SELECT id,title,published_at FROM articles ORDER BY updated_at DESC LIMIT 100').bind().all();
-  return html(shell('Article editor', `<main class="article-page editor"><p class="eyebrow">Guild Chronicle</p><h1>Article editor</h1>
-  <div class="editor-grid"><form method="post" action="/cms" enctype="multipart/form-data"><h2>${article ? 'Edit article' : 'New article'}</h2><input type="hidden" name="id" value="${escape(article?.id)}">
+  return html(shell('Article Editor', `<main class="article-page editor"><p class="eyebrow">Guild Chronicle</p><h1>Article Editor</h1>
+  <div class="editor-grid"><form method="post" action="/cms" enctype="multipart/form-data"><h2>${article ? 'Edit Article' : 'New Article'}</h2><input type="hidden" name="id" value="${escape(article?.id)}">
   <label>Title<input required name="title" maxlength="110" value="${escape(article?.title)}"></label>
   <label for="articleCategory">Category</label>
   <select id="articleCategory" name="category">${articleCategories.map(category =>
@@ -252,7 +252,7 @@ export async function cmsPage(request, env, url, session) {
   <p class="editor-note">Saving as a draft takes a published article offline.</p>
   <div class="actions"><button class="button gold" name="action" value="publish">Publish article</button><button class="button outline" name="action" value="draft">Save as draft</button>${article ? '<button type="button" class="button editor-delete" id="openArticleDelete">Delete article</button>' : ''}</div></form>
   ${article ? `<dialog id="articleDelete" class="editor-delete-dialog" aria-labelledby="articleDeleteTitle">
-    <h2 id="articleDeleteTitle">Delete this article?</h2>
+    <h2 id="articleDeleteTitle">Delete This Article?</h2>
     <p>“${escape(article.title)}” will be permanently removed.</p>
     <form method="post" action="/cms" class="actions">
       <input type="hidden" name="id" value="${escape(article.id)}">
@@ -260,5 +260,5 @@ export async function cmsPage(request, env, url, session) {
       <button class="button editor-delete" name="action" value="delete">Delete article</button>
     </form>
   </dialog>` : ''}
-  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})();</script></main>`, { session, editor: true }));
+  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New Article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})();</script></main>`, { session, editor: true }));
 }
