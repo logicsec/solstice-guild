@@ -516,7 +516,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .armory-confirm { background: var(--panel); }
 
 /* Shared charcoal surfaces with copper accents. */
-.guild-app, body:has(> :is(.guild-home,.editor)) {
+.guild-app, body:has(> :is(.guild-home,.editor,.chronicle-article)) {
   --surface: #151719;
   --night: var(--surface);
   --container: #202326;
@@ -632,14 +632,14 @@ body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex;
 .editor-content ul { list-style: disc; padding-inline-start: 1.5em; }
 .editor-content li { border: 0; padding: 0; }
 
-body:has(> .editor) {
+body:has(> :is(.editor,.chronicle-article)) {
   min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background: radial-gradient(ellipse at 84% 0%, #27272a, transparent 58%), var(--surface);
 }
-body:has(> .editor) :is(.site-header, footer) { background: transparent; }
-body:has(> .editor) .site-header .discord { background: var(--glass-panel); }
+body:has(> :is(.editor,.chronicle-article)) :is(.site-header, footer) { background: transparent; }
+body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: var(--glass-panel); }
 .editor { flex: 1; margin-block: 0; padding-block: clamp(24px, 4vw, 48px); }
 .editor .eyebrow { margin: 0; }
 .editor h1 { font-size: clamp(28px, 4vw, 38px); margin: 6px 0 18px; }
@@ -659,3 +659,13 @@ body:has(> .editor) .site-header .discord { background: var(--glass-panel); }
 .editor-grid .button.outline { background: var(--field); }
 .editor-grid .button.gold { background: color-mix(in srgb, var(--copper) 66%, var(--gold)); border-color: transparent; }
 .editor-grid .button.gold:hover { background: color-mix(in srgb, var(--gold) 75%, var(--ink)); }
+
+.chronicle-article { flex: 1; padding-block: clamp(28px, 5vw, 62px); }
+.chronicle-article > .text-link { font-size: 14px; }
+.chronicle-article-header { margin-top: 20px; padding-bottom: 18px; border-bottom: 1px solid var(--line); }
+.chronicle-article-header .eyebrow { margin-top: 0; }
+.chronicle-article h1 { font-size: clamp(32px, 5vw, 52px); overflow-wrap: anywhere; }
+.chronicle-article .article-summary { max-width: 66ch; }
+.chronicle-article-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; color: var(--muted); font-size: 13px; }
+.chronicle-article-meta strong { color: var(--accent); }
+.chronicle-article .article-body > :first-child { margin-top: 0; }
