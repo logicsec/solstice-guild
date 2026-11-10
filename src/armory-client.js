@@ -173,11 +173,15 @@ export function openCharacterSheet(player, event, organizer) {
   const portrait = characterIcons(player.class_name,player.spec);
   portrait.classList.add('character-banner-portrait');
   heading.append(portrait,identity);
-  const close = raidElement('button','Close');
+  const close = raidElement('button','×','character-banner-close');
+  close.type = 'button';
+  close.setAttribute('aria-label','Close character sheet');
   close.addEventListener('click',()=>dialog.close());
+  const level = raidElement('span',player.level == null ? '' : 'Level '+player.level,'raid-primary character-banner-level');
+  level.hidden = player.level == null;
   const header = raidElement('header',null,'workspace-drawer-heading character-banner');
   const facts = raidElement('dl',null,'character-banner-facts');
-  header.append(heading,close,facts);
+  header.append(heading,level,close,facts);
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
   const review = event ? raidElement('div',null,'character-raid-review') : null;
@@ -259,9 +263,11 @@ export function openCharacterSheet(player, event, organizer) {
       image.src = character.portrait;
     }
     if (character.guild) identity.append(raidElement('p','<'+character.guild+'>','character-banner-guild'));
-    const factsList = [
-      ['Level',character.level],['Race',character.race],['Faction',character.faction],['Item Level',character.itemLevel],
-    ];
+    if (character.level != null) {
+      level.textContent = 'Level '+character.level;
+      level.hidden = false;
+    }
+    const factsList = [['Race',character.race],['Faction',character.faction],['Item Level',character.itemLevel]];
     for (const [label,value] of factsList) {
       if (value == null || value === '') continue;
       const row = raidElement('div');
