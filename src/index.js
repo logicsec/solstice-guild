@@ -308,9 +308,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=9d6bdbbf2769"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=415caf50576a"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span class="guild-discord-account" title="Signed in with Discord"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
+<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -2042,15 +2042,64 @@ async function keepSessionActive() {
       const status = document.querySelector('.guild-discord-status');
       status.dataset.expired = 'true';
       status.setAttribute('aria-label','Discord sign-in expired');
-      status.closest('.guild-discord-account').title = 'Sign in to reconnect Discord';
+      byId('discordConnection').textContent = 'Session Expired';
     }
   } catch { /* Retry on the next activity check. */ }
 }
 keepSessionActive();
 setInterval(keepSessionActive,60*1000);
 document.addEventListener('visibilitychange',keepSessionActive);
+const discordAccount = document.querySelector('.guild-discord-account');
+const discordTrigger = byId('discordAccountTrigger');
+const discordCard = byId('discordAccountCard');
+let discordHideTimer;
+function showDiscordAccount(open) {
+  clearTimeout(discordHideTimer);
+  discordCard.hidden = !open;
+  discordTrigger.setAttribute('aria-expanded',String(open));
+}
+discordAccount.addEventListener('mouseenter',()=>showDiscordAccount(true));
+discordAccount.addEventListener('mouseleave',()=>{
+  discordHideTimer = setTimeout(()=>{
+    if (!discordAccount.contains(document.activeElement)) showDiscordAccount(false);
+  },180);
+});
+discordTrigger.addEventListener('focus',()=>showDiscordAccount(true));
+discordTrigger.addEventListener('click',()=>showDiscordAccount(true));
+discordAccount.addEventListener('focusout',event=>{
+  if (!discordAccount.contains(event.relatedTarget)) showDiscordAccount(false);
+});
+document.addEventListener('pointerdown',event=>{
+  if (!discordAccount.contains(event.target)) showDiscordAccount(false);
+});
+discordAccount.addEventListener('keydown',event=>{
+  if (event.key === 'Escape') {
+    discordTrigger.focus();
+    showDiscordAccount(false);
+    event.preventDefault();
+  }
+});
 fetch('/api/session').then(response => response.ok ? response.json() : null)
-  .then(session => { if (session) byId('guildIdentity').textContent = session.username ? '@'+session.username : session.displayName; }).catch(() => {});
+  .then(session => {
+    if (!session) return;
+    const username = session.username ? '@'+session.username : session.displayName;
+    byId('guildIdentity').textContent = username;
+    byId('discordCardName').textContent = username;
+    const profile = session.discordProfile;
+    const server = profile?.server;
+    const stats = byId('discordAccountStats');
+    const date = value => value ? new Intl.DateTimeFormat('en-US',{dateStyle:'medium',timeZone:'America/New_York'}).format(new Date(value)) : 'Unavailable';
+    for (const [label,value] of [
+      ['Display Name',session.displayName],
+      ['Server',server?.name ?? 'Solstice'],
+      ['Members',server?.memberCount == null ? 'Unavailable' : '≈ '+server.memberCount.toLocaleString()],
+      ['Online',server?.onlineCount == null ? 'Unavailable' : '≈ '+server.onlineCount.toLocaleString()],
+      ['Member Since',date(profile?.joinedAt)],
+    ]) stats.append(raidElement('dt',label),raidElement('dd',value));
+    byId('discordStatsUpdated').textContent = profile ? 'Server counts captured at sign-in.' : 'Sign in again to load Discord server details.';
+  }).catch(()=>{
+    byId('discordConnection').textContent = 'Account details unavailable';
+  });
 byId('refreshCraft').addEventListener('click', () => {
   loadCrafts();
   if (!loading) refresh();
@@ -2131,7 +2180,7 @@ export default {
       if (!sameOriginWrite(request,url)) return new Response('Invalid origin.',{status:403});
       return renewSession(request,env);
     }
-    if (pathname === '/api/session') return Response.json({ displayName: session.display_name, username:session.username ?? null }, { headers: { 'Cache-Control': 'no-store' } });
+    if (pathname === '/api/session') return Response.json({ displayName: session.display_name, username:session.username ?? null, discordProfile:session.profile ? JSON.parse(session.profile) : null }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
       try { return await raidApi(request, env, url, session.discord_id); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }

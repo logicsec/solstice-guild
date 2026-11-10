@@ -34,6 +34,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   let discordId = '30';
   let isMember = true;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url === 'https://discord.com/api/v10/users/@me/guilds?with_counts=true') return Response.json([{id:'20',name:'Solstice',approximate_member_count:50,approximate_presence_count:10}]);
+
     if (url === 'https://api.ahledger.com/v1/pricetable/forever.normal.alliance.us') {
       return new Response('AHL1|forever/normal/alliance/us|1794283197|2\n117:100:80:3:100:100\n118:100:90:3:100:100');
     }
@@ -68,7 +70,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     const begin = await send('/auth/discord?next=' + encodeURIComponent(next));
     const auth = new URL(begin.headers.get('location'));
     assert.equal(auth.origin, 'https://discord.com');
-    assert.equal(auth.searchParams.get('scope'), 'identify guilds.members.read');
+    assert.equal(auth.searchParams.get('scope'), 'identify guilds.members.read guilds');
     assert.equal(auth.searchParams.get('prompt'),'none');
     const state = wrongState ? 'invalid' : auth.searchParams.get('state');
     return send('/auth/discord/callback?code=mock&state=' + state, {
@@ -103,6 +105,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
   assert.equal((await (await send('/api/session', options)).json()).displayName, 'Raider');
   assert.equal((await (await send('/api/session', options)).json()).username,'raider_account');
+  assert.deepEqual((await (await send('/api/session',options)).json()).discordProfile.server,{name:'Solstice',memberCount:50,onlineCount:10});
   const renewedAt = Date.now();
   const renewal = await send('/api/session',{method:'POST',headers:{Cookie:cookie,Origin:origin}});
   assert.equal(renewal.status,204);

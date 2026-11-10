@@ -897,3 +897,16 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-discord-account #guildIdentity { overflow-wrap: anywhere; font-size: 13px; }
 .guild-discord-status { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #86bd8a; box-shadow: 0 0 7px #86bd8a55; }
 .guild-discord-status[data-expired="true"] { background: var(--muted); box-shadow: none; }
+
+.guild-discord-account { position: relative; }
+.guild-app .guild-discord-trigger { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--ink); }
+.guild-discord-icon-square { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #5865f266; border-radius: 8px; background: #5865f21f; }
+.guild-discord-card:not([hidden]) { display: block; }
+.guild-discord-card { position: absolute; z-index: 100; right: 0; top: 100%; width: min(310px,calc(100vw - 24px)); padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--container); box-shadow: 0 12px 32px #0008; text-align: left; }
+.guild-discord-card > strong { display: block; overflow-wrap: anywhere; }
+.guild-discord-card p { margin: 6px 0 12px; color: #86bd8a; font-size: 12px; }
+.guild-discord-card dl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px 14px; margin: 12px 0; font-size: 12px; }
+.guild-discord-card dt { color: var(--muted); }
+.guild-discord-card dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
+.guild-discord-card small { display: block; color: var(--muted); font-size: 11px; }
+.guild-discord-card form { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }

@@ -46,7 +46,7 @@ export function authReady(env) {
 export async function sessionFor(request, env) {
   const token = cookie(request, sessionCookie);
   if (!/^[a-f0-9]{64}$/.test(token ?? '')) return null;
-  return env.DB.prepare('SELECT discord_id, display_name, username FROM discord_sessions WHERE token_hash = ? AND expires_at > ?')
+  return env.DB.prepare('SELECT discord_id, display_name, username, profile FROM discord_sessions WHERE token_hash = ? AND expires_at > ?')
     .bind(await hash(token), Date.now()).first();
 }
 
@@ -84,7 +84,7 @@ export async function discordAuth(request, env, url) {
     const authorize = new URL('https://discord.com/oauth2/authorize');
     authorize.search = new URLSearchParams({
       client_id: env.DISCORD_CLIENT_ID, redirect_uri: callback, response_type: 'code',
-      scope: 'identify guilds.members.read', state, prompt: silent ? 'none' : 'consent',
+      scope: 'identify guilds.members.read guilds', state, prompt: silent ? 'none' : 'consent',
     });
     return redirect(authorize.href, [setCookie(flowCookie, state + '.' + encodeURIComponent(next) + (silent ? '.silent' : '.consent'), 600)]);
   }
@@ -120,12 +120,28 @@ export async function discordAuth(request, env, url) {
   if (!response.ok) return redirect('/?login=unavailable', [clearFlow]);
   const member = await response.json();
   if (!/^\d+$/.test(member.user?.id ?? '')) return redirect('/?login=unavailable', [clearFlow]);
+  let guild = null;
+  try {
+    const guilds = await fetch('https://discord.com/api/v10/users/@me/guilds?with_counts=true',{
+      headers:{Authorization:'Bearer '+accessToken},signal:AbortSignal.timeout(5000),
+    });
+    if (guilds.ok) {
+      const entries = await guilds.json();
+      guild = Array.isArray(entries) ? entries.find(entry=>entry.id === env.DISCORD_GUILD_ID) : null;
+    }
+  } catch { /* Account sign-in remains available when server counts are unavailable. */ }
+  const profile = {
+    joinedAt:member.joined_at ?? null,
+    server:guild ? {name:guild.name,memberCount:guild.approximate_member_count ?? null,
+      onlineCount:guild.approximate_presence_count ?? null} : null,
+    capturedAt:Date.now(),
+  };
   const session = randomToken();
   const now = Date.now();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM discord_sessions WHERE expires_at <= ?').bind(now),
-    env.DB.prepare('INSERT INTO discord_sessions (token_hash, discord_id, display_name, expires_at, username) VALUES (?, ?, ?, ?, ?)')
-      .bind(await hash(session), member.user.id, member.nick || member.user.global_name || member.user.username || 'Guild member', now + sessionSeconds * 1000, member.user.username || null),
+    env.DB.prepare('INSERT INTO discord_sessions (token_hash, discord_id, display_name, expires_at, username, profile) VALUES (?, ?, ?, ?, ?, ?)')
+      .bind(await hash(session), member.user.id, member.nick || member.user.global_name || member.user.username || 'Guild member', now + sessionSeconds * 1000, member.user.username || null, JSON.stringify(profile)),
   ]);
   return redirect(next, [clearFlow, setCookie(sessionCookie, session, sessionSeconds)]);
 }
