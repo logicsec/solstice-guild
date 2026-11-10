@@ -62,6 +62,43 @@ export function publicRosterProfile(env, slug) {
   return value;
 }
 
+function parseProfessions(data) {
+  const groups = [data?.primaries, data?.secondaries, data?.professions].filter(Array.isArray);
+  return groups.length ? groups.flat().map(entry => ({
+    name: localized(entry.profession?.name ?? entry.name),
+    skill: Number.isFinite(entry.skill_points) ? entry.skill_points : null,
+    maxSkill: Number.isFinite(entry.max_skill_points) ? entry.max_skill_points : null,
+    tiers: (Array.isArray(entry.tiers) ? entry.tiers : []).map(tier => ({
+      name: localized(tier.tier?.name ?? tier.name),
+      skill: Number.isFinite(tier.skill_points) ? tier.skill_points : null,
+      maxSkill: Number.isFinite(tier.max_skill_points) ? tier.max_skill_points : null,
+    })),
+  })).filter(entry => entry.name) : null;
+}
+
+export async function guildProfessionSummary(env, slugs) {
+  const counts = new Map();
+  let reviewed = 0;
+  if (!slugs.length || !env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) return { reviewed, professions:[] };
+  const token = await battleNetToken(env).catch(()=>null);
+  if (!token) return { reviewed, professions:[] };
+  for (let offset = 0; offset < slugs.length; offset += 8) {
+    const profiles = await Promise.all(slugs.slice(offset,offset+8).map(async slug => {
+      try {
+        const response = await requestCharacterProfile(token,slug,'/professions',3000);
+        return response.ok ? parseProfessions(await response.json()) : null;
+      } catch { return null; }
+    }));
+    for (const profile of profiles) {
+      if (!profile) continue;
+      reviewed++;
+      for (const name of new Set(profile.map(entry=>entry.name))) counts.set(name,(counts.get(name) ?? 0)+1);
+    }
+  }
+  const professions = [...counts].sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
+  return { reviewed, professions };
+}
+
 async function loadCharacter(env, slug) {
   const token = await battleNetToken(env);
   const requestProfile = suffix => requestCharacterProfile(token,slug,suffix);
@@ -80,20 +117,7 @@ async function loadCharacter(env, slug) {
   const [data, equipment, media, statistics] = await Promise.all([
     optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'),
   ]);
-  let professions = null;
-  if (data) {
-      const groups = [data.primaries, data.secondaries, data.professions].filter(Array.isArray);
-      if (groups.length) professions = groups.flat().map(entry => ({
-        name: localized(entry.profession?.name ?? entry.name),
-        skill: Number.isFinite(entry.skill_points) ? entry.skill_points : null,
-        maxSkill: Number.isFinite(entry.max_skill_points) ? entry.max_skill_points : null,
-        tiers: (Array.isArray(entry.tiers) ? entry.tiers : []).map(tier => ({
-          name: localized(tier.tier?.name ?? tier.name),
-          skill: Number.isFinite(tier.skill_points) ? tier.skill_points : null,
-          maxSkill: Number.isFinite(tier.max_skill_points) ? tier.max_skill_points : null,
-        })),
-      })).filter(entry => entry.name);
-  }
+  const professions = parseProfessions(data);
   const renders = Array.isArray(media?.assets) ? media.assets : [];
   const mediaUrl = keys => keys.map(key=>renders.find(asset=>asset.key === key)?.value).find(value=>
     typeof value === 'string' && /^https:\/\/render(?:-[a-z]+)?\.worldofwarcraft\.com\//i.test(value));

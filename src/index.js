@@ -2,7 +2,7 @@ import { parseTable, scanVendorFlips } from './vendor-flips.js';
 import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
 import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
-import { armoryApi, armorySpecs, linkedRosterProfiles, publicRosterProfile } from './armory.js';
+import { armoryApi, armorySpecs, guildProfessionSummary, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
 import { characterIcons, openCharacterSheet, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
@@ -63,12 +63,20 @@ async function raidApi(request, env, url, user) {
   const clean = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
-      if (url.searchParams.get('guild') === '1') {
+      if (url.searchParams.get('guild') === '1' || url.searchParams.get('dashboard') === '1') {
         const {results} = await db.prepare(`SELECT name, class_name, spec, role, 1 AS armory_linked, slug AS armorySlug FROM armory_links
           UNION ALL
           SELECT c.name, c.class_name, c.spec, c.role, 0, NULL FROM raid_characters c
           WHERE NOT EXISTS (SELECT 1 FROM armory_links a WHERE a.member = c.member AND a.name = c.name COLLATE NOCASE)
           ORDER BY name COLLATE NOCASE`).bind().all();
+        if (url.searchParams.get('dashboard') === '1') {
+          const slugs = results.map(character=>character.armorySlug).filter(Boolean);
+          const counts = field => [...new Set(results.map(character=>character[field]))]
+            .map(name=>[name,results.filter(character=>character[field] === name).length])
+            .sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
+          return reply({total:results.length,linked:slugs.length,classes:counts('class_name'),roles:counts('role'),
+            ...await guildProfessionSummary(env,slugs)});
+        }
         const characters = await Promise.all(results.map(async character => ({
           ...character, level:(await publicRosterProfile(env,character.armorySlug))?.level ?? null,
         })));
@@ -255,6 +263,7 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
 #searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
 #vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
+.guild-dashboard-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));align-items:start;gap:12px;margin-top:14px}.guild-dashboard-tiles [data-wow-class]{color:var(--class-color,var(--ink))}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
 .search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
 .filters{position:relative}.filters summary{padding:7px 10px;background:#181615;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
@@ -300,7 +309,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
 <link rel="stylesheet" href="/assets/home.css?v=ac329575f2a3"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
+<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -348,11 +357,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidHero" class="hero" hidden aria-labelledby="raidPlannerTitle">
-<div><div class="eyebrow">Solstice Guild Tools</div><h1 id="raidPlannerTitle">Solstice Raid Planner</h1><p>Plan raids, organize sign-ups, and track your team’s readiness.</p></div>
+<div><div class="eyebrow">Solstice Guild Tools</div><h1 id="raidPlannerTitle">Solstice Guild Hall</h1><p>Explore the guild roster, see profession coverage, and plan raids.</p></div>
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
-<section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Characters</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
+<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Roster</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -1060,17 +1069,20 @@ function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
   for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', guildCharacters:'Guild Characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildCharacters:'Guild Roster', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = {
     readiness:'See which raid requirements are met and which still need attention.',
     roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
     tonight:'Plan the evening around raid blockers, available players, and the work that fits.',
     loot:'View loot reserves for your working raid.',
+    guildDashboard:'See the guild’s class, role, and profession coverage.',
     guildCharacters:'Browse characters saved or linked by guild members.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
-  byId('newRaid').hidden = view === 'new' || view === 'guildCharacters';
+  const guildView = view === 'guildDashboard' || view === 'guildCharacters';
+  byId('newRaid').hidden = view === 'new' || guildView;
+  workingRaid.closest('label').hidden = guildView;
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
   characterForm.hidden = true;
@@ -1095,7 +1107,7 @@ async function openRaidView(view, id, navigate = true) {
       await openRaidWorkspace(view, revision);
       return;
     }
-    if (['detail','characters','guildCharacters','discover'].includes(view)) {
+    if (['detail','characters','discover'].includes(view)) {
       loadWorkingRaids(revision).catch(error=>{
         if (revision !== raidRevision) return;
         workingRaid.replaceChildren(new Option('Raids unavailable',''));
@@ -1110,6 +1122,36 @@ async function openRaidView(view, id, navigate = true) {
       activeRaidData = data;
       byId('rosterFilter').value = '';
       renderRaid(data);
+      return;
+    }
+    if (view === 'guildDashboard') {
+      const root = byId('raidList');
+      const status = raidElement('p','Loading guild overview…');
+      root.append(status);
+      const data = await guildRequest('/api/raid-characters?dashboard=1');
+      if (revision !== raidRevision) return;
+      const totals = raidElement('div',null,'raid-stats');
+      raidStats(totals,[['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length]]);
+      const tiles = raidElement('div',null,'guild-dashboard-tiles');
+      for (const [title,entries,empty] of [
+        ['Class Composition',data.classes,'No characters added yet.'],
+        ['Role Composition',data.roles,'No roles assigned yet.'],
+        ['Profession Coverage',data.professions,'No profession data available.'],
+      ]) {
+        const tile = raidElement('section',null,'raid-card');
+        tile.append(raidElement('h3',title));
+        if (title === 'Profession Coverage') tile.append(raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
+        for (const [name,count] of entries) {
+          const row = raidElement('div',null,'raid-row');
+          const label = raidElement('strong',name);
+          if (title === 'Class Composition') label.dataset.wowClass = name;
+          row.append(label,raidElement('span',String(count)));
+          tile.append(row);
+        }
+        if (!entries.length) tile.append(raidElement('p',empty));
+        tiles.append(tile);
+      }
+      root.replaceChildren(totals,tiles);
       return;
     }
     if (view === 'guildCharacters') {
@@ -1775,7 +1817,7 @@ for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch'])
     if (activeRaidData) renderRoster(activeRaidData);
   });
 }
-byId('raidTab').addEventListener('click',()=>openRaidView('readiness'));
+byId('raidTab').addEventListener('click',()=>openRaidView('guildDashboard'));
 for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
@@ -1884,7 +1926,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','guildCharacters','manage','new'].includes(view) ? view : 'readiness',id,false);
+    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','guildDashboard','guildCharacters','manage','new'].includes(view) ? view : 'guildDashboard',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
