@@ -20,7 +20,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=82ef278d05e0"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=b876512c5d16"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -124,9 +124,21 @@ export async function publicRaidPage(db, id, roles, session, requested) {
 
 export async function articlePage(env, id, session) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND published_at IS NOT NULL').bind(id).first();
-  if (!article) return html(shell('Article unavailable', '<main class="article-page"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
-  const paragraphs = articleMarkup(article.body, article.body_format, escape);
-  return html(shell(article.title, `<main class="article-page"><a class="text-link" href="/#chronicle">← Back to the Chronicle</a><p class="eyebrow">${dateLabel(article.published_at)}</p><h1>${escape(article.title)}</h1><p class="article-summary">${escape(article.summary)}</p><div class="article-body">${paragraphs}</div></main>`, { session, editor: canEditArticles(env, session) }));
+  if (!article) return html(shell('Article unavailable', '<main class="article-page chronicle-article"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
+  const content = articleMarkup(article.body, article.body_format, escape);
+  const byline = article.publisher_name ? `<span>Published by <strong>${escape(article.publisher_name)}</strong></span>` : '';
+  return html(shell(article.title, `<main class="article-page chronicle-article">
+    <a class="text-link" href="/#chronicle">← Back to the Chronicle</a>
+    <article>
+      <header class="chronicle-article-header">
+        <p class="eyebrow">Guild Chronicle</p>
+        <h1>${escape(article.title)}</h1>
+        ${article.summary ? `<p class="article-summary">${escape(article.summary)}</p>` : ''}
+        <p class="chronicle-article-meta">${byline}<time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
+      </header>
+      <div class="article-body">${content}</div>
+    </article>
+  </main>`, { session, editor: canEditArticles(env, session) }));
 }
 
 export async function cmsPage(request, env, url, session) {
@@ -144,13 +156,16 @@ export async function cmsPage(request, env, url, session) {
       return new Response('Enter a title and article body within the editor limits.', { status: 400 });
     }
     const now = new Date().toISOString();
+    const publishing = action === 'publish';
     if (id) {
-      const result = await env.DB.prepare('UPDATE articles SET title = ?, summary = ?, body = ?, body_format = ?, published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?')
-        .bind(title, summary, body, format, Number(action === 'publish'), now, now, id).run();
+      const result = await env.DB.prepare(`UPDATE articles SET title = ?, summary = ?, body = ?, body_format = ?,
+        publisher_name = CASE WHEN ? AND published_at IS NULL THEN ? ELSE publisher_name END,
+        published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?`)
+        .bind(title, summary, body, format, Number(publishing), session.display_name, Number(publishing), now, now, id).run();
       if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
     } else {
-      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,published_at,updated_at) VALUES (?,?,?,?,?,?,?)')
-        .bind(crypto.randomUUID(), title, summary, body, format, action === 'publish' ? now : null, now).run();
+      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,publisher_name,published_at,updated_at) VALUES (?,?,?,?,?,?,?,?)')
+        .bind(crypto.randomUUID(), title, summary, body, format, publishing ? session.display_name : null, publishing ? now : null, now).run();
     }
     return new Response(null, { status: 303, headers: { Location: '/cms', 'Cache-Control': 'no-store' } });
   }
