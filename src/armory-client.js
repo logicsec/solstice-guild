@@ -1,3 +1,21 @@
+export function professionIcon(name) {
+  const icons = {
+    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
+    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
+    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
+    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
+  };
+  const icon = raidElement('span',name.slice(0,1),'profession-progress-icon');
+  const asset = icons[name.toLowerCase()];
+  if (asset) {
+    const image = raidElement('img');
+    image.alt = '';
+    image.addEventListener('load',()=>icon.replaceChildren(image),{once:true});
+    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
+  }
+  return icon;
+}
+
 export function characterIcons(className,spec) {
   const icons = raidElement('span',null,'character-icons');
   if (!Object.hasOwn(armorySpecs,className)) return icons;
@@ -117,22 +135,9 @@ export function renderArmoryProfile(character) {
   layout.append(attributes);
   root.append(layout);
   const professions = raidElement('div',null,'character-professions');
-  const icons = {
-    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
-    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
-    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
-    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
-  };
   for (const entry of character.professions ?? []) {
     const card = raidElement('section',null,'raid-card profession-progress-card');
-    const icon = raidElement('span',entry.name.slice(0,1),'profession-progress-icon');
-    const asset = icons[entry.name.toLowerCase()];
-    if (asset) {
-      const image = raidElement('img');
-      image.alt = '';
-      image.addEventListener('load',()=>icon.replaceChildren(image),{once:true});
-      image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
-    }
+    const icon = professionIcon(entry.name);
     const details = raidElement('div',null,'profession-progress-details');
     details.append(raidElement('h3',entry.name));
     const ranks = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null) : [entry];

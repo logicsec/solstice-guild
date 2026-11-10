@@ -830,3 +830,22 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-character-name :is(strong,small) { display: block; }
 .guild-character-arrow { color: var(--accent); font-size: 20px; }
 .guild-character-watermark { position: absolute; z-index: -1; inset-inline-end: 28px; top: 50%; width: 76px; height: 76px; transform: translateY(-50%); object-fit: cover; opacity: .13; mask-image: radial-gradient(ellipse, #000 20%, transparent 71%); pointer-events: none; }
+
+.guild-dashboard-hero { gap: 16px; padding: clamp(18px,3vw,34px); background: radial-gradient(ellipse at 75% 125%, #d28d4038, transparent 55%), linear-gradient(90deg,#16181bfa,#16181b90), url('/assets/solstice-twilight.webp') center 38% / cover; }
+.guild-dashboard-hero h2 { margin: 5px 0; font-size: clamp(26px,3.4vw,42px); line-height: 1.12; }
+.guild-dashboard-hero .raid-primary { margin-top: 12px; }
+.guild-dashboard-crest { align-self: start; width: clamp(36px,5vw,64px); filter: drop-shadow(0 0 11px #e3ac5c70); }
+.guild-dashboard-totals { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(130px,100%),1fr)); gap: 8px; margin: 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.guild-dashboard-totals > div { padding: 8px 12px; border-radius: 8px; background: #111315b8; }
+.guild-dashboard-totals dt { color: var(--muted); font-size: 12px; }
+.guild-dashboard-totals dd { margin: 0; color: #d4a85d; font-size: 24px; font-weight: 750; text-shadow: 0 0 12px #e3ac5c65; }
+.guild-dashboard-tiles { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(260px,100%),1fr)); gap: 12px; margin-top: 14px; }
+.guild-dashboard-tile[data-kind="profession"] { grid-column: 1 / -1; }
+.guild-dashboard-rows { display: grid; gap: 6px; margin-top: 9px; }
+.guild-dashboard-tile[data-kind="profession"] .guild-dashboard-rows { grid-template-columns: repeat(auto-fit,minmax(min(190px,100%),1fr)); }
+.guild-dashboard-entry { display: grid; grid-template-columns: 26px minmax(0,1fr); align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: linear-gradient(100deg, transparent 45%, #d4a85d10), var(--field); }
+.guild-dashboard-entry .profession-progress-icon { width: 24px; height: 24px; }
+.guild-dashboard-role-icon { text-align: center; color: var(--accent); }
+.guild-dashboard-entry-body { min-width: 0; }
+.guild-dashboard-entry-body > div { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; color: var(--class-color,var(--ink)); }
+.guild-dashboard-entry-body progress { display: block; width: 100%; height: 6px; margin-top: 3px; accent-color: var(--class-color,var(--copper)); }

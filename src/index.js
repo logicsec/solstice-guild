@@ -5,9 +5,9 @@ import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
 import { armoryApi, armorySpecs, guildProfessionSummary, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
-import { characterIcons, openCharacterSheet, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
+import { characterIcons, openCharacterSheet, professionIcon, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
 import { articleImagePage } from './article-images.js';
-import { articlePage, canEditArticles, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup } from './home.js';
+import { articlePage, canEditArticles, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup, solsticeMark } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
@@ -263,7 +263,6 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
 #searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
 #vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
-.guild-dashboard-tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(230px,100%),1fr));align-items:start;gap:12px;margin-top:14px}.guild-dashboard-tiles [data-wow-class]{color:var(--class-color,var(--ink))}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
 .search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
 .filters{position:relative}.filters summary{padding:7px 10px;background:#181615;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
@@ -307,7 +306,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=ac329575f2a3"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=8ff22bb1d6a3"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1130,28 +1129,56 @@ async function openRaidView(view, id, navigate = true) {
       root.append(status);
       const data = await guildRequest('/api/raid-characters?dashboard=1');
       if (revision !== raidRevision) return;
-      const totals = raidElement('div',null,'raid-stats');
-      raidStats(totals,[['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length]]);
+      const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
+      const intro = raidElement('div');
+      intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2','Life In Solstice'),
+        raidElement('p','Meet the characters and trades that make up the guild.'));
+      const crest = raidElement('div',null,'guild-dashboard-crest');
+      crest.innerHTML = ${JSON.stringify(solsticeMark)};
+      const roster = raidElement('button','Open Guild Roster →','raid-primary');
+      roster.addEventListener('click',()=>openRaidView('guildCharacters'));
+      intro.append(roster);
+      const totals = raidElement('dl',null,'guild-dashboard-totals');
+      for (const [label,value] of [['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length]]) {
+        const item = raidElement('div');
+        item.append(raidElement('dt',label),raidElement('dd',String(value)));
+        totals.append(item);
+      }
+      hero.append(intro,crest,totals);
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
-      for (const [title,entries,empty] of [
-        ['Class Composition',data.classes,'No characters added yet.'],
-        ['Role Composition',data.roles,'No roles assigned yet.'],
-        ['Profession Coverage',data.professions,'No profession data available.'],
+      const roleIcons = {Tank:'⛨',Healer:'✚','Melee DPS':'⚔','Ranged DPS':'◎'};
+      for (const [kind,title,entries,total,empty] of [
+        ['class','Class Composition',data.classes,data.total,'No characters added yet.'],
+        ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),data.total,'No roles assigned yet.'],
+        ['profession','Profession Coverage',data.professions,data.reviewed,'No profession data available.'],
       ]) {
-        const tile = raidElement('section',null,'raid-card');
+        const tile = raidElement('section',null,'raid-card guild-dashboard-tile');
+        tile.dataset.kind = kind;
         tile.append(raidElement('h3',title));
-        if (title === 'Profession Coverage') tile.append(raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
+        if (kind === 'profession') tile.append(raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
+        const rows = raidElement('div',null,'guild-dashboard-rows');
         for (const [name,count] of entries) {
-          const row = raidElement('div',null,'raid-row');
-          const label = raidElement('strong',name);
-          if (title === 'Class Composition') label.dataset.wowClass = name;
-          row.append(label,raidElement('span',String(count)));
-          tile.append(row);
+          const row = raidElement('div',null,'guild-dashboard-entry');
+          if (kind === 'class') row.dataset.wowClass = name;
+          const icon = kind === 'class' ? characterIcons(name) : kind === 'profession' ? professionIcon(name) :
+            raidElement('span',roleIcons[name],'guild-dashboard-role-icon');
+          icon.setAttribute('aria-hidden','true');
+          const details = raidElement('div',null,'guild-dashboard-entry-body');
+          const caption = raidElement('div');
+          caption.append(raidElement('strong',name),raidElement('span',String(count)));
+          const bar = raidElement('progress');
+          bar.max = Math.max(1,total);
+          bar.value = count;
+          bar.setAttribute('aria-label',name+' coverage');
+          details.append(caption,bar);
+          row.append(icon,details);
+          rows.append(row);
         }
-        if (!entries.length) tile.append(raidElement('p',empty));
+        if (entries.length) tile.append(rows);
+        else tile.append(raidElement('p',empty));
         tiles.append(tile);
       }
-      root.replaceChildren(totals,tiles);
+      root.replaceChildren(hero,tiles);
       return;
     }
     if (view === 'guildCharacters') {
@@ -1332,6 +1359,7 @@ ${renderArmoryConfirmation.toString()}
 ${renderArmory.toString()}
 ${renderRaidReserves.toString()}
 ${showReserveHistory.toString()}
+${professionIcon.toString()}
 ${renderArmoryProfile.toString()}
 ${characterIcons.toString()}
 ${openCharacterSheet.toString()}
