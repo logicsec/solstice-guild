@@ -263,6 +263,7 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
 #searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
 #vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
+.guild-roster-directory{margin-top:14px}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
 .search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
 .filters{position:relative}.filters summary{padding:7px 10px;background:#181615;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
@@ -1105,6 +1106,25 @@ function raidStats(target, values) {
     target.append(box);
   }
 }
+function guildOverviewBanner(title, description, actionLabel, target, stats) {
+  const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
+  const intro = raidElement('div');
+  intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2',title),
+    raidElement('p',description));
+  const crest = raidElement('div',null,'guild-dashboard-crest');
+  crest.innerHTML = ${JSON.stringify(solsticeMark)};
+  const action = raidElement('button',actionLabel,'raid-primary');
+  action.addEventListener('click',()=>openRaidView(target));
+  intro.append(action);
+  const totals = raidElement('dl',null,'guild-dashboard-totals');
+  for (const [label,value] of stats) {
+    const item = raidElement('div');
+    item.append(raidElement('dt',label),raidElement('dd',String(value)));
+    totals.append(item);
+  }
+  hero.append(intro,crest,totals);
+  return hero;
+}
 async function openRaidView(view, id, navigate = true) {
   if (navigate) writeRoute('raid', view, id);
   setView('raid');
@@ -1138,22 +1158,10 @@ async function openRaidView(view, id, navigate = true) {
       root.append(status);
       const data = await guildRequest('/api/raid-characters?dashboard=1');
       if (revision !== raidRevision) return;
-      const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
-      const intro = raidElement('div');
-      intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2','Life In Solstice'),
-        raidElement('p','Meet the characters and trades that make up the guild.'));
-      const crest = raidElement('div',null,'guild-dashboard-crest');
-      crest.innerHTML = ${JSON.stringify(solsticeMark)};
-      const roster = raidElement('button','Open Guild Roster →','raid-primary');
-      roster.addEventListener('click',()=>openRaidView('guildCharacters'));
-      intro.append(roster);
-      const totals = raidElement('dl',null,'guild-dashboard-totals');
-      for (const [label,value] of [['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length]]) {
-        const item = raidElement('div');
-        item.append(raidElement('dt',label),raidElement('dd',String(value)));
-        totals.append(item);
-      }
-      hero.append(intro,crest,totals);
+      const hero = guildOverviewBanner('Life In Solstice','Meet the characters and trades that make up the guild.',
+        'Open Guild Roster →','guildCharacters',[
+          ['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length],
+        ]);
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
       const roleIcons = {Tank:'⛨',Healer:'✚','Melee DPS':'⚔','Ranged DPS':'◎'};
       for (const [kind,title,entries,empty] of [
@@ -1187,7 +1195,12 @@ async function openRaidView(view, id, navigate = true) {
     if (view === 'guildCharacters') {
       const {characters} = await guildRequest('/api/raid-characters?guild=1');
       if (revision !== raidRevision) return;
-      const list = raidElement('section',null,'raid-card');
+      const hero = guildOverviewBanner('Meet The Guild','Browse the roster and open a character sheet to see gear, stats, and professions.',
+        'View Guild Dashboard →','guildDashboard',[
+          ['Guild Characters',characters.length],['Armory Linked',characters.filter(character=>character.armory_linked).length],
+          ['Classes Represented',new Set(characters.map(character=>character.class_name)).size],
+        ]);
+      const list = raidElement('section',null,'raid-card guild-roster-directory');
       const search = raidElement('input');
       search.type = 'search';
       search.placeholder = 'Search by character, class, spec, or role';
@@ -1243,7 +1256,7 @@ async function openRaidView(view, id, navigate = true) {
       search.addEventListener('input',draw);
       sort.addEventListener('change',draw);
       draw();
-      byId('raidList').append(list);
+      byId('raidList').append(hero,list);
       return;
     }
     if (view === 'characters') {
