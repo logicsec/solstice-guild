@@ -36,7 +36,7 @@ export function renderRaidReserves(root,{event,organizer,mine,reserves,pendingRe
     button.disabled = true;
     try {
       await raidRequest('/'+event.id,data);
-      if (activeRaid === event.id) await openRaidView('detail',event.id,false);
+      if (raidView === 'loot' && workspaceGoal === event.id) await openRaidView('loot',null,false);
     } catch (error) { status.textContent = error.message; }
     finally { button.disabled = false; }
   }

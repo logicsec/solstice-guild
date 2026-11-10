@@ -317,7 +317,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -358,7 +358,6 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div id="raidControls" class="raid-controls" role="group" aria-label="Raid actions"></div>
 <div id="raidStats" class="raid-stats"></div>
 <div id="raidRequirements" class="raid-card" hidden></div>
-<div id="raidReserves" class="raid-card"></div>
 <form id="raidSignup" class="raid-card raid-form">
 <h3>Your RSVP</h3><label>Saved character<select id="signupCharacter"><option value="">Enter manually</option></select></label>
 <label>Character<input name="character" required maxlength="61"></label><label>Class<select name="className"></select></label><label>Role<select name="role"></select></label><label>Status<select name="status"><option>Going</option><option>Tentative</option><option>Bench</option><option>Declined</option></select></label><button class="raid-primary">Save RSVP</button></form>
@@ -989,11 +988,12 @@ function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
   for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = {
     readiness:'See which raid requirements are met and which still need attention.',
     roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
     tonight:'Plan the evening around raid blockers, available players, and the work that fits.',
+    loot:'View loot reserves for your working raid.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
@@ -1107,7 +1107,7 @@ function workspaceSteps(view) {
   return strip;
 }
 
-const workspaceViews = ['readiness','roster','tonight'];
+const workspaceViews = ['readiness','roster','tonight','loot'];
 const workingRaid = byId('workingRaid');
 const workingRaidKey = 'solstice.workingRaid';
 let workspaceGoal;
@@ -1162,7 +1162,7 @@ async function openRaidWorkspace(view, revision) {
   await loadWorkingRaids(revision);
   if (revision !== raidRevision) return;
   const root = byId('raidList');
-  root.append(workspaceSteps(view));
+  if (view !== 'loot') root.append(workspaceSteps(view));
   if (!workingRaid.value) {
     const empty = raidElement('section',null,'raid-card workspace-empty');
     empty.append(raidElement('p','Guild workspace','eyebrow'),raidElement('h3','Set your first raid goal'),
@@ -1183,7 +1183,11 @@ async function openRaidWorkspace(view, revision) {
   content.replaceChildren();
   if (view === 'readiness') renderReadinessWorkspace(content,data);
   else if (view === 'roster') renderRosterWorkspace(content,data);
-  else renderTonight(content,data);
+  else if (view === 'loot') {
+    byId('raidSubtitle').textContent = data.event.title + ' · ' + raidDate(data.event.starts_at);
+    content.classList.add('raid-card');
+    renderRaidReserves(content,data);
+  } else renderTonight(content,data);
 }
 
 function renderReadinessWorkspace(root,{event,roster}) {
@@ -1458,7 +1462,6 @@ function reviewCharacter(event, player, organizer) {
 
 function renderRaid(data) {
   const { event, organizer, roster, mine } = data;
-  renderRaidReserves(byId('raidReserves'),data);
   byId('raidTitle').textContent = event.title;
   byId('raidSubtitle').textContent = raidDate(event.starts_at) + ' · ' + event.size + ' players · US Normal Alliance';
   byId('raidMessage').textContent = event.notes;
@@ -1732,7 +1735,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : ['readiness','roster','tonight','calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
+    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
