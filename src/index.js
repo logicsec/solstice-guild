@@ -308,7 +308,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=7cb8ab9d0323"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=eaa8ade98ed9"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1138,7 +1138,14 @@ function renderGuildRoster(list, characters) {
   }
   filters.append(search,sort);
   const rows = raidElement('div',null,'guild-character-list');
-  list.append(filters,rows);
+  const clear = raidElement('button','Clear Profession Filter');
+  clear.type = 'button';
+  const filterName = raidElement('span');
+  const activeFilter = raidElement('div',null,'guild-profession-filter');
+  activeFilter.hidden = true;
+  activeFilter.append(filterName,clear);
+  list.append(activeFilter,filters,rows);
+  let professionSlugs = null;
   const draw = () => {
     const query = search.value.trim().toLowerCase();
     rows.replaceChildren();
@@ -1150,6 +1157,7 @@ function renderGuildRoster(list, characters) {
       return (sort.value === 'level-asc' ? a.level-b.level : b.level-a.level) || nameOrder;
     });
     for (const character of ordered) {
+      if (professionSlugs && !professionSlugs.has(character.armorySlug)) continue;
       const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
       if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
       const row = raidElement('button',null,'guild-character-row');
@@ -1176,11 +1184,25 @@ function renderGuildRoster(list, characters) {
       row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
       rows.append(row);
     }
-    if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
+    if (!rows.childElementCount) rows.append(raidElement('p',query || professionSlugs ? 'No characters match your filters.' : 'No guild characters have been added yet.'));
   };
   search.addEventListener('input',draw);
   sort.addEventListener('change',draw);
+  function filterByProfession(profession) {
+    professionSlugs = profession ? new Set(profession[1]) : null;
+    activeFilter.hidden = !profession;
+    if (profession) {
+      search.value = '';
+      filterName.textContent = 'Showing characters with '+profession[0];
+    }
+    draw();
+  }
+  clear.addEventListener('click',()=>{
+    filterByProfession(null);
+    search.focus();
+  });
   draw();
+  return filterByProfession;
 }
 async function openRaidView(view, id, navigate = true) {
   const showGuildRoster = view === 'guildCharacters';
@@ -1233,22 +1255,22 @@ async function openRaidView(view, id, navigate = true) {
         'Jump To Guild Roster ↓',jumpToRoster,[
           ['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length],
         ]);
+      let selectedProfession = null;
+      let filterRoster;
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
       const roleIcons = {Tank:'⛨',Healer:'✚','Melee DPS':'⚔','Ranged DPS':'◎'};
       for (const [kind,title,entries,empty] of [
         ['class','Class Composition',data.classes,'No characters added yet.'],
         ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),'No roles assigned yet.'],
-        ['profession','Profession Coverage',data.professions,'No profession data available.'],
       ]) {
         const tile = raidElement('section',null,'raid-card guild-dashboard-tile');
         tile.dataset.kind = kind;
         tile.append(raidElement('h3',title));
-        if (kind === 'profession') tile.append(raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
         const rows = raidElement('div',null,'guild-dashboard-rows');
         for (const [name,count] of entries) {
           const row = raidElement('div',null,'guild-dashboard-entry');
           if (kind === 'class') row.dataset.wowClass = name;
-          const icon = kind === 'class' ? characterIcons(name) : kind === 'profession' ? professionIcon(name) :
+          const icon = kind === 'class' ? characterIcons(name) :
             raidElement('span',roleIcons[name],'guild-dashboard-role-icon');
           icon.setAttribute('aria-hidden','true');
           const countBadge = raidElement('span',String(count),'guild-dashboard-count');
@@ -1260,13 +1282,42 @@ async function openRaidView(view, id, navigate = true) {
         else tile.append(raidElement('p',empty));
         tiles.append(tile);
       }
+      const coverage = raidElement('section',null,'raid-card guild-dashboard-tile');
+      coverage.dataset.kind = 'profession';
+      coverage.append(raidElement('h3','Profession Coverage'),
+        raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
+      for (const [category,label] of [['primary','Primary Professions'],['secondary','Secondary Professions']]) {
+        const section = raidElement('section',null,'guild-profession-group');
+        section.append(raidElement('h4',label));
+        const rows = raidElement('div',null,'guild-dashboard-rows');
+        for (const [name,count,kind,slugs] of data.professions) {
+          if (kind !== category) continue;
+          const button = raidElement('button',null,'guild-dashboard-entry guild-profession-link');
+          button.type = 'button';
+          button.setAttribute('aria-controls','guildRoster');
+          button.setAttribute('aria-label','Show '+count+(count === 1 ? ' character' : ' characters')+' with '+name);
+          const icon = professionIcon(name);
+          icon.setAttribute('aria-hidden','true');
+          button.append(icon,raidElement('strong',name),raidElement('span',String(count)+' ›','guild-dashboard-count'));
+          button.addEventListener('click',()=>{
+            selectedProfession = [name,slugs];
+            filterRoster?.(selectedProfession);
+            jumpToRoster();
+          });
+          rows.append(button);
+        }
+        section.append(rows.children.length ? rows : raidElement('p','No '+category+' professions reported.'));
+        coverage.append(section);
+      }
+      tiles.append(coverage);
       root.replaceChildren(hero,tiles,roster);
       if (showGuildRoster) jumpToRoster();
       try {
         const {characters} = await guildRequest('/api/raid-characters?guild=1');
         if (revision !== raidRevision) return;
         rosterStatus.remove();
-        renderGuildRoster(roster,characters);
+        filterRoster = renderGuildRoster(roster,characters);
+        if (selectedProfession) filterRoster(selectedProfession);
       } catch {
         rosterStatus.textContent = 'The guild roster is temporarily unavailable.';
       }

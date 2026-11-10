@@ -165,7 +165,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send('/api/raid-characters?dashboard=1')).status,401);
   const overview = await (await send('/api/raid-characters?dashboard=1',options)).json();
   assert.deepEqual(overview,{total:2,linked:1,classes:[['Mage',1],['Priest',1]],
-    roles:[['Healer',1],['Ranged DPS',1]],reviewed:1,professions:[['Alchemy',1]]});
+    roles:[['Healer',1],['Ranged DPS',1]],reviewed:1,professions:[['Alchemy',1,'primary',['astra-mortis']]]});
   const linked = await (await send('/api/armory',{headers:{Cookie:member}})).json();
   assert.equal(linked.characters[0].spec,'Frost');
   assert.equal(linked.characters[0].role,'Ranged DPS');

@@ -79,25 +79,33 @@ function parseProfessions(data) {
 }
 
 export async function guildProfessionSummary(env, slugs) {
-  const counts = new Map();
+  const coverage = new Map();
   let reviewed = 0;
   if (!slugs.length || !env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) return { reviewed, professions:[] };
   const token = await battleNetToken(env).catch(()=>null);
   if (!token) return { reviewed, professions:[] };
   for (let offset = 0; offset < slugs.length; offset += 8) {
-    const profiles = await Promise.all(slugs.slice(offset,offset+8).map(async slug => {
+    const batch = slugs.slice(offset,offset+8);
+    const profiles = await Promise.all(batch.map(async slug => {
       try {
         const response = await requestCharacterProfile(token,slug,'/professions',3000);
         return response.ok ? parseProfessions(await response.json()) : null;
       } catch { return null; }
     }));
-    for (const profile of profiles) {
+    for (const [index,profile] of profiles.entries()) {
       if (!profile) continue;
       reviewed++;
-      for (const name of new Set(profile.map(entry=>entry.name))) counts.set(name,(counts.get(name) ?? 0)+1);
+      for (const {name,category} of profile) {
+        if (!coverage.has(name)) coverage.set(name,{category:null,slugs:new Set()});
+        const entry = coverage.get(name);
+        entry.category ??= category;
+        entry.slugs.add(batch[index]);
+      }
     }
   }
-  const professions = [...counts].sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
+  const professions = [...coverage].map(([name,entry])=>[name,entry.slugs.size,
+    entry.category ?? (['cooking','fishing','first aid'].includes(name.toLowerCase()) ? 'secondary' : 'primary'),[...entry.slugs]])
+    .sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
   return { reviewed, professions };
 }
 
