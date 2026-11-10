@@ -754,3 +754,37 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .profession-progress-row { display: flex; align-items: center; gap: 8px; }
 .profession-progress-row progress { flex: 1; min-width: 0; height: 10px; accent-color: var(--copper); }
 .profession-progress-row small { white-space: nowrap; }
+
+.character-banner {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0,1fr) auto;
+  gap: 12px;
+  padding: clamp(14px, 2vw, 24px);
+  border-color: color-mix(in srgb, var(--accent) 74%, var(--line));
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 114%, #d28d4040, transparent 55%),
+    linear-gradient(90deg, #16181bf5, #16181be0), url('/assets/solstice-twilight.webp') center 35% / cover;
+}
+.character-banner::after { content: ''; position: absolute; inset: auto 18% -1px; height: 1px; background: linear-gradient(90deg, transparent, #e7b47e, transparent); pointer-events: none; }
+.character-banner h2 { font-size: clamp(21px, 3vw, 30px); overflow-wrap: anywhere; }
+.character-banner-portrait img { width: clamp(44px, 6vw, 68px); height: clamp(44px, 6vw, 68px); }
+.character-banner-facts { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(145px,100%),1fr)); gap: 8px 16px; margin: 0; padding-top: 10px; border-top: 1px solid var(--line); }
+.character-banner-facts:empty { display: none; }
+.character-banner-facts > div { display: flex; justify-content: space-between; gap: 6px; font-size: 13px; }
+.character-banner-facts dt { color: var(--muted); }
+.character-banner-facts dd { margin: 0; text-align: end; }
+.character-raid-review { display: grid; gap: 12px; }
+.guild-app .character-raid-review .readiness-details { padding: 14px; }
+.character-raid-review form { float: none; }
+.guild-app .character-raid-review .readiness-checks { grid-template-columns: repeat(auto-fit,minmax(min(175px,100%),1fr)); }
+.character-raid-review .readiness-checks > * { margin: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--container); }
+.character-raid-review .readiness-checks small { display: block; font-weight: 400; }
+.character-raid-review .raid-actions { align-items: end; }
+.character-raid-review .raid-actions label { flex: 1 1 210px; margin: 0; }
+.character-raid-review textarea { display: block; width: 100%; margin-top: 4px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--container); color: var(--ink); font: inherit; resize: vertical; }
+.raid-review-summary h3 { margin-bottom: 5px; }
+.raid-review-summary [data-readiness] { color: var(--accent); }
+.raid-review-summary [data-readiness="Ready"] { color: #a6c99b; }
+.raid-review-summary [data-readiness="Blocked"] { color: #ffab9a; }
+.raid-review-evidence .raid-stats { grid-template-columns: repeat(auto-fit,minmax(min(155px,100%),1fr)); }
