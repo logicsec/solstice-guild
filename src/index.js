@@ -2083,7 +2083,7 @@ fetch('/api/session').then(response => response.ok ? response.json() : null)
   .then(session => {
     if (!session) return;
     const username = session.username ? '@'+session.username : session.displayName;
-    byId('guildIdentity').textContent = username;
+    byId('guildIdentity').textContent = session.displayName || username;
     byId('discordCardName').textContent = username;
     const profile = session.discordProfile;
     const server = profile?.server;
