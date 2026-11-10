@@ -6,7 +6,7 @@ import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
 import { armoryApi, armorySpecs, guildProfessionSummary, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
-import { characterIcons, openCharacterSheet, professionIcon, renderArmory, renderArmoryConfirmation, renderArmoryProfile, renderCharacterTalents } from './armory-client.js';
+import { attachCharacterTooltip, characterIcons, openCharacterSheet, professionIcon, renderArmory, renderArmoryConfirmation, renderArmoryProfile, renderCharacterTalents } from './armory-client.js';
 import { articleImagePage } from './article-images.js';
 import { articlePage, canEditArticles, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup, solsticeMark } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
@@ -308,7 +308,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=20ad7713c5a3"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=fb1ea08b89e3"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1373,6 +1373,7 @@ ${renderArmory.toString()}
 ${renderRaidReserves.toString()}
 ${showReserveHistory.toString()}
 ${professionIcon.toString()}
+${attachCharacterTooltip.toString()}
 ${renderArmoryProfile.toString()}
 ${characterIcons.toString()}
 const foreverTalentLayout = ${JSON.stringify(foreverTalentLayout)};

@@ -1,3 +1,31 @@
+export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showOnClick = false) {
+  trigger.setAttribute('aria-describedby',tooltip.id);
+  if (typeof tooltip.showPopover !== 'function') {
+    trigger.title = fallback.filter(Boolean).join(' · ');
+    tooltip.hidden = true;
+    return;
+  }
+  function show() {
+    if (!tooltip.matches(':popover-open')) tooltip.showPopover();
+    const rect = anchor.getBoundingClientRect();
+    const leftEdge = rect.right+tooltip.offsetWidth+10 <= innerWidth ? rect.right+8 : rect.left-tooltip.offsetWidth-8;
+    tooltip.style.left = Math.max(8,Math.min(leftEdge,innerWidth-tooltip.offsetWidth-8))+'px';
+    tooltip.style.top = Math.max(8,Math.min(rect.top,innerHeight-tooltip.offsetHeight-8))+'px';
+  }
+  function hide() { tooltip.hidePopover(); }
+  trigger.addEventListener('mouseenter',show);
+  trigger.addEventListener('focus',show);
+  if (showOnClick) trigger.addEventListener('click',show);
+  trigger.addEventListener('mouseleave',hide);
+  trigger.addEventListener('blur',hide);
+  trigger.addEventListener('keydown',event=>{
+    if (event.key === 'Escape' && tooltip.matches(':popover-open')) {
+      event.preventDefault();
+      hide();
+    }
+  });
+}
+
 export function professionIcon(name) {
   const icons = {
     alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
@@ -90,30 +118,7 @@ export function renderArmoryProfile(character) {
     if (level) tooltip.append(raidElement('span',level,'character-tooltip-level'));
     tooltip.append(...[item.slot,...item.details].filter(Boolean).map(line=>raidElement('span',line)));
     tooltip.append(...[...enchants,...(item.effects ?? [])].map(line=>raidElement('span',line,'character-tooltip-effect')));
-    button.setAttribute('aria-describedby',tooltip.id);
-    function show() {
-      if (typeof tooltip.showPopover !== 'function') {
-        button.title = [item.name,...lines].join(' · ');
-        return;
-      }
-      if (!tooltip.matches(':popover-open')) tooltip.showPopover();
-      const rect = tile.getBoundingClientRect();
-      const leftEdge = rect.right+tooltip.offsetWidth+10 <= innerWidth ? rect.right+8 : rect.left-tooltip.offsetWidth-8;
-      tooltip.style.left = Math.max(8,Math.min(leftEdge,innerWidth-tooltip.offsetWidth-8))+'px';
-      tooltip.style.top = Math.max(8,Math.min(rect.top,innerHeight-tooltip.offsetHeight-8))+'px';
-    }
-    function hide() { if (typeof tooltip.hidePopover === 'function') tooltip.hidePopover(); }
-    button.addEventListener('mouseenter',show);
-    button.addEventListener('focus',show);
-    if (!linked) button.addEventListener('click',show);
-    button.addEventListener('mouseleave',hide);
-    button.addEventListener('blur',hide);
-    button.addEventListener('keydown',event=>{
-      if (event.key === 'Escape' && typeof tooltip.hidePopover === 'function' && tooltip.matches(':popover-open')) {
-        event.preventDefault();
-        hide();
-      }
-    });
+    attachCharacterTooltip(button,tile,tooltip,[item.name,...lines],!linked);
     row.append(button,tooltip);
     column.append(row);
   }
@@ -160,6 +165,9 @@ export function renderArmoryProfile(character) {
       details.append(row);
     }
     if (!ranks.length) details.append(raidElement('small','Skill Level Unavailable'));
+    const skillCap = Math.max(0,...ranks.map(rank=>rank.maxSkill ?? 0));
+    const professionRank = ({75:'Apprentice',150:'Journeyman',225:'Expert',300:'Artisan'})[skillCap];
+    if (professionRank) card.append(raidElement('p',professionRank,'eyebrow profession-progress-rank'));
     card.append(icon,details);
     professions.append(card);
   }
@@ -180,7 +188,7 @@ export function renderCharacterTalents(character) {
   const trees = raidElement('div',null,'character-talent-trees');
   const detail = raidElement('div',null,'character-talent-detail');
   detail.setAttribute('aria-live','polite');
-  const source = raidElement('a','Tree layout from The Forever Era','text-link');
+  const source = raidElement('a','Talent data from The Forever Era','text-link');
   source.href = 'https://theforeverera.com/en/talents/';
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
@@ -188,7 +196,7 @@ export function renderCharacterTalents(character) {
   function select(index) {
     for (const [i,button] of [...builds.children].entries()) button.setAttribute('aria-pressed',String(i === index));
     trees.replaceChildren();
-    detail.replaceChildren(raidElement('p','Select a talent to see its rank and any Armory details.'));
+    detail.replaceChildren(raidElement('p','Hover over or select a talent to see what it does.'));
     const build = character.talents[index];
     const labels = new Map(layout.map(tree=>[tree[0].toLowerCase(),tree]));
     for (const tree of build.trees) {
@@ -209,7 +217,7 @@ export function renderCharacterTalents(character) {
       card.append(title);
       const grid = raidElement('div',null,'character-talent-grid');
       const matched = new Set();
-      for (const [id,talentName,row,col,maxRank,asset] of nodes) {
+      for (const [id,talentName,row,col,maxRank,asset,descriptions] of nodes) {
         const talent = learned.find(entry=>entry.id === id || entry.name.toLowerCase() === talentName.toLowerCase());
         if (talent) matched.add(talent);
         const rank = talent?.rank ?? 0;
@@ -219,7 +227,15 @@ export function renderCharacterTalents(character) {
         node.style.gridArea = (row+1)+' / '+(col+1);
         const rankText = rank+'/'+maxRank;
         node.setAttribute('aria-label',talentName+', rank '+rankText);
-        node.title = talentName+' · '+rankText;
+        const description = talent?.description || descriptions[Math.max(0,Math.min(rank,maxRank)-1)];
+        const rankLabel = rank ? 'Rank '+rankText : 'Unlearned · Rank 1 Preview';
+        const tooltip = raidElement('div',null,'character-item-tooltip character-talent-tooltip');
+        tooltip.id = 'character-talent-'+id;
+        tooltip.setAttribute('popover','manual');
+        tooltip.setAttribute('role','tooltip');
+        tooltip.append(raidElement('strong',talentName),raidElement('span',rankLabel,'character-tooltip-level'));
+        if (description) tooltip.append(raidElement('span',description));
+        attachCharacterTooltip(node,node,tooltip,[talentName,rankLabel,description]);
         if (asset) {
           const image = raidElement('img');
           image.alt = '';
@@ -228,11 +244,9 @@ export function renderCharacterTalents(character) {
           node.append(image);
         }
         node.append(raidElement('span',rankText));
-        const showTalent = () => detail.replaceChildren(raidElement('strong',talentName+' · '+rankText),
-          ...(talent?.description ? [raidElement('p',talent.description)] : []));
-        node.addEventListener('click',showTalent);
-        node.addEventListener('focus',showTalent);
-        grid.append(node);
+        node.addEventListener('click',()=>detail.replaceChildren(raidElement('strong',talentName+' · '+rankLabel),
+          ...(description ? [raidElement('p',description)] : [])));
+        grid.append(node,tooltip);
       }
       if (nodes.length) card.append(grid);
       for (const talent of learned.filter(entry=>!matched.has(entry))) {
