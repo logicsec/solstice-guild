@@ -202,7 +202,7 @@ export function renderCharacterTalents(character) {
     return panel;
   }
   const layout = Object.hasOwn(foreverTalentLayout,character.className) ? foreverTalentLayout[character.className] : [];
-  const builds = raidElement('div',null,'raid-actions');
+  const builds = raidElement('div',null,'raid-actions character-talent-builds');
   const trees = raidElement('div',null,'character-talent-trees');
   const detail = raidElement('div',null,'character-talent-detail');
   detail.setAttribute('aria-live','polite');
@@ -225,7 +225,9 @@ export function renderCharacterTalents(character) {
       const learned = tree?.talents ?? [];
       const points = tree?.points ?? learned.reduce((sum,talent)=>sum+talent.rank,0);
       const card = raidElement('section',null,'character-talent-tree');
-      const title = raidElement('h4',name+' · '+points+' pts');
+      card.dataset.theme = ['arcane','fire','frost'][trees.children.length % 3];
+      const title = raidElement('h4',name);
+      title.append(raidElement('span',points+' pts','character-talent-points'));
       if (icon) {
         const image = raidElement('img');
         image.alt = '';
@@ -235,13 +237,37 @@ export function renderCharacterTalents(character) {
       card.append(title);
       const grid = raidElement('div',null,'character-talent-grid');
       const matched = new Set();
-      for (const [id,talentName,row,col,maxRank,asset,descriptions] of nodes) {
-        const talent = learned.find(entry=>entry.id === id || entry.name.toLowerCase() === talentName.toLowerCase());
+      const allocations = new Map(nodes.map(([id,talentName])=>[id,learned.find(entry=>
+        entry.id === id || entry.name.toLowerCase() === talentName.toLowerCase())]));
+      const positions = new Map(nodes.map(node=>[node[0],node]));
+      const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+      svg.setAttribute('viewBox','0 0 400 700');
+      svg.setAttribute('aria-hidden','true');
+      svg.classList.add('character-talent-connections');
+      for (const [id,talentName,row,col,maxRank,asset,descriptions,requirements = []] of nodes) {
+        const talent = allocations.get(id);
+        for (const [requiredId,requiredRank] of requirements) {
+          const prerequisite = positions.get(requiredId);
+          if (!prerequisite) continue;
+          const [,,fromRow,fromCol] = prerequisite;
+          const startX = fromCol*100+50, startY = fromRow*100+50;
+          const endX = col*100+50, endY = row*100+50;
+          const angle = Math.atan2(endY-startY,endX-startX);
+          const tipX = endX-36*Math.cos(angle), tipY = endY-36*Math.sin(angle);
+          const baseX = tipX-12*Math.cos(angle), baseY = tipY-12*Math.sin(angle);
+          const wingX = 7*Math.sin(angle), wingY = 7*Math.cos(angle);
+          const arrow = document.createElementNS(svg.namespaceURI,'path');
+          arrow.setAttribute('d','M '+startX+' '+startY+' L '+tipX+' '+tipY+
+            ' M '+(baseX+wingX)+' '+(baseY-wingY)+' L '+tipX+' '+tipY+' L '+(baseX-wingX)+' '+(baseY+wingY));
+          if ((allocations.get(requiredId)?.rank ?? 0) >= requiredRank) arrow.classList.add('is-unlocked');
+          svg.append(arrow);
+        }
         if (talent) matched.add(talent);
         const rank = talent?.rank ?? 0;
         const node = raidElement('button',null,'character-talent-node');
         node.type = 'button';
-        node.dataset.learned = String(rank > 0);
+        node.dataset.state = rank >= maxRank ? 'maxed' : rank > 0 ? 'learned' :
+          points >= row*5 && requirements.every(([requiredId,requiredRank])=>(allocations.get(requiredId)?.rank ?? 0) >= requiredRank) ? 'available' : 'locked';
         node.style.gridArea = (row+1)+' / '+(col+1);
         const rankText = rank+'/'+maxRank;
         node.setAttribute('aria-label',talentName+', rank '+rankText);
@@ -261,12 +287,15 @@ export function renderCharacterTalents(character) {
           image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
           node.append(image);
         }
-        node.append(raidElement('span',rankText));
+        if (rank) node.append(raidElement('span',String(rank)));
         node.addEventListener('click',()=>detail.replaceChildren(raidElement('strong',talentName+' · '+rankLabel),
           ...(description ? [raidElement('p',description)] : [])));
         grid.append(node,tooltip);
       }
-      if (nodes.length) card.append(grid);
+      if (nodes.length) {
+        grid.prepend(svg);
+        card.append(grid);
+      }
       for (const talent of learned.filter(entry=>!matched.has(entry))) {
         card.append(raidElement('p',talent.name+' · Rank '+talent.rank));
       }
@@ -275,7 +304,7 @@ export function renderCharacterTalents(character) {
     if (!labels.size) trees.append(raidElement('p','No talents reported for this build.'));
   }
   for (const [i,build] of character.talents.entries()) {
-    const label = 'Build '+(i+1)+(build.active ? ' · Active' : '');
+    const label = (['Primary','Secondary'][i] ?? 'Build '+(i+1))+(build.active ? ' · Active' : '');
     const button = raidElement('button',label);
     button.type = 'button';
     button.addEventListener('click',()=>select(i));

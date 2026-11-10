@@ -865,19 +865,28 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-app a.character-slot-button { color: var(--ink); text-decoration: none; }
 .guild-app a.character-slot-button:hover { border-color: var(--accent); }
 
-.character-talent-trees { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(210px,100%),1fr)); gap: 10px; margin: 10px 0; }
-.character-talent-tree { padding: 10px; border: 1px solid var(--line); border-radius: 9px; background: radial-gradient(ellipse at top,#d4a85d14,transparent 75%),var(--field); }
-.character-talent-tree h4 { display: flex; align-items: center; gap: 7px; margin: 0 0 10px; color: var(--accent); }
-.character-talent-tree h4 img { width: 23px; height: 23px; border-radius: 4px; }
-.character-talent-grid { display: grid; grid-template-columns: repeat(4,minmax(0,42px)); grid-auto-rows: 42px; justify-content: center; gap: 6px; }
-.guild-app .character-talent-node { position: relative; display: grid; place-items: center; min-width: 0; padding: 0; border-radius: 6px; background: var(--container); }
-.character-talent-node img { width: 100%; height: 100%; object-fit: cover; border-radius: 5px; }
-.character-talent-node span { position: absolute; inset: auto 1px 1px auto; padding: 0 2px; border-radius: 2px; background: #111e; color: var(--ink); font-size: 10px; }
-.character-talent-node[data-learned="false"] img { filter: grayscale(1); opacity: .45; }
-.guild-app .character-talent-node[data-learned="true"] { border-color: var(--accent); }
-.guild-app .character-talent-node:hover { border-color: var(--gold); }
+.character-talent-trees { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(210px,100%),1fr)); gap: 2px; margin: 12px 0; overflow: hidden; border: 1px solid #74511e; border-radius: 10px; background: #2d2112; }
+.character-talent-tree { --tree-glow: #175874; --tree-art: url('/assets/solstice-twilight.webp'); min-width: 0; padding: 16px 12px 18px; background: linear-gradient(0deg,#070709ed,#07070955 65%,#07070999),radial-gradient(ellipse at 50% 25%,var(--tree-glow),transparent 75%),var(--tree-art) center / cover,#100d0b; }
+.character-talent-tree[data-theme="fire"] { --tree-glow: #8e391c; --tree-art: url('/assets/raid-onyxias-lair.webp'); }
+.character-talent-tree[data-theme="frost"] { --tree-glow: #345178; --tree-art: url('/assets/raid-hyjal-summit.webp'); }
+.character-talent-tree h4 { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid #bd8b4066; color: #f9eed8; font-size: 17px; }
+.character-talent-tree h4 img { width: 34px; height: 34px; border: 2px solid #a37833; border-radius: 50%; box-shadow: 0 2px 8px #000b; }
+.character-talent-points { padding: 2px 6px; border: 1px solid #765522; border-radius: 4px; background: #130f0a; color: #f1ce77; font-size: 11px; white-space: nowrap; }
+.character-talent-grid { position: relative; display: grid; width: min(100%,240px); aspect-ratio: 4 / 7; margin-inline: auto; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(7,minmax(0,1fr)); }
+.character-talent-connections { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.character-talent-connections path { fill: none; stroke: #8a744e; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .68; }
+.character-talent-connections .is-unlocked { stroke: #f1c35c; opacity: 1; }
+.guild-app .character-talent-node { position: relative; display: grid; place-items: center; place-self: center; width: 68%; aspect-ratio: 1; min-width: 0; min-height: 0; padding: 1px; border: 2px solid #d4a64d; border-radius: 8px; background: #17100a; box-shadow: 0 2px 7px #000c; }
+.character-talent-node img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
+.character-talent-node span { position: absolute; inset: auto 1px 0 auto; padding: 0 2px; border-radius: 2px; background: #080705ed; color: #f6d36b; font-size: 12px; line-height: 1.2; }
+.character-talent-node[data-state="maxed"] span { color: #a8e57a; }
+.character-talent-node[data-state="available"] img,.character-talent-node[data-state="locked"] img { filter: grayscale(1); }
+.character-talent-node[data-state="available"] img { opacity: .72; }
+.guild-app .character-talent-node[data-state="locked"] { border-color: #725522; }
+.character-talent-node[data-state="locked"] img { opacity: .36; }
+.guild-app .character-talent-node:is(:hover,:focus-visible) { border-color: #ffdf8e; box-shadow: 0 0 10px #ffd16688; }
 .character-talent-detail { margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
-.guild-app .character-talents .raid-actions button[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+.guild-app .character-talent-builds button[aria-pressed="true"] { border-color: #a37833; background: #26190e; color: #f1ce77; }
 
 .guild-app .profession-progress-rank { grid-column: 1 / -1; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 4px 8px; }
 .profession-progress-rank .eyebrow { margin: 0; color: var(--gold); }
