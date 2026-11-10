@@ -1,4 +1,3 @@
-import { maxArticleImageBytes } from './article-images.js';
 import { createReadStream } from 'node:fs';
 import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
@@ -42,13 +41,14 @@ const server = createServer(async (req, res) => {
     for (let i = 0; i < req.rawHeaders.length; i += 2) headers.append(req.rawHeaders[i], req.rawHeaders[i + 1]);
     const method = req.method ?? 'GET';
     let body;
-    if (method !== 'GET' && method !== 'HEAD') {
-      const limit = method === 'POST' && url.pathname === '/cms/images' ? maxArticleImageBytes : 131072;
+    if (method === 'POST' && url.pathname === '/cms/images') {
+      body = Readable.toWeb(req);
+    } else if (method !== 'GET' && method !== 'HEAD') {
       let bytes = 0;
       const chunks = [];
       for await (const chunk of req.iterator({ destroyOnReturn: false })) {
         bytes += chunk.length;
-        if (bytes > limit) {
+        if (bytes > 131072) {
           res.writeHead(413, { Connection: 'close' }).end('Request too large');
           return;
         }
@@ -56,7 +56,7 @@ const server = createServer(async (req, res) => {
       }
       body = Buffer.concat(chunks);
     }
-    const response = await worker.fetch(new Request(url, { method, headers, body }), env);
+    const response = await worker.fetch(new Request(url, { method, headers, body, duplex: 'half' }), env);
     const cookies = response.headers.getSetCookie();
     for (const [name, value] of response.headers) if (name !== 'set-cookie') res.setHeader(name, value);
     if (cookies.length) res.setHeader('Set-Cookie', cookies);
