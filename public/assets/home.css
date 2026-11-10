@@ -595,29 +595,11 @@ body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex;
   box-shadow: -16px 0 48px #0006;
   overflow: auto;
 }
-.guild-app .character-drawer { width: min(100%, 690px); }
 .workspace-drawer[open] { animation: workspace-drawer-in 270ms cubic-bezier(.2,.8,.25,1) both; }
 .workspace-drawer::backdrop { background: #070809a6; }
 .workspace-drawer-heading { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); }
 .workspace-drawer-heading :is(h2,h3) { margin: 0; }
 @keyframes workspace-drawer-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
-.character-sheet { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:clamp(6px,2vw,16px); padding:clamp(8px,2vw,16px); margin-block:12px; border:1px solid var(--line); border-radius:12px; background:var(--field); }
-.character-gear { display:grid; align-content:start; gap:6px; }
-.character-weapons { grid-column:2; display:flex; flex-wrap:wrap; justify-content:center; }
-.character-weapons:empty { display:none; }
-.guild-app .character-slot-button { display:grid; place-items:center; padding:0; width:46px; height:46px; background:var(--panel); border-color:var(--gear-quality,var(--line)); }
-.armory-profile .character-slot-button img { width:100%; height:100%; object-fit:cover; border-radius:6px; }
-.character-slot-caption { font-size:9px; line-height:1.1; overflow-wrap:anywhere; color:var(--muted); }
-.character-center { min-width:0; }
-.character-model { display:grid; place-items:center; min-height:180px; text-align:center; background:radial-gradient(ellipse,var(--hover),transparent 72%); }
-.armory-profile .character-model img { max-height:360px; background:transparent; }
-.character-attributes { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(120px,100%),1fr)); gap:8px; padding-top:10px; border-top:1px solid var(--line); }
-.character-attributes h3 { grid-column:1 / -1; margin:0; }
-.character-attributes h4 { color:var(--gold); margin:0 0 4px; }
-.character-attributes dl { display:grid; grid-template-columns:1fr auto; gap:2px 8px; margin:0; font-size:12px; }
-.character-attributes dd { margin:0; text-align:end; font-variant-numeric:tabular-nums; }
-.character-item-tooltip { position:fixed; inset:auto; margin:0; width:max-content; max-width:min(270px,calc(100vw - 16px)); padding:10px 12px; background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:8px; box-shadow:0 8px 24px #0009; pointer-events:none; }
-.character-item-tooltip span { display:block; font-size:12px; }
 .guest-reserve-form { display:grid; gap:10px; margin-top:16px; max-width:540px; }
 .guest-reserve-form label { display:grid; gap:4px; }
 .guest-reserve-form :is(input,textarea,select) { border:1px solid var(--line); border-radius:6px; padding:8px; color:var(--ink); background:var(--field); font:inherit; }
@@ -721,26 +703,44 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .chronicle-feature .chronicle-card-link:has(.chronicle-card-cover) { grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); }
 }
 
-.guild-app .character-drawer { width: min(100%, 900px); }
-.character-drawer-checks { margin-block: 12px; }
-.character-overview { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 8px; margin: 12px 0; }
-.character-overview > div { padding: 10px; background: var(--field); border: 1px solid var(--line); border-radius: 8px; }
-.character-overview dt { font-size: 12px; color: var(--muted); }
-.character-overview dd { margin: 0; color: var(--accent); font-weight: 700; }
-.character-sheet { grid-template-columns: minmax(0,1fr) minmax(0,1.05fr) minmax(0,1fr); }
-.guild-app .character-slot-button { display: flex; align-items: center; text-align: start; gap: 8px; width: 100%; height: auto; min-height: 52px; padding: 5px; border-color: var(--line); }
+
+.guild-app .character-drawer { width: min(100%, 1160px); }
+.character-banner { padding: 16px; border: 1px solid var(--line); border-radius: 12px; background: radial-gradient(ellipse at 10% 0%, var(--hover), transparent 75%), var(--field); }
+.character-banner .character-inspector-title { margin: 0; gap: 12px; min-width: 0; }
+.character-banner-portrait { flex: none; }
+.character-banner-portrait img { width: 48px; height: 48px; object-fit: cover; border-radius: 7px; }
+.character-banner-portrait img + img { display: none; }
+.character-banner-guild { color: var(--accent); }
+.character-review-tabs { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0; padding: 5px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); }
+.character-review-tabs button[aria-pressed="true"] { background: var(--copper); color: var(--field); }
+.character-review-layout { display: grid; grid-template-columns: minmax(0,1fr) minmax(175px,24%); align-items: start; gap: 12px; margin-bottom: 12px; }
+.character-sheet { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--field); }
+.character-gear, .character-attributes { display: grid; align-content: start; gap: 6px; }
+.guild-app .character-slot-button, .character-slot-empty { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 52px; padding: 5px 8px; text-align: start; border: 1px solid var(--line); border-radius: 8px; background: var(--container); }
+.character-slot-empty { color: var(--muted); font-size: 12px; }
+.character-gear-right :is(.character-slot-button,.character-slot-empty) { flex-direction: row-reverse; text-align: end; }
 .character-slot-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 1px solid var(--gear-quality,var(--line)); border-radius: 7px; text-align: center; }
+.character-slot-empty .character-slot-icon { background: var(--field); }
+.armory-profile .character-slot-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.character-slot-caption { font-size: 8px; line-height: 1.1; overflow-wrap: anywhere; color: var(--muted); }
 .character-slot-copy { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
 .character-slot-copy :is(strong,small) { display: block; }
-.character-slot-copy strong { font-size: 12px; }
+.character-slot-copy strong { font-size: 13px; }
 .character-slot-copy small { color: var(--muted); font-size: 11px; }
-.character-slot-copy .character-slot-enchant { color: #a6c99b; }
-.character-model { min-height: 220px; }
-.armory-profile .character-model img { width: 100%; height: clamp(220px, 34vw, 360px); object-fit: contain; }
-.character-weapons { grid-column: 1 / -1; }
-.character-weapons .character-slot { flex: 0 1 185px; }
-.character-attributes { margin-block: 12px; padding: 12px; border: 1px solid var(--line); border-radius: 10px; }
-@media (max-width: 560px) {
-  .character-sheet { grid-template-columns: repeat(2,minmax(0,1fr)); }
-  .character-model { grid-column: 1 / -1; grid-row: 1; }
+.character-slot-copy .character-slot-enchant, .character-tooltip-effect { color: #8cd994; }
+.character-stat-card { padding: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); }
+.character-stat-card h3 { margin: 0 0 7px; color: var(--accent); text-align: center; font-size: 13px; }
+.character-stat-card dl { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; margin: 0; font-size: 12px; }
+.character-stat-card dd { margin: 0; text-align: end; font-variant-numeric: tabular-nums; }
+.character-stat-card dt { color: var(--muted); }
+.character-item-tooltip { position: fixed; inset: auto; margin: 0; width: max-content; max-width: min(340px,calc(100vw - 16px)); padding: 12px; background: #08090b; color: var(--ink); border: 1px solid var(--line); border-radius: 6px; box-shadow: 0 8px 24px #0009; pointer-events: none; }
+.character-item-tooltip span { display: block; font-size: 12px; }
+.character-tooltip-level { color: #f1cb72; }
+@media (max-width: 760px) {
+  .character-review-layout { grid-template-columns: minmax(0,1fr); }
+  .character-attributes { grid-template-columns: repeat(auto-fit,minmax(min(150px,100%),1fr)); }
+}
+@media (max-width: 460px) {
+  .character-sheet { grid-template-columns: minmax(0,1fr); }
+  .character-gear-right :is(.character-slot-button,.character-slot-empty) { flex-direction: row; text-align: start; }
 }
