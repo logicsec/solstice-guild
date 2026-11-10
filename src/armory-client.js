@@ -35,13 +35,53 @@ export function renderArmoryProfile(character) {
   const leftSlots = ['HEAD','NECK','SHOULDER','BACK','CHEST','SHIRT','TABARD','WRIST'];
   const weaponSlots = ['MAIN_HAND','OFF_HAND','RANGED'];
   for (const item of character.gear ?? []) {
-    const row = raidElement('div',null,'armory-item character-slot');
-    const name = itemLabel(item.id,item.name,item.quality);
-    name.dataset.quality = item.quality;
-    name.title = [item.name,...item.enchants].join(' · ');
-    row.append(raidElement('small',item.slot),name);
-    if (item.level != null) row.append(raidElement('small','Item level '+item.level));
-    if (item.enchants.length) row.append(raidElement('small',item.enchants.join(' · ')));
+    const row = raidElement('div',null,'character-slot');
+    const button = raidElement('button',null,'character-slot-button');
+    button.type = 'button';
+    button.setAttribute('aria-label',item.slot+': '+item.name);
+    button.style.setProperty('--gear-quality',rarityColor(item.id,item.quality));
+    const icon = itemIcons.get(item.id);
+    const fallback = raidElement('span',item.slot,'character-slot-caption');
+    button.append(fallback);
+    if (icon) {
+      const image = raidElement('img');
+      image.alt = '';
+      image.addEventListener('load',()=>button.replaceChildren(image),{once:true});
+      image.src = icon;
+    }
+    const lines = [item.slot,item.level != null ? 'Item level '+item.level : '',...item.details,...item.enchants].filter(Boolean);
+    const tooltip = raidElement('div',null,'character-item-tooltip');
+    tooltip.id = 'character-item-'+(left.children.length+right.children.length+weapons.children.length);
+    tooltip.setAttribute('popover','manual');
+    tooltip.setAttribute('role','tooltip');
+    const name = raidElement('strong',item.name);
+    name.style.color = rarityColor(item.id,item.quality);
+    tooltip.append(name,...lines.map(line=>raidElement('span',line)));
+    button.setAttribute('aria-describedby',tooltip.id);
+    function show() {
+      if (typeof tooltip.showPopover !== 'function') {
+        button.title = [item.name,...lines].join(' · ');
+        return;
+      }
+      if (!tooltip.matches(':popover-open')) tooltip.showPopover();
+      const rect = button.getBoundingClientRect();
+      const leftEdge = rect.right+tooltip.offsetWidth+10 <= innerWidth ? rect.right+8 : rect.left-tooltip.offsetWidth-8;
+      tooltip.style.left = Math.max(8,leftEdge)+'px';
+      tooltip.style.top = Math.max(8,Math.min(rect.top,innerHeight-tooltip.offsetHeight-8))+'px';
+    }
+    function hide() { if (typeof tooltip.hidePopover === 'function') tooltip.hidePopover(); }
+    button.addEventListener('mouseenter',show);
+    button.addEventListener('focus',show);
+    button.addEventListener('click',show);
+    button.addEventListener('mouseleave',hide);
+    button.addEventListener('blur',hide);
+    button.addEventListener('keydown',event=>{
+      if (event.key === 'Escape' && typeof tooltip.hidePopover === 'function' && tooltip.matches(':popover-open')) {
+        event.preventDefault();
+        hide();
+      }
+    });
+    row.append(button,tooltip);
     const slot = item.slotType || item.slot.toUpperCase().replace(/\s+/g,'_');
     const column = weaponSlots.includes(slot) ? weapons : leftSlots.includes(slot) ? left : right;
     column.append(row);
@@ -50,11 +90,15 @@ export function renderArmoryProfile(character) {
   attributes.append(raidElement('h3','Attributes'));
   for (const [group,values] of character.attributes ?? []) {
     const list = raidElement('dl');
-    attributes.append(raidElement('h4',group),list);
+    const groupPanel = raidElement('div');
+    groupPanel.append(raidElement('h4',group),list);
+    attributes.append(groupPanel);
     for (const [label,value] of values) list.append(raidElement('dt',label),raidElement('dd',new Intl.NumberFormat().format(value)));
   }
   if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.'));
-  sheet.append(left,model,right,weapons,attributes);
+  const center = raidElement('div',null,'character-center');
+  center.append(model,attributes);
+  sheet.append(left,center,right,weapons);
   root.append(sheet);
   if (!character.gear?.length) root.append(raidElement('p','No equipment data available.'));
   const professions = raidElement('details');
@@ -84,6 +128,9 @@ export function openCharacterSheet(player) {
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
   dialog.append(header,content);
+  dialog.addEventListener('scroll',()=>{
+    dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
+  });
   document.body.append(dialog);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   dialog.showModal();

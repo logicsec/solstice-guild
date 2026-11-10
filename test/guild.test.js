@@ -164,12 +164,29 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post(raid,picks,member)).status,200);
   assert.equal((await post(raid,{action:'reserve-settings',limit:1})).status,409);
   assert.equal((await post(raid,{...picks,guest:'Guest Raider',items:['Copper Helm']})).status,200);
+  const guestRequest = (character,items,requestOrigin=origin) => send(publicPath,{
+    method:'POST',headers:{Origin:requestOrigin},body:new URLSearchParams({character,items}),
+  });
+  assert.equal((await guestRequest('Public Pug','Copper Sword','https://other.example')).status,403);
+  assert.equal((await guestRequest('Public Pug','One\nTwo\nThree')).status,409);
+  assert.equal((await guestRequest('Public Pug','Copper Sword')).status,303);
+  assert.equal((await guestRequest('PUBLIC PUG','Other Sword')).status,409);
+  assert.doesNotMatch(await (await send(publicPath)).text(),/Copper Sword/);
+  const guestQueue = (await (await send(raid,options)).json()).pendingReserves;
+  assert.equal(guestQueue[0].character,'Public Pug');
+  assert.deepEqual((await (await send(raid,{headers:{Cookie:member}})).json()).pendingReserves,[]);
+  const approve = {action:'reserve-review',key:guestQueue[0].key,approve:true};
+  assert.equal((await post(raid,approve,member)).status,403);
+  assert.equal((await post(raid,approve)).status,200);
+  assert.match(await (await send(publicPath)).text(),/Copper Sword/);
   assert.equal((await post(raid,{action:'reserve-settings',locked:true},member)).status,403);
   assert.equal((await post(raid,{action:'reserve-settings',locked:true})).status,200);
   assert.equal((await post(raid,{...picks,items:[]},member)).status,409);
   assert.equal((await post(raid,{...picks,member:'31'})).status,409);
   const publicReserves = await (await send(publicPath)).text();
   assert.match(publicReserves,/Locked · 2 per player/);
+  assert.doesNotMatch(publicReserves,/Request guest reserves/);
+  assert.equal((await guestRequest('Late Pug','Copper Sword')).status,409);
   assert.match(publicReserves,/Staff of the Wild/);
   assert.match(publicReserves,/Guest Raider/);
   assert.doesNotMatch(publicReserves,/member:31|guest:guest raider/);

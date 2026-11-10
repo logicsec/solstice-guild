@@ -19,7 +19,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=713594c478a2"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=4d868b3302f2"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -64,7 +64,7 @@ export async function publicHome(env, url, session) {
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
 
-export async function publicRaidPage(db, id, roles, session) {
+export async function publicRaidPage(db, id, roles, session, requested) {
   const next = '/raid/' + id;
   const respond = (title, body, status) => {
     const response = html(shell(title, body, { next, session, raidView:true, hall:'/?tool=raid&view=detail&raid='+id }),status);
@@ -109,11 +109,18 @@ export async function publicRaidPage(db, id, roles, session) {
       ${rows ? `<div class="news-card public-raid-table"><table aria-label="Confirmed raid roster">
         <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
         <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
-      <h2 class="public-raid-roster-heading">Loot reserves</h2>
+      <h2 id="loot-reserves" class="public-raid-roster-heading">Loot reserves</h2>
       <p>${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Open'} · ${raid.reserve_limit} per player</p>
       ${reserveRows ? `<div class="news-card public-raid-table"><table aria-label="Raid loot reserves">
         <thead><tr><th scope="col">Character</th><th scope="col">Reserved items</th></tr></thead>
         <tbody>${reserveRows}</tbody></table></div>` : '<p class="empty">No reserves recorded yet.</p>'}
+      ${requested ? '<p role="status">Guest request sent for organizer approval.</p>' : ''}
+      ${!raid.reserves_locked && raid.state !== 'Cancelled' ? `<form class="news-card guest-reserve-form" method="post" action="${next}">
+        <h3>Request guest reserves</h3><p>Enter up to ${raid.reserve_limit} items, one per line. Approved picks appear here after the organizer reviews them.</p>
+        <label>Character name<input name="character" required maxlength="61"></label>
+        <label>Item names<textarea name="items" required rows="3" maxlength="605"></textarea></label>
+        <button class="button gold" type="submit">Request reserves</button>
+      </form>` : ''}
       ${external}
     </section>
   </main>`);

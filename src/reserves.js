@@ -28,6 +28,20 @@ export async function reserveHistory(db, raid, user, requestedKey, reply) {
 
 export async function changeReserves(db, raid, user, input, reply) {
   const organizer = raid.owner === user;
+  if (input.action === 'reserve-review') {
+    if (!organizer) return reply({error:'Only the organizer can review guest requests.'},403);
+    const {key,approve} = input;
+    if (typeof key !== 'string' || !key.startsWith('request:') || key.length > 130 || typeof approve !== 'boolean') {
+      return reply({error:'Invalid guest request.'},400);
+    }
+    const result = approve ? await db.prepare(`UPDATE OR IGNORE raid_reserves SET player_key = ?
+      WHERE raid_id = ? AND player_key = ? AND EXISTS (SELECT 1 FROM raids
+      WHERE id = raid_reserves.raid_id AND owner = ? AND reserves_locked = 0
+      AND state <> 'Cancelled' AND reserve_limit >= json_array_length(raid_reserves.items))`)
+      .bind('guest:'+key.slice(8),raid.id,key,user).run() :
+      await db.prepare('DELETE FROM raid_reserves WHERE raid_id = ? AND player_key = ?').bind(raid.id,key).run();
+    return result.meta.changes ? reply({ok:true}) : reply({error:'Request unavailable, reserves closed, or an approved reserve already exists for this character.'},409);
+  }
   if (input.action === 'reserve-settings') {
     if (!organizer) return reply({ error:'Only the organizer can change reserve settings.' },403);
     const {limit,locked} = input;
@@ -39,7 +53,7 @@ export async function changeReserves(db, raid, user, input, reply) {
     const result = locked !== undefined ?
       await db.prepare('UPDATE raids SET reserves_locked = ? WHERE id = ? AND owner = ?').bind(Number(locked),raid.id,user).run() :
       await db.prepare(`UPDATE raids SET reserve_limit = ? WHERE id = ? AND owner = ?
-        AND NOT EXISTS (SELECT 1 FROM raid_reserves WHERE raid_id = raids.id AND json_array_length(items) > ?)`)
+        AND NOT EXISTS (SELECT 1 FROM raid_reserves WHERE raid_id = raids.id AND player_key NOT LIKE 'request:%' AND json_array_length(items) > ?)`)
         .bind(limit,raid.id,user,limit).run();
     return result.meta.changes ? reply({ok:true}) : reply({error:'The raid is unavailable or has players with more picks than the new limit.'},409);
   }
@@ -63,4 +77,29 @@ export async function changeReserves(db, raid, user, input, reply) {
     ON CONFLICT(raid_id,player_key) DO UPDATE SET character = excluded.character, items = excluded.items`)
     .bind(key,guest,guest,JSON.stringify(items),member,raid.id,items.length,guest,user,user,user).run();
   return result.meta.changes ? reply({ok:true}) : reply({error:'Picks can only be saved for confirmed raiders or organizer-entered guests while reserves are open and within the limit.'},409);
+}
+
+export async function pendingGuestReserves(db,id) {
+  const {results} = await db.prepare(`SELECT player_key AS key, character, items FROM raid_reserves
+    WHERE raid_id = ? AND player_key LIKE 'request:%' ORDER BY character COLLATE NOCASE`).bind(id).all();
+  return results.map(row=>({...row,items:JSON.parse(row.items)}));
+}
+
+export async function requestGuestReserves(db,id,form) {
+  const name = String(form.get('character') ?? '').trim().replace(/\s+/g,' ');
+  const raw = String(form.get('items') ?? '');
+  const items = raw.split(/\r?\n/).map(item=>item.trim()).filter(Boolean);
+  if (!name || name.length > 61 || !items.length || items.length > 5 || raw.length > 605 ||
+      items.some(item=>item.length > 120) || new Set(items.map(item=>item.toLowerCase())).size !== items.length) {
+    return new Response('Enter a character name and up to five distinct items, one per line.',{status:400});
+  }
+  const normalized = name.toLowerCase();
+  const result = await db.prepare(`INSERT OR IGNORE INTO raid_reserves (raid_id,player_key,character,items)
+    SELECT id, ?, ?, ? FROM raids WHERE id = ? AND reserves_locked = 0 AND state <> 'Cancelled' AND reserve_limit >= ?
+    AND NOT EXISTS (SELECT 1 FROM raid_reserves WHERE raid_id = raids.id AND player_key = ?)
+    AND (SELECT count(*) FROM raid_reserves WHERE raid_id = raids.id AND player_key LIKE 'request:%') < 100`)
+    .bind('request:'+normalized,name,JSON.stringify(items),id,items.length,'guest:'+normalized).run();
+  return result.meta.changes ?
+    new Response(null,{status:303,headers:{Location:'/raid/'+id+'?reserve=requested#loot-reserves','Cache-Control':'no-store'}}) :
+    new Response('This request could not be saved. Check the raid’s reserve limit and lock status, or ask the organizer if a request already exists.',{status:409});
 }

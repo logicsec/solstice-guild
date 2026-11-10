@@ -25,7 +25,7 @@ export function showReserveHistory(raidId, key, name) {
   }).catch(error=>body.replaceChildren(raidElement('p',error.message)));
 }
 
-export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,myReserveItems}) {
+export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pendingReserves,myReserveItems}) {
   root.replaceChildren(raidElement('h3','Loot reserves'),
     raidElement('p',(event.reserves_locked ? 'Locked' : event.state === 'Cancelled' ? 'Closed' : 'Open')+' · '+event.reserve_limit+' per player'));
   const status = raidElement('p');
@@ -51,6 +51,17 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,my
     const lock = raidElement('button',event.reserves_locked ? 'Unlock reserves' : 'Lock reserves');
     lock.addEventListener('click',()=>save(lock,{action:'reserve-settings',locked:!event.reserves_locked}));
     settings.append(label,update,lock); root.append(settings);
+    if (pendingReserves.length) root.append(raidElement('h4','Guest requests awaiting review'));
+    for (const request of pendingReserves) {
+      const row = raidElement('div',null,'raid-row');
+      const approve = raidElement('button','Approve');
+      approve.disabled = Boolean(event.reserves_locked) || event.state === 'Cancelled';
+      approve.addEventListener('click',()=>save(approve,{action:'reserve-review',key:request.key,approve:true}));
+      const decline = raidElement('button','Decline');
+      decline.addEventListener('click',()=>save(decline,{action:'reserve-review',key:request.key,approve:false}));
+      row.append(raidElement('strong',request.character),raidElement('span',request.items.join(' · ')),approve,decline);
+      root.append(row);
+    }
   }
   if (!reserves.length) root.append(raidElement('p','No reserves recorded yet.'));
   for (const pick of reserves) {

@@ -1,4 +1,4 @@
-import { changeReserves, raidReserves, reserveHistory } from './reserves.js';
+import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
 import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
@@ -127,7 +127,7 @@ async function raidApi(request, db, url, user) {
     const myReserveItems = reserveRows.find(row=>row.key === 'member:'+user)?.items ?? [];
     const reserves = organizer ? reserveRows : reserveRows.map(({key,...row})=>row);
     const { owner, ...event } = raid;
-    return reply({ event: { ...event, settings }, organizer, roster, prep, reserves, myReserveItems, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
+    return reply({ event: { ...event, settings }, organizer, roster, prep, reserves, pendingReserves: organizer ? await pendingGuestReserves(db,id) : [], myReserveItems, mine: mine ? { character: mine.character, class_name: mine.class_name, role: mine.role, status: mine.status } : null });
   }
   if (typeof input.action === 'string' && input.action.startsWith('reserve-')) return changeReserves(db,raid,user,input,reply);
   if (input.action === 'delete') {
@@ -272,7 +272,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=713594c478a2"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=4d868b3302f2"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1760,10 +1760,18 @@ export default {
     try { session = await sessionFor(request, env); }
     catch { return new Response('Guild session storage is unavailable.', { status: 503 }); }
     const raidPath = pathname.match(/^\/raid\/([0-9a-f-]{36})$/);
+    if (raidPath && request.method === 'POST') {
+      if (!sameOriginWrite(request,url)) return new Response('Invalid origin.',{status:403});
+      if (!request.headers.get('Content-Type')?.startsWith('application/x-www-form-urlencoded')) {
+        return new Response('Invalid reserve form.',{status:415});
+      }
+      try { return await requestGuestReserves(env.DB,raidPath[1],await request.formData()); }
+      catch { return new Response('Reserve requests are unavailable.',{status:503}); }
+    }
     const legacyRaidId = pathname === '/' && url.searchParams.get('tool') === 'raid' ? url.searchParams.get('raid') : null;
     const memberDetail = session && url.searchParams.get('view') === 'detail';
     if (request.method === 'GET' && (raidPath || (/^[0-9a-f-]{36}$/.test(legacyRaidId ?? '') && !memberDetail && !url.searchParams.has('login')))) {
-      try { return await publicRaidPage(env.DB, raidPath?.[1] ?? legacyRaidId, raidRoles, session); }
+      try { return await publicRaidPage(env.DB, raidPath?.[1] ?? legacyRaidId, raidRoles, session, url.searchParams.get('reserve') === 'requested'); }
       catch { return new Response('Raid storage is unavailable.', { status: 503 }); }
     }
     try {

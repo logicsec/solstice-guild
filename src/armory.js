@@ -82,6 +82,10 @@ async function loadCharacter(env, slug) {
     slot: localized(item.slot?.name ?? item.slot?.type),
     name: localized(item.name),
     quality: item.quality?.type ?? 'COMMON',
+    details: [localized(item.binding?.name),localized(item.item_subclass?.name),
+      ...(Array.isArray(item.stats) ? item.stats.map(stat=>localized(stat.display?.display_string)) : []),
+      ...(Array.isArray(item.spells) ? item.spells.map(spell=>localized(spell.description)) : []),
+    ].filter(Boolean),
     enchants: (Array.isArray(item.enchantments) ? item.enchantments : []).map(enchant=>
       localized(enchant.display_string ?? enchant.enchantment?.name ?? enchant.source_item?.name)).filter(Boolean),
   })).filter(item=>item.name) : null;
