@@ -276,7 +276,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=eb6a168e6ab9"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=dd3968991cd5"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1290,7 +1290,7 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
     }
     if (player.armorySlug) {
       const sheet = raidElement('button','Open character sheet','raid-primary inspector-sheet');
-      sheet.addEventListener('click',()=>openCharacterSheet(player));
+      sheet.addEventListener('click',()=>openCharacterSheet(player,event,organizer));
       actions.append(sheet);
     }
     detail.append(actions);
@@ -1419,9 +1419,9 @@ function readinessOf(player) {
   return 'Ready';
 }
 
-function reviewCharacter(event, player, organizer) {
+function reviewCharacter(event, player, organizer, saveReview = update => changeRaid(event.id,update)) {
   const details = raidElement('details', null, 'readiness-details');
-  details.append(raidElement('summary','Character checks'));
+  details.append(raidElement('summary','Character Checks'));
   if (player.reviewed_at) details.append(raidElement('p','Reviewed '+raidDate(player.reviewed_at)));
   const grid = raidElement('div',null,'readiness-checks');
   if (!organizer) {
@@ -1446,16 +1446,19 @@ function reviewCharacter(event, player, organizer) {
   const note = raidElement('input');
   note.placeholder = 'Shared readiness note'; note.maxLength = 400; note.value = player.readiness_note ?? '';
   note.setAttribute('aria-label','Shared readiness note for '+player.character);
-  const save = raidElement('button','Save review','raid-primary');
+  const save = raidElement('button','Save Review','raid-primary');
   const actions = raidElement('div',null,'raid-actions');
   actions.append(note,save);
-  form.append(grid,actions);
+  const feedback = raidElement('p');
+  feedback.setAttribute('role','status');
+  form.append(grid,actions,feedback);
   form.addEventListener('submit', async e => {
-    e.preventDefault(); save.disabled = true;
+    e.preventDefault(); save.disabled = true; feedback.textContent = '';
     try {
-      await changeRaid(event.id,{action:'readiness',member:player.member,character:player.character,
+      await saveReview({action:'readiness',member:player.member,character:player.character,
         checks:Object.fromEntries(fields.map(([key,field]) => [key,field.value])),note:note.value});
-    } finally { save.disabled = false; }
+    } catch (error) { feedback.textContent = error.message; }
+    finally { save.disabled = false; }
   });
   details.append(form);
   return details;
