@@ -243,6 +243,26 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const editor = await (await send('/cms?edit=' + articleId,options)).text();
   assert.match(editor,/data-command="image">Add image/);
   assert.match(editor,/<h2>Raid recap<\/h2>/);
+  const png = Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aWckAAAAASUVORK5CYII=', 'base64'));
+  const upload = (editorCookie, bytes = png) => send('/cms/images', {
+    method:'POST', headers:{ Cookie:editorCookie, Origin:origin, 'Content-Type':'image/png' }, body:bytes,
+  });
+  assert.equal((await upload(member)).status,403);
+  assert.equal((await upload(cookie,new Uint8Array([1,2,3]))).status,415);
+  const uploaded = await upload(cookie);
+  assert.equal(uploaded.status,201);
+  const { path:imagePath } = await uploaded.json();
+  assert.equal((await send(imagePath)).status,404);
+  assert.equal((await send(imagePath,options)).status,200);
+  article.set('body','<p>Screenshot</p><img src="' + imagePath + '" alt="">');
+  assert.equal((await save()).status,303);
+  assert.ok((await (await send('/chronicle/' + articleId)).text()).includes('<img src="' + imagePath + '"'));
+  const publicImage = await send(imagePath);
+  assert.equal(publicImage.headers.get('Content-Type'),'image/png');
+  assert.deepEqual(new Uint8Array(await publicImage.arrayBuffer()),png);
+  article.set('action','draft');
+  assert.equal((await save()).status,303);
+  assert.equal((await send(imagePath)).status,404);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'https://bad.example','Sec-Fetch-Site':'cross-site'}})).status,403);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'same-origin'}})).status,303);
   assert.equal((await send('/api/session', options)).status, 401);
