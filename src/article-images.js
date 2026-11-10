@@ -1,6 +1,5 @@
 import { sameOriginWrite } from './auth.js';
 
-export const maxArticleImageBytes = 1536 * 1024;
 const imageTypes = {
   'image/png': [137, 80, 78, 71, 13, 10, 26, 10],
   'image/jpeg': [255, 216, 255],
@@ -23,11 +22,7 @@ export async function articleImagePage(request, env, url, editor, id) {
   const mime = request.headers.get('Content-Type');
   const signature = Object.hasOwn(imageTypes, mime) ? imageTypes[mime] : null;
   if (!signature) return new Response('Paste a PNG, JPEG, or WebP image.', { status: 415 });
-  if (Number(request.headers.get('Content-Length')) > maxArticleImageBytes) {
-    return new Response('Image is too large. The limit is 1.5 MB.', { status: 413 });
-  }
   const bytes = new Uint8Array(await request.arrayBuffer());
-  if (bytes.length > maxArticleImageBytes) return new Response('Image is too large. The limit is 1.5 MB.', { status: 413 });
   if (!signature.every((byte, index) => byte === bytes[index]) ||
       (mime === 'image/webp' && String.fromCharCode(...bytes.subarray(8, 12)) !== 'WEBP')) {
     return new Response('The image format does not match its contents.', { status: 415 });
