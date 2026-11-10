@@ -34,6 +34,11 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   let discordId = '30';
   let isMember = true;
   t.mock.method(globalThis, 'fetch', async (url, options) => {
+    if (url === 'https://api.ahledger.com/v1/pricetable/forever.normal.alliance.us') {
+      return new Response('AHL1|forever/normal/alliance/us|1794283197|2\n117:100:80:3:100:100\n118:100:90:3:100:100');
+    }
+    if (url === 'https://api.ahledger.com/v1/items/117?game=forever') return Response.json({id:117,name:'Tough Jerky',vendorSell:100});
+    if (url === 'https://api.ahledger.com/v1/items/118?game=forever') return Response.json({id:118,name:'Minor Healing Potion',vendorSell:80});
     if (url === 'https://oauth.battle.net/token') return Response.json({access_token:'blizzard-token',expires_in:3600});
     if (url.startsWith('https://us.api.blizzard.com/')) {
       assert.equal(options.headers.Authorization,'Bearer blizzard-token');
@@ -82,11 +87,27 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const post = (path, body, session = cookie) => send(path, {
     method: 'POST', headers: { Cookie: session, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
+  assert.equal((await send('/api/vendor-flips',{method:'POST'})).status,401);
+  const flips = await (await post('/api/vendor-flips',{})).json();
+  assert.equal(flips.complete,true);
+  assert.equal(flips.checked,2);
+  assert.deepEqual(flips.flips,[{id:117,name:'Tough Jerky',min:80,vendor:100,profit:20}]);
   const created = await post('/api/raids', { instance: 'barrow-deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true });
   assert.equal(created.status, 201);
   const { id } = await created.json();
   discordId = '31';
   const member = (await signIn('/?tool=raid&raid=' + id)).headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
+  const memberOptions = {headers:{Cookie:member}};
+  for (const path of ['/api/raids','/api/raids?discover=1']) {
+    const {raids} = await (await send(path,memberOptions)).json();
+    assert.ok(raids.some(raid=>raid.id === id && !raid.organizer));
+  }
+  assert.equal((await send('/api/raid-characters?guild=1')).status,401);
+  assert.equal((await post('/api/raid-characters',{name:'Guild Tester',className:'Priest',spec:'Holy',role:'Healer'},member)).status,200);
+  const directory = await (await send('/api/raid-characters?guild=1',options)).json();
+  assert.deepEqual(directory.characters,[{name:'Guild Tester',class_name:'Priest',spec:'Holy',role:'Healer',armory_linked:0}]);
+  const ownCharacters = await (await send('/api/raid-characters',options)).json();
+  assert.deepEqual(ownCharacters.signupCharacters,[]);
   const raid = '/api/raids/' + id;
   const publicPath = '/raid/' + id;
   assert.equal((await signIn(publicPath)).headers.get('location'),publicPath);

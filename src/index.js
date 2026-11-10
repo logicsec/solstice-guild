@@ -1,3 +1,4 @@
+import { parseTable, scanVendorFlips } from './vendor-flips.js';
 import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
 import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
@@ -61,6 +62,14 @@ async function raidApi(request, db, url, user) {
   const clean = (value, max) => typeof value === 'string' ? value.trim().slice(0, max) : '';
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
+      if (url.searchParams.get('guild') === '1') {
+        const {results} = await db.prepare(`SELECT name, class_name, spec, role, 1 AS armory_linked FROM armory_links
+          UNION ALL
+          SELECT c.name, c.class_name, c.spec, c.role, 0 FROM raid_characters c
+          WHERE NOT EXISTS (SELECT 1 FROM armory_links a WHERE a.member = c.member AND a.name = c.name COLLATE NOCASE)
+          ORDER BY name COLLATE NOCASE`).bind().all();
+        return reply({ characters:results });
+      }
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
       const linked = await db.prepare('SELECT name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
       const names = new Set(linked.results.map(row=>row.name.toLowerCase()));
@@ -75,11 +84,16 @@ async function raidApi(request, db, url, user) {
   }
   if (!id) {
     if (!post) {
+      const now = new Date().toISOString();
       if (url.searchParams.get('discover') === '1') {
-        const result = await db.prepare("SELECT id, title, starts_at, size, state, (owner = ?) AS organizer FROM raids WHERE json_extract(settings, '$.listed') = 1 AND state = 'Open' AND starts_at > ? ORDER BY starts_at LIMIT 100").bind(user, new Date().toISOString()).all();
+        const result = await db.prepare("SELECT id, title, starts_at, size, state, (owner = ?) AS organizer FROM raids WHERE state = 'Open' AND starts_at > ? ORDER BY starts_at LIMIT 100").bind(user,now).all();
         return reply({ raids: result.results });
       }
-      const result = await db.prepare('SELECT id, title, starts_at, size, state, (owner = ?) AS organizer FROM raids WHERE owner = ? OR id IN (SELECT raid_id FROM raid_signups WHERE member = ?) ORDER BY starts_at DESC LIMIT 100').bind(user, user, user).all();
+      const result = await db.prepare(`WITH member_raids AS (SELECT raid_id FROM raid_signups WHERE member = ?)
+        SELECT id, title, starts_at, size, state, (owner = ?) AS organizer,
+          (id IN member_raids) AS joined FROM raids
+        WHERE owner = ? OR id IN member_raids OR (state = 'Open' AND starts_at > ?)
+        ORDER BY starts_at DESC LIMIT 100`).bind(user,user,user,now).all();
       return reply({ raids: result.results });
     }
     const instance = raidInstance(input.instance);
@@ -99,7 +113,7 @@ async function raidApi(request, db, url, user) {
     if (reserve && !/^https:\/\/[^\s]+$/i.test(reserve)) return reply({ error: 'Use an HTTPS soft-reserve link.' }, 400);
     const settings = JSON.stringify({
       roles: input.slots ? roles : null, review: input.review === true, waitlist: input.waitlist === true,
-      listed: input.listed === true, requirements: clean(input.requirements, 500), softReserve: reserve,
+      requirements: clean(input.requirements, 500), softReserve: reserve,
     });
     const dates = input.dates ?? [input.startsAt];
     if (!Array.isArray(dates) || !dates.length || dates.length > 12 || dates[0] !== input.startsAt ||
@@ -235,6 +249,8 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .hero-stats div{padding:9px 13px;background:#181615;min-width:105px}.hero-stats span{display:block;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.hero-stats strong{color:var(--ink);font-size:15px;white-space:nowrap}
 .board{margin:16px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:4px}
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
+#searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
+#vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
 .search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
 .filters{position:relative}.filters summary{padding:7px 10px;background:#181615;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
@@ -291,8 +307,16 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <input id="query" type="search" aria-label="Item name or ID" placeholder="Search by item name or ID" autocomplete="off">
 <details class="filters"><summary>Filter</summary><div><label for="sort">Sort by</label><select id="sort"><option value="name">Item name</option><option value="min">Lowest buyout</option><option value="quantity">Most units</option><option value="discount">Biggest discount vs. 30d</option></select></div></details>
 <button type="submit" class="search-button">Search</button>
+<button type="button" id="vendorFlipsToggle" aria-pressed="false" aria-controls="vendorFlips">Vendor Flips</button>
 </form>
-<div class="auction-layout">
+<section id="vendorFlips" class="craft-section" hidden aria-labelledby="vendorFlipsTitle">
+<h2 id="vendorFlipsTitle">Vendor Flips</h2>
+<p>Compare the lowest unit buyout with the vendor payout. Check the current in-game price before buying.</p>
+<p class="status" id="vendorFlipStatus" role="status"></p>
+<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col">Lowest Buyout</th><th scope="col">Vendor Payout</th><th scope="col">Profit per Item</th></tr></thead><tbody id="vendorFlipRows"></tbody></table></div>
+<p class="status"><a href="https://ahledger.com/">Prices from AHledger</a></p>
+</section>
+<div id="auctionListings" class="auction-layout">
 <aside class="categories" aria-label="Auction House categories">
 <h2>Categories</h2>
 <div id="category"></div>
@@ -324,7 +348,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Raid Planner">
-<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Raid planner"><div class="raid-nav-group"><div class="eyebrow">Guild workspace</div><label class="working-raid">Working raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Readiness</button><button data-raid-view="roster"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m20 0v-2a4 4 0 0 0-3-4M13 8a4 4 0 1 1-8 0 4 4 0 0 1 8 0zm4-4a4 4 0 0 1 0 8"/></svg>Raid roster</button><button data-raid-view="tonight"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4l16 16m-4 0 4-4M20 4 4 20m0-4 4 4"/></svg>Tonight</button><button data-raid-view="loot"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9h18v11H3zM3 9l2-5h14l2 5M3 13h18m-11-2h4v4h-4z"/></svg>Loot</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Characters</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -354,7 +378,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
-<label class="raid-check"><input name="listed" type="checkbox"> Show in Find a raid</label>
+<p>Open raids are visible to all signed-in guild members.</p>
 <label>Requirements<input name="requirements" maxlength="500" placeholder="Minimum level, gear, consumables"></label>
 <label>Soft-reserve URL<input name="softReserve" type="url" maxlength="400" placeholder="https://…"></label>
 <p>Link-only by default. Each signed-in player can RSVP with one character per raid.</p></div>
@@ -548,6 +572,57 @@ for (const [name, iconPath] of professionTiles) {
   professionGrid.append(button);
 }
 
+let vendorFlipTimer;
+let vendorFlipPending = false;
+const vendorPanel = byId('vendorFlips');
+const vendorToggle = byId('vendorFlipsToggle');
+function vendorFlipsVisible() {
+  return !vendorPanel.hidden && !byId('auctionPanel').hidden;
+}
+async function refreshVendorFlips() {
+  if (!vendorFlipsVisible() || vendorFlipPending) return;
+  clearTimeout(vendorFlipTimer);
+  vendorFlipPending = true;
+  const status = byId('vendorFlipStatus');
+  if (!status.textContent) status.textContent = 'Loading the auction snapshot…';
+  let delay = 5000;
+  try {
+    const response = await fetch('/api/vendor-flips',{method:'POST'});
+    if (!response.ok) throw new Error(await response.text());
+    const data = await response.json();
+    const rows = byId('vendorFlipRows');
+    rows.replaceChildren();
+    for (const flip of data.flips) {
+      const row = rows.insertRow();
+      const name = document.createElement('a');
+      name.href = 'https://ahledger.com/items/'+flip.id;
+      name.textContent = flip.name;
+      row.insertCell().append(name);
+      for (const value of [flip.min,flip.vendor,flip.profit]) row.insertCell().textContent = money(value);
+      row.cells[3].className = 'price is-sale';
+    }
+    const time = new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}).format(new Date(data.timestamp));
+    const coverage = format.format(data.checked)+' of '+format.format(data.total)+' prices verified';
+    const unavailable = data.unavailable ? ' · '+data.unavailable+' vendor values unavailable' : '';
+    status.textContent = (data.complete ? (data.flips.length ? data.flips.length+' opportunities found' : 'No profitable flips found in verified prices') : 'Checking vendor prices…')
+      +' · '+coverage+unavailable+' · Auction scan '+time+' ET';
+    if (data.complete) delay = 60000;
+  } catch (error) {
+    status.textContent = error.message || 'Vendor prices are temporarily unavailable.';
+    delay = 30000;
+  } finally {
+    vendorFlipPending = false;
+    if (vendorFlipsVisible()) vendorFlipTimer = setTimeout(refreshVendorFlips,delay);
+  }
+}
+vendorToggle.addEventListener('click',()=>{
+  vendorPanel.hidden = !vendorPanel.hidden;
+  byId('auctionListings').hidden = !vendorPanel.hidden;
+  vendorToggle.setAttribute('aria-pressed',String(!vendorPanel.hidden));
+  if (vendorFlipsVisible()) refreshVendorFlips();
+  else clearTimeout(vendorFlipTimer);
+});
+
 function setView(view) {
   byId('marketFooter').hidden = view === 'raid';
   const showProfessions = view === 'profession';
@@ -561,6 +636,8 @@ function setView(view) {
   byId('auctionTab').setAttribute('aria-pressed', String(view === 'auction'));
   byId('professionTab').setAttribute('aria-pressed', String(showProfessions));
   if (showProfessions && !craftData && !craftRequest) loadCrafts();
+  if (vendorFlipsVisible()) refreshVendorFlips();
+  else clearTimeout(vendorFlipTimer);
 }
 
 async function loadCrafts() {
@@ -692,24 +769,7 @@ function renderCrafts() {
 }
 
 
-function parseTable(raw) {
-  const [header, ...lines] = raw.trim().split(/\r?\n/);
-  const [version, market, stamp, count] = header.split('|');
-  if (version !== 'AHL1' || !['forever/normal/alliance/us', 'forever.normal.alliance.us'].includes(market)) {
-    throw new Error('Expected an AHledger AHL1 price table for US Normal Alliance.');
-  }
-  const timestamp = new Date(Number(stamp) * 1000);
-  const parsed = lines.filter(Boolean).map(line => {
-    const fields = line.split(':').map(value => /^\d+$/.test(value) && Number.isSafeInteger(Number(value)) ? Number(value) : null);
-    const [id, median, min, quantity, week, month] = fields;
-    if (!id || fields.length < 6) throw new Error('The price table contains an invalid row.');
-    return { id, median, min, quantity, week, month };
-  });
-  if (!/^\d+$/.test(stamp) || !Number.isFinite(+timestamp) || !/^\d+$/.test(count) || Number(count) !== parsed.length) {
-    throw new Error('The price table header or row count is invalid.');
-  }
-  return { parsed, timestamp };
-}
+${parseTable.toString()}
 
 function money(copper) {
   if (copper == null) return '—';
@@ -996,12 +1056,13 @@ function raidReset(view, id) {
   raidView = view;
   activeRaid = id || null;
   for (const node of document.querySelectorAll('[data-raid-view]')) node.setAttribute('aria-current', String(node.dataset.raidView === view));
-  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = { readiness:'Raid Readiness', roster:'Raid roster', tonight:'Tonight', loot:'Loot', signups:'My sign-ups', characters:'My characters', guildCharacters:'Guild Characters', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = {
     readiness:'See which raid requirements are met and which still need attention.',
     roster:'Review sign-ups, raid blockers, and the checks behind each character’s status.',
     tonight:'Plan the evening around raid blockers, available players, and the work that fits.',
     loot:'View loot reserves for your working raid.',
+    guildCharacters:'Browse characters saved or linked by guild members.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
@@ -1030,7 +1091,7 @@ async function openRaidView(view, id, navigate = true) {
       await openRaidWorkspace(view, revision);
       return;
     }
-    if (['detail','characters','discover'].includes(view)) {
+    if (['detail','characters','guildCharacters','discover'].includes(view)) {
       loadWorkingRaids(revision).catch(error=>{
         if (revision !== raidRevision) return;
         workingRaid.replaceChildren(new Option('Raids unavailable',''));
@@ -1045,6 +1106,39 @@ async function openRaidView(view, id, navigate = true) {
       activeRaidData = data;
       byId('rosterFilter').value = '';
       renderRaid(data);
+      return;
+    }
+    if (view === 'guildCharacters') {
+      const {characters} = await raidRequest('characters?guild=1');
+      if (revision !== raidRevision) return;
+      const list = raidElement('section',null,'raid-card');
+      const search = raidElement('input');
+      search.type = 'search';
+      search.placeholder = 'Search by character, class, spec, or role';
+      search.setAttribute('aria-label','Search guild characters');
+      const filters = raidElement('div',null,'roster-filters');
+      filters.append(search);
+      const rows = raidElement('div');
+      list.append(raidElement('h3','Guild Character Directory'),filters,rows);
+      const draw = () => {
+        const query = search.value.trim().toLowerCase();
+        rows.replaceChildren();
+        for (const character of characters) {
+          const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
+          if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
+          const row = raidElement('div',null,'raid-row');
+          const identity = raidElement('div',null,'roster-character');
+          const info = raidElement('div');
+          info.append(raidElement('strong',character.name),raidElement('small',meta));
+          identity.append(characterIcons(character.class_name,character.spec),info);
+          row.append(identity,raidElement('small',character.armory_linked ? 'Armory linked' : 'Manually added'));
+          rows.append(row);
+        }
+        if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
+      };
+      search.addEventListener('input',draw);
+      draw();
+      byId('raidList').append(list);
       return;
     }
     if (view === 'characters') {
@@ -1078,13 +1172,14 @@ async function openRaidView(view, id, navigate = true) {
       return;
     }
     const visible = view === 'manage' ? raids.filter(raid => raid.organizer) :
-      view === 'calendar' ? [...raids].sort((a,b) => a.starts_at.localeCompare(b.starts_at)) : raids;
+      view === 'calendar' ? [...raids].sort((a,b) => a.starts_at.localeCompare(b.starts_at)) :
+      view === 'signups' ? raids.filter(raid => raid.organizer || raid.joined) : raids;
     const upcoming = visible.filter(raid => +new Date(raid.starts_at) >= Date.now());
     const summary = raidElement('div', null, 'raid-stats');
     raidStats(summary, [['Upcoming raids',upcoming.length],['Your organized raids',visible.filter(raid => raid.organizer).length],['Total events',visible.length]]);
     const list = raidElement('div', null, 'raid-card');
-    list.append(raidElement('h3', view === 'manage' ? 'Raids you organize' : view === 'discover' ? 'Open listed raids' : view === 'calendar' ? 'Scheduled events' : 'Your raid activity'));
-    if (!visible.length) list.append(raidElement('p', 'No raids yet. Create one or open a guild invite link.'));
+    list.append(raidElement('h3', view === 'manage' ? 'Raids you organize' : view === 'discover' ? 'Open Guild Raids' : view === 'calendar' ? 'Scheduled events' : 'Your raid activity'));
+    if (!visible.length) list.append(raidElement('p', view === 'discover' ? 'No upcoming raids are open for sign-ups.' : 'No raids yet. Create one or open a guild invite link.'));
     for (const raid of visible) {
       const row = raidElement('div', null, 'raid-row');
       const title = raidElement('div');
@@ -1215,7 +1310,7 @@ function renderReadinessWorkspace(root,{event,roster}) {
   const plan = raidElement('button','Plan tonight’s preparation');
   plan.addEventListener('click',()=>openRaidView('tonight'));
   const actions = raidElement('div',null,'raid-actions');
-  const details = raidElement('button','Open raid details');
+  const details = raidElement('button',event.state === 'Open' ? 'Open Raid & RSVP' : 'Open Raid Details');
   details.addEventListener('click',()=>openRaidView('detail',event.id));
   byId('readinessInviteLink').value = raidInviteUrl(event.id);
   byId('copyReadinessInvite').textContent = 'Copy';
@@ -1689,7 +1784,7 @@ raidForm.addEventListener('submit', async event => {
     return date.toISOString();
   });
   data.slots = Object.fromEntries(raidRoles.map((role,index) => [role,Number(roleSlotFields[index].value)]));
-  for (const flag of ['review','waitlist','listed']) data[flag] = data[flag] === 'on';
+  for (const flag of ['review','waitlist']) data[flag] = data[flag] === 'on';
   const button = byId('raidSubmit');
   button.disabled = true;
   try {
@@ -1756,7 +1851,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','manage','new'].includes(view) ? view : 'readiness',id,false);
+    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','guildCharacters','manage','new'].includes(view) ? view : 'readiness',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
@@ -1838,6 +1933,13 @@ export default {
     if (pathname === '/api/armory') {
       try { return await armoryApi(request, env, url, session.discord_id); }
       catch { return Response.json({ error:'The Armory is temporarily unavailable.' }, { status:502, headers:{ 'Cache-Control':'no-store' } }); }
+    }
+    if (pathname === '/api/vendor-flips') {
+      if (request.method !== 'POST') return new Response('Method not allowed.',{status:405});
+      if (!sameOriginWrite(request,url)) return new Response('Invalid origin.',{status:403});
+      try {
+        return Response.json(await scanVendorFlips(env.DB,market),{headers:{'Cache-Control':'no-store'}});
+      } catch { return new Response('Vendor flip data is temporarily unavailable.',{status:503}); }
     }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
