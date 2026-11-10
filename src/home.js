@@ -1,3 +1,4 @@
+import { armorySpecs, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { articleMarkup, startArticleEditor } from './article-editor.js';
 import { raidReserves } from './reserves.js';
 import { sameOriginWrite } from './auth.js';
@@ -23,7 +24,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=e8cfc6de6bcf"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=9a986242d0d0"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -85,7 +86,8 @@ export async function publicHome(env, url, session) {
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
 
-export async function publicRaidPage(db, id, roles, session, requested) {
+export async function publicRaidPage(env, id, roles, session, requested) {
+  const db = env.DB;
   const next = '/raid/' + id;
   const respond = (title, body, status) => {
     const response = html(shell(title, body, { next, session, raidView:true, hall:'/?tool=raid&view=detail&raid='+id }),status);
@@ -94,7 +96,7 @@ export async function publicRaidPage(db, id, roles, session, requested) {
   };
   const { results } = await db.prepare(`SELECT r.title, r.starts_at, r.size, r.state, r.owner, r.instance,
       r.reserve_limit, r.reserves_locked, json_extract(r.settings, '$.softReserve') AS reserve_url,
-      json_extract(r.settings, '$.roles') AS role_targets, s.character, s.class_name, s.role, s.group_no
+      json_extract(r.settings, '$.roles') AS role_targets, s.member, s.character, s.class_name, s.role, s.group_no
     FROM raids r LEFT JOIN raid_signups s ON s.raid_id = r.id AND s.status = 'Going'
     WHERE r.id = ?
     ORDER BY s.group_no IS NULL, s.group_no, s.character COLLATE NOCASE`).bind(id).all();
@@ -115,7 +117,25 @@ export async function publicRaidPage(db, id, roles, session, requested) {
     const target = targets?.[role];
     return `<div class="news-card"><dt>${escape(role)}</dt><dd>${count}${Number.isInteger(target) ? ' / '+target : ''}</dd></div>`;
   }).join('');
-  const rows = roster.map(player=>`<tr><th scope="row">${escape(player.character)}</th><td>${escape(player.class_name)}</td><td>${escape(player.role)}</td><td>${player.group_no == null ? 'Unassigned' : escape(player.group_no)}</td></tr>`).join('');
+  const profiles = roster.length ? await linkedRosterProfiles(db,id) : new Map();
+  const rows = (await Promise.all(roster.map(async player=>{
+    const link = profiles.get(player.member);
+    const profile = await publicRosterProfile(env,link?.slug);
+    const specs = Object.hasOwn(armorySpecs,player.class_name) ? armorySpecs[player.class_name] : null;
+    const spec = specs?.find(([name])=>name.toLowerCase() === (link?.spec ?? '').toLowerCase());
+    const icon = name => `<img src="https://wow.zamimg.com/images/wow/icons/medium/${escape(name)}.jpg" alt="" width="28" height="28" loading="lazy">`;
+    const metadata = [player.class_name,spec?.[0],player.role,profile?.level != null ? 'Level '+profile.level : ''].filter(Boolean);
+    return `<li class="news-card public-raider">
+      <div class="public-raider-identity">
+        ${specs ? `<span class="public-raider-icons">${icon('classicon_'+player.class_name.toLowerCase())}${spec ? icon(spec[2]) : ''}</span>` : ''}
+        <div><strong data-wow-class="${escape(player.class_name)}">${escape(player.character)}</strong>
+          <p>${metadata.map(escape).join(' · ')}</p>
+        </div>
+      </div>
+      ${profile?.guild ? `<span class="public-raider-guild">&lt;${escape(profile.guild)}&gt;</span>` : ''}
+      <span class="public-raider-group">${player.group_no == null ? 'Unassigned' : 'Group '+escape(player.group_no)}</span>
+    </li>`;
+  }))).join('');
   return respond(raid.title,`<main class="guild-home public-raid">
     <section class="home-banner public-raid-banner raid-banner" data-raid-instance="${escape(raid.instance)}"><div class="home-banner-content">
       <p class="eyebrow">Solstice raid · Guest view</p><h1>${escape(raid.title)}</h1>
@@ -130,9 +150,7 @@ export async function publicRaidPage(db, id, roles, session, requested) {
       </section>
       <section class="public-raid-section" aria-labelledby="confirmed-roster">
         <h2 id="confirmed-roster">Confirmed Roster</h2>
-        ${rows ? `<div class="news-card public-raid-table"><table aria-labelledby="confirmed-roster">
-          <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
-          <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
+        ${rows ? `<ul class="public-raider-list">${rows}</ul>` : '<p class="empty">No players have been confirmed yet.</p>'}
       </section>
       <section class="public-raid-section" aria-labelledby="loot-reserves">
         <h2 id="loot-reserves">Loot Reserves</h2>

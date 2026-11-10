@@ -13,6 +13,7 @@ export const armorySpecs = {
   Warrior: [['Arms','Melee DPS','ability_warrior_savageblow'],['Fury','Melee DPS','ability_warrior_innerrage'],['Protection','Tank','ability_warrior_defensivestance']],
 };
 let tokenCache;
+const rosterProfileCache = new Map();
 
 function localized(value) {
   return typeof value === 'string' ? value : value?.en_US ?? '';
@@ -38,11 +39,32 @@ async function battleNetToken(env) {
   return token.access_token;
 }
 
+function requestCharacterProfile(token, slug, suffix = '', timeout = 10000) {
+  return fetch('https://us.api.blizzard.com/profile/wow/character/' + encodeURIComponent(slug) + suffix + '?namespace=profile-forever-us&locale=en_US', {
+    headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(timeout),
+  });
+}
+
+export function publicRosterProfile(env, slug) {
+  if (!slug || !env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) return null;
+  const key = env.BLIZZARD_CLIENT_ID + ':' + slug;
+  const cached = rosterProfileCache.get(key);
+  if (cached?.expires > Date.now()) return cached.value;
+  const value = (async () => {
+    const response = await requestCharacterProfile(await battleNetToken(env),slug,'',3000);
+    if (!response.ok) return null;
+    const profile = await response.json();
+    return { level:Number.isSafeInteger(profile.level) ? profile.level : null, guild:localized(profile.guild?.name) };
+  })().catch(()=>null);
+  rosterProfileCache.delete(key);
+  rosterProfileCache.set(key,{value,expires:Date.now() + 5 * 60 * 1000});
+  if (rosterProfileCache.size > 500) rosterProfileCache.delete(rosterProfileCache.keys().next().value);
+  return value;
+}
+
 async function loadCharacter(env, slug) {
   const token = await battleNetToken(env);
-  const requestProfile = suffix => fetch('https://us.api.blizzard.com/profile/wow/character/' + encodeURIComponent(slug) + suffix + '?namespace=profile-forever-us&locale=en_US', {
-    headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(10000),
-  });
+  const requestProfile = suffix => requestCharacterProfile(token,slug,suffix);
   const response = await requestProfile('');
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('The Armory profile is temporarily unavailable.');

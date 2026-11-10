@@ -45,7 +45,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
       if (suffix === 'statistics') return Response.json({intellect:{effective:42},health:900});
       if (suffix === 'professions') return Response.json({primaries:[{profession:{name:'Alchemy'},skill_points:100}]});
       if (suffix === 'character-media') return Response.json({assets:[{key:'main-raw',value:'https://render.worldofwarcraft.com/us/test.png'}]});
-      return Response.json({name:'Astra',surname:'Mortis',character_class:{name:'Mage'},level:60});
+      return Response.json({name:'Astra',surname:'Mortis',character_class:{name:'Mage'},level:60,guild:{name:'Solstice'}});
     }
     if (url === 'https://discord.com/api/v10/oauth2/token') {
       assert.equal(options.body.get('redirect_uri'), origin + '/auth/discord/callback');
@@ -158,6 +158,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.doesNotMatch(body,/<footer>/);
     assert.match(body,/Astra Mortis/);
     assert.match(body,/Ranged DPS/);
+    assert.match(body,/classicon_mage\.jpg/);
+    assert.match(body,/spell_frost_frostbolt02\.jpg/);
+    assert.match(body,/Level 60/);
+    assert.match(body,/&lt;Solstice&gt;/);
     assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);
   }
   const picks = {action:'reserve-picks',items:['Staff of the Wild','Ember Ring']};

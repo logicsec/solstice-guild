@@ -467,15 +467,15 @@ body:has(> .guild-home) { background: var(--surface); }
   border-color: color-mix(in srgb, var(--class-color, var(--ink)) 28%, var(--line));
   background: color-mix(in srgb, var(--class-color, var(--ink)) 8%, transparent);
 }
-.armory-class-badge[data-wow-class="Druid"] { --class-color: #ff7c0a; }
-.armory-class-badge[data-wow-class="Hunter"] { --class-color: #aad372; }
-.armory-class-badge[data-wow-class="Mage"] { --class-color: #3fc7eb; }
-.armory-class-badge[data-wow-class="Paladin"] { --class-color: #f48cba; }
-.armory-class-badge[data-wow-class="Priest"] { --class-color: #fff; }
-.armory-class-badge[data-wow-class="Rogue"] { --class-color: #fff468; }
-.armory-class-badge[data-wow-class="Shaman"] { --class-color: #0070dd; }
-.armory-class-badge[data-wow-class="Warlock"] { --class-color: #8788ee; }
-.armory-class-badge[data-wow-class="Warrior"] { --class-color: #c69b6d; }
+[data-wow-class="Druid"] { --class-color: #ff7c0a; }
+[data-wow-class="Hunter"] { --class-color: #aad372; }
+[data-wow-class="Mage"] { --class-color: #3fc7eb; }
+[data-wow-class="Paladin"] { --class-color: #f48cba; }
+[data-wow-class="Priest"] { --class-color: #fff; }
+[data-wow-class="Rogue"] { --class-color: #fff468; }
+[data-wow-class="Shaman"] { --class-color: #0070dd; }
+[data-wow-class="Warlock"] { --class-color: #8788ee; }
+[data-wow-class="Warrior"] { --class-color: #c69b6d; }
 .guild-app .armory-confirm p.armory-confirm-guild { color: var(--gold); font-weight: 400; }
 .armory-confirm-form { float: none; margin-top: 14px; }
 .armory-specs { border: 0; padding: 0; margin: 0 0 12px; }
@@ -810,3 +810,13 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .workspace-goal .character-banner-facts { gap: 10px 22px; }
 .workspace-goal .character-banner-facts > div { flex-wrap: wrap; }
 .guild-app .guild-account .guild-signout { min-height: 30px; padding: 5px 10px; border: 1px solid transparent; border-radius: 8px; font-size: 12px; box-shadow: none; }
+
+.public-raider-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.public-raid .public-raider { display: flex; align-items: center; flex-wrap: wrap; gap: 8px 16px; padding: 12px 16px; }
+.public-raider-identity { display: flex; align-items: center; gap: 9px; flex: 1 1 220px; min-width: 0; }
+.public-raider-identity strong { color: var(--class-color,var(--ink)); overflow-wrap: anywhere; }
+.public-raider-identity p { font-size: 13px; }
+.public-raider-icons { display: flex; gap: 5px; flex: none; }
+.public-raider-icons img { display: block; border: 1px solid var(--line); border-radius: 5px; }
+.public-raider-guild { color: var(--accent); font-size: 13px; overflow-wrap: anywhere; }
+.public-raider-group { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; color: var(--muted); font-size: 12px; }

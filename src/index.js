@@ -278,7 +278,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=e8cfc6de6bcf"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=9a986242d0d0"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1817,7 +1817,7 @@ export default {
     const legacyRaidId = pathname === '/' && url.searchParams.get('tool') === 'raid' ? url.searchParams.get('raid') : null;
     const memberDetail = session && url.searchParams.get('view') === 'detail';
     if (request.method === 'GET' && (raidPath || (/^[0-9a-f-]{36}$/.test(legacyRaidId ?? '') && !memberDetail && !url.searchParams.has('login')))) {
-      try { return await publicRaidPage(env.DB, raidPath?.[1] ?? legacyRaidId, raidRoles, session, url.searchParams.get('reserve') === 'requested'); }
+      try { return await publicRaidPage(env, raidPath?.[1] ?? legacyRaidId, raidRoles, session, url.searchParams.get('reserve') === 'requested'); }
       catch { return new Response('Raid storage is unavailable.', { status: 503 }); }
     }
     try {
