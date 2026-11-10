@@ -62,7 +62,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     }
     assert.equal(url, 'https://discord.com/api/v10/users/@me/guilds/20/member');
     assert.equal(options.headers.Authorization, 'Bearer mock-token');
-    return isMember ? Response.json({ user: { id: discordId, username: 'Raider' } }) : new Response(null, { status: 404 });
+    return isMember ? Response.json({ nick:'Raider', user: { id: discordId, username: 'raider_account' } }) : new Response(null, { status: 404 });
   });
   async function signIn(next, wrongState = false) {
     const begin = await send('/auth/discord?next=' + encodeURIComponent(next));
@@ -102,6 +102,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
   assert.equal((await (await send('/api/session', options)).json()).displayName, 'Raider');
+  assert.equal((await (await send('/api/session', options)).json()).username,'raider_account');
   const renewedAt = Date.now();
   const renewal = await send('/api/session',{method:'POST',headers:{Cookie:cookie,Origin:origin}});
   assert.equal(renewal.status,204);

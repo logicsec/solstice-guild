@@ -891,3 +891,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-profession-watermark { inset-inline-end: 30px; width: 58px; height: 58px; }
 .guild-app .guild-profession-link:is(:hover,:focus-visible) { border-color: var(--gold); }
 .guild-profession-filter:not([hidden]) { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 10px; }
+
+.guild-discord-account { display: inline-flex; align-items: center; gap: 8px; min-width: 0; }
+.guild-discord-icon { width: 20px; height: 20px; flex: none; color: #a4abff; }
+.guild-discord-account #guildIdentity { overflow-wrap: anywhere; font-size: 13px; }
+.guild-discord-status { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #86bd8a; box-shadow: 0 0 7px #86bd8a55; }
+.guild-discord-status[data-expired="true"] { background: var(--muted); box-shadow: none; }

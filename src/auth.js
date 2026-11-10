@@ -46,7 +46,7 @@ export function authReady(env) {
 export async function sessionFor(request, env) {
   const token = cookie(request, sessionCookie);
   if (!/^[a-f0-9]{64}$/.test(token ?? '')) return null;
-  return env.DB.prepare('SELECT discord_id, display_name FROM discord_sessions WHERE token_hash = ? AND expires_at > ?')
+  return env.DB.prepare('SELECT discord_id, display_name, username FROM discord_sessions WHERE token_hash = ? AND expires_at > ?')
     .bind(await hash(token), Date.now()).first();
 }
 
@@ -124,8 +124,8 @@ export async function discordAuth(request, env, url) {
   const now = Date.now();
   await env.DB.batch([
     env.DB.prepare('DELETE FROM discord_sessions WHERE expires_at <= ?').bind(now),
-    env.DB.prepare('INSERT INTO discord_sessions (token_hash, discord_id, display_name, expires_at) VALUES (?, ?, ?, ?)')
-      .bind(await hash(session), member.user.id, member.nick || member.user.global_name || member.user.username || 'Guild member', now + sessionSeconds * 1000),
+    env.DB.prepare('INSERT INTO discord_sessions (token_hash, discord_id, display_name, expires_at, username) VALUES (?, ?, ?, ?, ?)')
+      .bind(await hash(session), member.user.id, member.nick || member.user.global_name || member.user.username || 'Guild member', now + sessionSeconds * 1000, member.user.username || null),
   ]);
   return redirect(next, [clearFlow, setCookie(sessionCookie, session, sessionSeconds)]);
 }
