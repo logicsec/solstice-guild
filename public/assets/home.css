@@ -866,9 +866,7 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-app a.character-slot-button:hover { border-color: var(--accent); }
 
 .character-talent-trees { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(210px,100%),1fr)); gap: 2px; margin: 12px 0; overflow: hidden; border: 1px solid #74511e; border-radius: 10px; background: #2d2112; }
-.character-talent-tree { --tree-glow: #175874; --tree-art: url('/assets/solstice-twilight.webp'); min-width: 0; padding: 16px 12px 18px; background: linear-gradient(0deg,#070709ed,#07070955 65%,#07070999),radial-gradient(ellipse at 50% 25%,var(--tree-glow),transparent 75%),var(--tree-art) center / cover,#100d0b; }
-.character-talent-tree[data-theme="fire"] { --tree-glow: #8e391c; --tree-art: url('/assets/raid-onyxias-lair.webp'); }
-.character-talent-tree[data-theme="frost"] { --tree-glow: #345178; --tree-art: url('/assets/raid-hyjal-summit.webp'); }
+.character-talent-tree { min-width: 0; padding: 16px 12px 18px; background: linear-gradient(0deg,#070709cc,#07070940 65%,#0707098c),var(--tree-art,none) center / cover,#100d0b; }
 .character-talent-tree h4 { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid #bd8b4066; color: #f9eed8; font-size: 17px; }
 .character-talent-tree h4 img { width: 34px; height: 34px; border: 2px solid #a37833; border-radius: 50%; box-shadow: 0 2px 8px #000b; }
 .character-talent-points { padding: 2px 6px; border: 1px solid #765522; border-radius: 4px; background: #130f0a; color: #f1ce77; font-size: 11px; white-space: nowrap; }

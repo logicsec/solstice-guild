@@ -218,14 +218,14 @@ export function renderCharacterTalents(character) {
     const build = character.talents[index];
     const labels = new Map(layout.map(tree=>[tree[0].toLowerCase(),tree]));
     for (const tree of build.trees) {
-      if (!labels.has(tree.name.toLowerCase())) labels.set(tree.name.toLowerCase(),[tree.name,'',[]]);
+      if (!labels.has(tree.name.toLowerCase())) labels.set(tree.name.toLowerCase(),[tree.name,'',null,[]]);
     }
-    for (const [key,[name,icon,nodes]] of labels) {
+    for (const [key,[name,icon,art,nodes]] of labels) {
       const tree = build.trees.find(entry=>entry.name.toLowerCase() === key);
       const learned = tree?.talents ?? [];
       const points = tree?.points ?? learned.reduce((sum,talent)=>sum+talent.rank,0);
       const card = raidElement('section',null,'character-talent-tree');
-      card.dataset.theme = ['arcane','fire','frost'][trees.children.length % 3];
+      if (art) card.style.setProperty('--tree-art','url(https://theforeverera.com'+art+')');
       const title = raidElement('h4',name);
       title.append(raidElement('span',points+' pts','character-talent-points'));
       if (icon) {
