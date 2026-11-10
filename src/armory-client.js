@@ -18,6 +18,21 @@ export function renderArmoryProfile(character) {
   root.append(raidElement('p',[
     character.level && 'Level '+character.level,character.race,character.faction,character.guild,
   ].filter(Boolean).join(' · ')));
+  const gear = character.gear ?? [];
+  if (character.itemLevel != null || gear.length) {
+    const overview = raidElement('dl',null,'character-overview');
+    const metrics = [
+      ['Item Level', character.itemLevel ?? 'Unavailable'],
+      ['Equipped Items', gear.length || 'Unavailable'],
+      ['Items With Reported Enchants', gear.length ? gear.filter(item=>item.enchants.length).length : 'Unavailable'],
+    ];
+    for (const [label,value] of metrics) {
+      const metric = raidElement('div');
+      metric.append(raidElement('dt',label),raidElement('dd',String(value)));
+      overview.append(metric);
+    }
+    root.append(overview);
+  }
   const sheet = raidElement('div',null,'character-sheet');
   const left = raidElement('div',null,'character-gear');
   const right = raidElement('div',null,'character-gear');
@@ -31,22 +46,33 @@ export function renderArmoryProfile(character) {
     image.addEventListener('error',()=>image.replaceWith(raidElement('p','Character render unavailable.')),{once:true});
     model.append(image);
   } else model.append(raidElement('p','Character render unavailable.'));
-  if (character.itemLevel != null) model.append(raidElement('small','Item level '+character.itemLevel));
   const leftSlots = ['HEAD','NECK','SHOULDER','BACK','CHEST','SHIRT','TABARD','WRIST'];
   const weaponSlots = ['MAIN_HAND','OFF_HAND','RANGED'];
-  for (const item of character.gear ?? []) {
+  const order = [...leftSlots,'HANDS','WAIST','LEGS','FEET','FINGER_1','FINGER_2','TRINKET_1','TRINKET_2',...weaponSlots];
+  const slotKey = item => item.slotType || item.slot.toUpperCase().replace(/\s+/g,'_');
+  const slotRank = item => {
+    const index = order.indexOf(slotKey(item));
+    return index === -1 ? order.length : index;
+  };
+  for (const item of [...gear].sort((a,b)=>slotRank(a)-slotRank(b))) {
     const row = raidElement('div',null,'character-slot');
     const button = raidElement('button',null,'character-slot-button');
     button.type = 'button';
     button.setAttribute('aria-label',item.slot+': '+item.name);
     button.style.setProperty('--gear-quality',rarityColor(item.id,item.quality));
     const icon = itemIcons.get(item.id);
-    const fallback = raidElement('span',item.slot,'character-slot-caption');
-    button.append(fallback);
+    const tile = raidElement('span',null,'character-slot-icon');
+    tile.append(raidElement('span',item.slot,'character-slot-caption'));
+    const copy = raidElement('span',null,'character-slot-copy');
+    const label = raidElement('strong',item.name);
+    label.style.color = rarityColor(item.id,item.quality);
+    copy.append(label,raidElement('small',[item.slot,item.level != null ? 'iLvl '+item.level : ''].filter(Boolean).join(' · ')));
+    if (item.enchants.length) copy.append(raidElement('small',item.enchants.join(' · '),'character-slot-enchant'));
+    button.append(tile,copy);
     if (icon) {
       const image = raidElement('img');
       image.alt = '';
-      image.addEventListener('load',()=>button.replaceChildren(image),{once:true});
+      image.addEventListener('load',()=>tile.replaceChildren(image),{once:true});
       image.src = icon;
     }
     const lines = [item.slot,item.level != null ? 'Item level '+item.level : '',...item.details,...item.enchants].filter(Boolean);
@@ -82,7 +108,7 @@ export function renderArmoryProfile(character) {
       }
     });
     row.append(button,tooltip);
-    const slot = item.slotType || item.slot.toUpperCase().replace(/\s+/g,'_');
+    const slot = slotKey(item);
     const column = weaponSlots.includes(slot) ? weapons : leftSlots.includes(slot) ? left : right;
     column.append(row);
   }
@@ -96,10 +122,8 @@ export function renderArmoryProfile(character) {
     for (const [label,value] of values) list.append(raidElement('dt',label),raidElement('dd',new Intl.NumberFormat().format(value)));
   }
   if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.'));
-  const center = raidElement('div',null,'character-center');
-  center.append(model,attributes);
-  sheet.append(left,center,right,weapons);
-  root.append(sheet);
+  sheet.append(left,model,right,weapons);
+  root.append(sheet,attributes);
   if (!character.gear?.length) root.append(raidElement('p','No equipment data available.'));
   const professions = raidElement('details');
   professions.append(raidElement('summary','Professions'));
@@ -114,20 +138,28 @@ export function renderArmoryProfile(character) {
   return root;
 }
 
-export function openCharacterSheet(player) {
+export function openCharacterSheet(player, event, organizer) {
   const dialog = raidElement('dialog',null,'workspace-drawer character-drawer');
   const title = raidElement('h2',player.character);
   title.id = 'character-sheet-title';
   dialog.setAttribute('aria-labelledby',title.id);
   const heading = raidElement('div',null,'character-inspector-title');
-  heading.append(characterIcons(player.class_name,player.spec),title);
+  const identity = raidElement('div');
+  identity.append(title,raidElement('p',[player.class_name,player.spec,player.role].filter(Boolean).join(' · '),'inspector-meta'));
+  heading.append(characterIcons(player.class_name,player.spec),identity);
   const close = raidElement('button','Close');
   close.addEventListener('click',()=>dialog.close());
   const header = raidElement('header',null,'workspace-drawer-heading');
   header.append(heading,close);
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
-  dialog.append(header,content);
+  const checks = reviewCharacter(event,player,organizer,async update=>{
+    await raidRequest('/'+event.id,update);
+    dialog.close();
+    if (raidView === 'roster' && workspaceGoal === event.id) await openRaidView('roster',null,false);
+  });
+  checks.classList.add('character-drawer-checks');
+  dialog.append(header,checks,content);
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
@@ -135,7 +167,7 @@ export function openCharacterSheet(player) {
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   dialog.showModal();
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
-    content.replaceChildren(renderArmoryProfile(character));
+    if (dialog.open) content.replaceChildren(renderArmoryProfile(character));
   }).catch(error=>content.replaceChildren(raidElement('p',error.message)));
 }
 
