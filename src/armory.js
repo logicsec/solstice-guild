@@ -82,10 +82,12 @@ async function loadCharacter(env, slug) {
     slot: localized(item.slot?.name ?? item.slot?.type),
     name: localized(item.name),
     quality: item.quality?.type ?? 'COMMON',
-    details: [localized(item.binding?.name),localized(item.item_subclass?.name),
+    details: [localized(item.binding?.name),localized(item.item_subclass?.name),localized(item.armor?.display?.display_string),
+      localized(item.weapon?.damage?.display_string),localized(item.weapon?.attack_speed?.display_string),
+      localized(item.durability?.display_string),localized(item.requirements?.level?.display_string),
       ...(Array.isArray(item.stats) ? item.stats.map(stat=>localized(stat.display?.display_string)) : []),
-      ...(Array.isArray(item.spells) ? item.spells.map(spell=>localized(spell.description)) : []),
     ].filter(Boolean),
+    effects: (Array.isArray(item.spells) ? item.spells : []).map(spell=>localized(spell.description)).filter(Boolean),
     enchants: (Array.isArray(item.enchantments) ? item.enchantments : []).map(enchant=>
       localized(enchant.display_string ?? enchant.enchantment?.name ?? enchant.source_item?.name)).filter(Boolean),
   })).filter(item=>item.name) : null;
@@ -104,7 +106,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, attributes, render: mediaUrl(['main-raw','main','inset']) ?? null,
+    professions, gear, attributes, portrait: mediaUrl(['avatar','inset']) ?? null, render: mediaUrl(['main-raw','main','inset']) ?? null,
   };
 }
 
