@@ -210,9 +210,9 @@ body { border-top: 3px solid var(--gold); }
 .inspector-status[data-status="Pending"], .inspector-status[data-status="Waitlist"] { color:var(--gold); }
 .inspector-status[data-status="Going"] { color:#a6c99b; }
 .inspector-controls { display:grid; gap:10px; margin-top:16px; }
-.inspector-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
-.inspector-character-actions { display:flex; flex:1 1 auto; min-width:0; gap:8px; }
-.inspector-character-actions .inspector-sheet { margin-inline-start:auto; }
+.inspector-actions { display:flex; gap:8px; margin-top:14px; padding-top:12px; border-top:1px solid var(--line); }
+.inspector-actions > button { min-width:0; overflow-wrap:anywhere; }
+.inspector-actions .inspector-sheet { margin-inline-start:auto; }
 @media (max-width: 940px) {
   .guild-app .workspace-goal, .workspace-roster { grid-template-columns: 1fr; }
   .workspace-goal > :last-child { border-inline-start: 0; border-top: 1px solid var(--line); padding: 14px 0 0; }
