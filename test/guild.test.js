@@ -260,13 +260,26 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send(imagePath,options)).status,200);
   article.set('body','<p>Screenshot</p><img src="' + imagePath + '" alt="">');
   assert.equal((await save()).status,303);
-  assert.ok((await (await send('/chronicle/' + articleId)).text()).includes('<img src="' + imagePath + '"'));
+  const articleWithCover = await (await send('/chronicle/' + articleId)).text();
+  assert.ok(articleWithCover.includes('<div class="chronicle-article-cover"><img src="' + imagePath + '"'));
+  assert.ok(articleWithCover.indexOf('chronicle-article-cover') < articleWithCover.indexOf('<h1>'));
+  assert.ok((await (await send('/')).text()).includes('<div class="chronicle-card-cover"><img src="' + imagePath + '"'));
   const publicImage = await send(imagePath);
   assert.equal(publicImage.headers.get('Content-Type'),'image/png');
   assert.deepEqual(new Uint8Array(await publicImage.arrayBuffer()),largeImage);
   article.set('action','draft');
   assert.equal((await save()).status,303);
   assert.equal((await send(imagePath)).status,404);
+  assert.match(await (await send('/cms?edit=' + articleId,options)).text(), /Delete this article/);
+  const deleteArticle = (editorCookie, requestOrigin = origin) => send('/cms', {
+    method:'POST', headers:{ Cookie:editorCookie, Origin:requestOrigin },
+    body:new URLSearchParams({id:articleId,action:'delete'}),
+  });
+  assert.equal((await deleteArticle(member)).status,403);
+  assert.equal((await deleteArticle(cookie,'https://other.example')).status,403);
+  assert.equal((await deleteArticle(cookie)).status,303);
+  assert.equal((await send('/cms?edit=' + articleId,options)).status,404);
+  assert.equal((await deleteArticle(cookie)).status,404);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'https://bad.example','Sec-Fetch-Site':'cross-site'}})).status,403);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'same-origin'}})).status,303);
   assert.equal((await send('/api/session', options)).status, 401);
