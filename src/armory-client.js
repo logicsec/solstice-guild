@@ -225,6 +225,21 @@ export function openCharacterSheet(player, event, organizer) {
   });
   document.body.append(dialog);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
+  dialog.setAttribute('closedby','any');
+  function onBackdrop(event) {
+    if (event.target !== dialog) return false;
+    const bounds = dialog.getBoundingClientRect();
+    return event.clientX < bounds.left || event.clientX >= bounds.right ||
+      event.clientY < bounds.top || event.clientY >= bounds.bottom;
+  }
+  if (!('closedBy' in dialog)) {
+    let pressedBackdrop = false;
+    dialog.addEventListener('pointerdown',event=>{ pressedBackdrop = onBackdrop(event); });
+    dialog.addEventListener('click',event=>{
+      if (pressedBackdrop && onBackdrop(event)) dialog.close();
+      pressedBackdrop = false;
+    });
+  }
   dialog.showModal();
   if (!player.armorySlug) return;
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
