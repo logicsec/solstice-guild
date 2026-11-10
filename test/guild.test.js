@@ -225,9 +225,14 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send('/chronicle/' + articleId)).status, 404);
   article.set('id',articleId);
   article.set('action','publish');
+  article.set('category','Raid recaps');
   assert.equal((await save()).status, 303);
   assert.match(await (await send('/')).text(), /First &amp; Dawn/);
   const published = await (await send('/chronicle/' + articleId)).text();
+  assert.match(published, /Recent posts/);
+  assert.match(published, /Raid recaps<\/span><span>1/);
+  assert.match(await (await send('/?category=Raid%20recaps')).text(), /First &amp; Dawn/);
+  assert.doesNotMatch(await (await send('/?category=Guides')).text(), /First &amp; Dawn/);
   assert.match(published, /Published by <strong>[^<]+<\/strong>/);
   assert.match(published, /class="article-page chronicle-article"/);
   assert.match(published, /&lt;script&gt;unsafe/);
