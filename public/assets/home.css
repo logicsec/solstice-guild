@@ -854,7 +854,10 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 
 .guild-app .character-banner-close { position: absolute; inset-block-start: 7px; inset-inline-end: 8px; display: grid; place-items: center; width: 28px; height: 28px; padding: 0; background: transparent; border: 1px solid transparent; color: var(--muted); font-size: 22px; line-height: 1; }
 .guild-app .character-banner-close:hover { border-color: var(--line); color: var(--ink); background: var(--field); }
-.guild-app .character-banner-level { align-self: end; justify-self: end; display: inline-flex; align-items: center; min-height: 38px; padding: 7px 12px; font-size: 14px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.guild-app .character-banner-level { align-self: center; justify-self: end; display: inline-flex; align-items: center; min-height: 38px; padding: 7px 12px; border-radius: 9px; background: color-mix(in srgb, var(--copper) 66%, var(--gold)); color: var(--field); font-size: 14px; font-weight: 750; white-space: nowrap; font-variant-numeric: tabular-nums; }
 @media (max-width: 480px) {
   .guild-app .character-banner-level { min-height: 32px; padding: 5px 8px; font-size: 12px; }
 }
+
+.guild-app a.character-slot-button { color: var(--ink); text-decoration: none; }
+.guild-app a.character-slot-button:hover { border-color: var(--accent); }

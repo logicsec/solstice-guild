@@ -52,9 +52,15 @@ export function renderArmoryProfile(character) {
       return;
     }
     const row = raidElement('div',null,'character-slot');
-    const button = raidElement('button',null,'character-slot-button');
-    button.type = 'button';
-    button.setAttribute('aria-label',item.slot+': '+item.name);
+    const linked = Number.isSafeInteger(item.id) && item.id > 0;
+    const button = raidElement(linked ? 'a' : 'button',null,'character-slot-button');
+    if (linked) {
+      button.href = 'https://www.wowhead.com/forever/item='+item.id;
+      button.target = '_blank';
+      button.rel = 'noopener noreferrer';
+      button.dataset.wowhead = 'np';
+    } else button.type = 'button';
+    button.setAttribute('aria-label',item.slot+': '+item.name+(linked ? ' (opens Wowhead in a new tab)' : ''));
     button.style.setProperty('--gear-quality',rarityColor(item.id,item.quality));
     const icon = itemIcons.get(item.id);
     const tile = raidElement('span',null,'character-slot-icon');
@@ -99,7 +105,7 @@ export function renderArmoryProfile(character) {
     function hide() { if (typeof tooltip.hidePopover === 'function') tooltip.hidePopover(); }
     button.addEventListener('mouseenter',show);
     button.addEventListener('focus',show);
-    button.addEventListener('click',show);
+    if (!linked) button.addEventListener('click',show);
     button.addEventListener('mouseleave',hide);
     button.addEventListener('blur',hide);
     button.addEventListener('keydown',event=>{
@@ -177,11 +183,10 @@ export function openCharacterSheet(player, event, organizer) {
   close.type = 'button';
   close.setAttribute('aria-label','Close character sheet');
   close.addEventListener('click',()=>dialog.close());
-  const level = raidElement('span',player.level == null ? '' : 'Level '+player.level,'raid-primary character-banner-level');
+  const level = raidElement('span',player.level == null ? '' : 'Level '+player.level,'character-banner-level');
   level.hidden = player.level == null;
   const header = raidElement('header',null,'workspace-drawer-heading character-banner');
-  const facts = raidElement('dl',null,'character-banner-facts');
-  header.append(heading,level,close,facts);
+  header.append(heading,level,close);
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
   const review = event ? raidElement('div',null,'character-raid-review') : null;
@@ -266,13 +271,6 @@ export function openCharacterSheet(player, event, organizer) {
     if (character.level != null) {
       level.textContent = 'Level '+character.level;
       level.hidden = false;
-    }
-    const factsList = [['Race',character.race],['Faction',character.faction],['Item Level',character.itemLevel]];
-    for (const [label,value] of factsList) {
-      if (value == null || value === '') continue;
-      const row = raidElement('div');
-      row.append(raidElement('dt',label),raidElement('dd',String(value)));
-      facts.append(row);
     }
     if (!evidence) return;
     const gear = character.gear;
