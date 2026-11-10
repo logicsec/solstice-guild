@@ -308,7 +308,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=eaa8ade98ed9"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=b639cb82a4cd"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1296,7 +1296,7 @@ async function openRaidView(view, id, navigate = true) {
           button.type = 'button';
           button.setAttribute('aria-controls','guildRoster');
           button.setAttribute('aria-label','Show '+count+(count === 1 ? ' character' : ' characters')+' with '+name);
-          const icon = professionIcon(name);
+          const icon = professionIcon(name,button);
           icon.setAttribute('aria-hidden','true');
           button.append(icon,raidElement('strong',name),raidElement('span',String(count)+' ›','guild-dashboard-count'));
           button.addEventListener('click',()=>{

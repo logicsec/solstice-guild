@@ -26,7 +26,7 @@ export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showO
   });
 }
 
-export function professionIcon(name) {
+export function professionIcon(name, watermarkTarget) {
   const icons = {
     alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
     enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
@@ -38,7 +38,14 @@ export function professionIcon(name) {
   if (asset) {
     const image = raidElement('img');
     image.alt = '';
-    image.addEventListener('load',()=>icon.replaceChildren(image),{once:true});
+    image.addEventListener('load',()=>{
+      icon.replaceChildren(image);
+      if (watermarkTarget) {
+        const watermark = image.cloneNode();
+        watermark.className = 'guild-character-watermark guild-profession-watermark';
+        watermarkTarget.append(watermark);
+      }
+    },{once:true});
     image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
   }
   return icon;
