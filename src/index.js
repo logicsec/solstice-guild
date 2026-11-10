@@ -5,7 +5,8 @@ import { armoryApi, armorySpecs, linkedRosterProfiles } from './armory.js';
 import { changePrep, prepTasks, prepCategories, schedulePrep } from './prep.js';
 import { renderTonight } from './tonight.js';
 import { characterIcons, openCharacterSheet, renderArmory, renderArmoryConfirmation, renderArmoryProfile } from './armory-client.js';
-import { articlePage, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup } from './home.js';
+import { articleImagePage } from './article-images.js';
+import { articlePage, canEditArticles, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup } from './home.js';
 import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
@@ -275,7 +276,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}</style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=edb08d5d434a"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=82ef278d05e0"></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Raid Planner</button></div><div class="guild-account"><span id="guildIdentity"></span><form method="post" action="/auth/logout"><button>Sign out</button></form></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1800,6 +1801,10 @@ export default {
       catch { return new Response('Raid storage is unavailable.', { status: 503 }); }
     }
     try {
+      const articleImage = pathname.match(/^\/chronicle\/images\/([0-9a-f-]{36})$/);
+      if (articleImage || pathname === '/cms/images') {
+        return await articleImagePage(request, env, url, canEditArticles(env, session), articleImage?.[1]);
+      }
       if (pathname === '/cms') return await cmsPage(request, env, url, session);
       const article = pathname.match(/^\/chronicle\/([0-9a-f-]{36})$/);
       if (article && request.method === 'GET') return await articlePage(env, article[1], session);
