@@ -669,3 +669,21 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .chronicle-article-meta { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; color: var(--muted); font-size: 13px; }
 .chronicle-article-meta strong { color: var(--accent); }
 .chronicle-article .article-body > :first-child { margin-top: 0; }
+
+.chronicle-grid { grid-template-columns: repeat(3,minmax(0,1fr)); gap: clamp(14px, 2vw, 24px); }
+.chronicle-grid > .empty { grid-column: 1 / -1; }
+.home-journal .chronicle-card { padding: 0; border-color: var(--line); border-radius: 18px; }
+.chronicle-card-link { display: grid; align-content: start; gap: 8px; height: 100%; padding: clamp(14px, 2vw, 24px); border-radius: inherit; color: var(--ink); }
+.chronicle-card-link:hover { background: var(--hover); }
+.chronicle-card-link p { color: var(--muted); }
+.chronicle-card-cover { margin-bottom: 6px; }
+.chronicle-card-cover img { display: block; width: 100%; aspect-ratio: 3 / 2; object-fit: cover; border-radius: 14px; }
+.chronicle-article-cover { margin-top: 20px; }
+.chronicle-article-cover img { display: block; width: 100%; height: auto; border-radius: clamp(16px, 3vw, 30px); }
+.chronicle-article .article-body img { border-radius: 16px; }
+.editor-grid .editor-delete { color: #ffab9a; background: var(--field); }
+.editor-grid .editor-delete:hover { border-color: #ffab9a; }
+.editor-grid .editor-delete-dialog { width: min(420px, 90vw); margin: auto; color: var(--ink); background: var(--container); }
+.editor-delete-dialog::backdrop { background: #0009; }
+@media (max-width: 960px) { .chronicle-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media (max-width: 580px) { .chronicle-grid { grid-template-columns: 1fr; } }
