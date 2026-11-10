@@ -1,4 +1,3 @@
-import { raidLoot } from './raid-loot.js';
 import { raidReserves } from './reserves.js';
 import { sameOriginWrite } from './auth.js';
 
@@ -83,8 +82,6 @@ export async function publicRaidPage(db, id, roles, session, requested) {
     '<main class="article-page"><h1>Raid unavailable</h1><p>This raid link may be outdated.</p><a class="text-link" href="/">Back to Solstice</a></main>',404);
   const roster = results.filter(row=>row.character != null);
   const reserves = await raidReserves(db,id);
-  const loot = await raidLoot(db,raid);
-  const lootOptions = loot.map(item=>`<option value="${escape(item)}">${escape(item)}</option>`).join('');
   const reserveRows = reserves.map(row=>`<tr><th scope="row">${escape(row.character)}</th><td>${row.items.map(escape).join(' · ')}</td></tr>`).join('');
   const external = typeof raid.reserve_url === 'string' && /^https:\/\//i.test(raid.reserve_url) ?
     `<a class="text-link" href="${escape(raid.reserve_url)}" rel="noreferrer">Open external soft reserves</a>` : '';
@@ -113,17 +110,12 @@ export async function publicRaidPage(db, id, roles, session, requested) {
         <thead><tr><th scope="col">Character</th><th scope="col">Class</th><th scope="col">Role</th><th scope="col">Group</th></tr></thead>
         <tbody>${rows}</tbody></table></div>` : '<p class="empty">No players have been confirmed yet.</p>'}
       <h2 id="loot-reserves" class="public-raid-roster-heading">Loot reserves</h2>
-      <p>${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Open'} · ${raid.reserve_limit} per player</p>
+      <p>${raid.reserves_locked ? 'Locked' : raid.state === 'Cancelled' ? 'Closed' : 'Coming soon'} · ${raid.reserve_limit} per player</p>
       ${reserveRows ? `<div class="news-card public-raid-table"><table aria-label="Raid loot reserves">
         <thead><tr><th scope="col">Character</th><th scope="col">Reserved items</th></tr></thead>
         <tbody>${reserveRows}</tbody></table></div>` : '<p class="empty">No reserves recorded yet.</p>'}
       ${requested ? '<p role="status">Guest request sent for organizer approval.</p>' : ''}
-      ${!raid.reserves_locked && raid.state !== 'Cancelled' && loot.length ? `<form class="news-card guest-reserve-form" method="post" action="${next}">
-        <h3>Request guest reserves</h3><p>Choose up to ${raid.reserve_limit} items from the raid loot table. Approved picks appear here after the organizer reviews them.</p>
-        <label>Character name<input name="character" required maxlength="61"></label>
-        ${Array.from({length:raid.reserve_limit},(_,i)=>`<label>Pick ${i+1}<select name="items"${i===0 ? ' required' : ''}><option value="">Choose an item</option>${lootOptions}</select></label>`).join('')}
-        <button class="button gold" type="submit">Request reserves</button>
-      </form>` : !loot.length && !raid.reserves_locked && raid.state !== 'Cancelled' ? '<p>Reserves open once the organizer loads the raid loot table.</p>' : ''}
+      <p>Automatic raid loot and reserve selection are coming soon.</p>
       ${external}
     </section>
   </main>`);

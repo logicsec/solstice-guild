@@ -165,8 +165,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post(raid,lootTable)).status,200);
   assert.equal((await post(raid,{...picks,items:['Not in table']},member)).status,409);
   const lootPage = await (await send(publicPath)).text();
-  assert.match(lootPage,/<option value="Copper Sword">Copper Sword<\/option>/);
-  assert.doesNotMatch(lootPage,/<textarea name="items"/);
+  assert.match(lootPage,/Automatic raid loot and reserve selection are coming soon/);
+  assert.doesNotMatch(lootPage,/name="items"|Request guest reserves/);
   assert.equal((await post(raid,{...picks,guest:'Guest Raider'},member)).status,403);
   assert.equal((await post(raid,{...picks,items:[...picks.items,'Third item']},member)).status,409);
   assert.equal((await post(raid,picks,member)).status,200);

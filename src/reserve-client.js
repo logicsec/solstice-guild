@@ -25,9 +25,10 @@ export function showReserveHistory(raidId, key, name) {
   }).catch(error=>body.replaceChildren(raidElement('p',error.message)));
 }
 
-export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pendingReserves,myReserveItems,lootItems}) {
+export function renderRaidReserves(root,{event,organizer,mine,reserves,pendingReserves}) {
   root.replaceChildren(raidElement('h3','Loot reserves'),
-    raidElement('p',(event.reserves_locked ? 'Locked' : event.state === 'Cancelled' ? 'Closed' : 'Open')+' · '+event.reserve_limit+' per player'));
+    raidElement('p',(event.reserves_locked ? 'Locked' : event.state === 'Cancelled' ? 'Closed' : 'Coming soon')+' · '+event.reserve_limit+' per player'),
+    raidElement('p','Automatic raid loot and reserve selection are coming soon.'));
   const status = raidElement('p');
   status.setAttribute('role','status');
   root.append(status);
@@ -42,8 +43,10 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
   if (organizer) {
     const settings = raidElement('div',null,'raid-actions');
     const label = raidElement('label','Picks per player ');
-    const limit = raidElement('select');
-    for (const value of [1,2,3,4,5]) limit.add(new Option(value,value));
+    const limit = raidElement('input');
+    limit.type = 'number';
+    limit.min = 1;
+    limit.max = 5;
     limit.value = event.reserve_limit;
     label.append(limit);
     const update = raidElement('button','Save limit');
@@ -51,30 +54,6 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
     const lock = raidElement('button',event.reserves_locked ? 'Unlock reserves' : 'Lock reserves');
     lock.addEventListener('click',()=>save(lock,{action:'reserve-settings',locked:!event.reserves_locked}));
     settings.append(label,update,lock); root.append(settings);
-    const table = raidElement('details');
-    table.append(raidElement('summary','Manage raid loot table'));
-    if (!event.instance) {
-      const select = raidElement('select');
-      select.setAttribute('aria-label','Raid instance');
-      select.add(new Option('Choose a raid',''));
-      for (const [key,instance] of Object.entries(raidInstances)) {
-        if (instance.size === event.size) select.add(new Option(instance.name,key));
-      }
-      const attach = raidElement('button','Assign raid');
-      attach.addEventListener('click',()=>save(attach,{action:'reserve-instance',instance:select.value}));
-      table.append(raidElement('p','Assign this existing event to a raid type.'),select,attach);
-    } else {
-      const label = raidElement('label','Verified loot table · one item name per line');
-      const input = raidElement('textarea');
-      input.rows = 6;
-      input.value = lootItems.join('\n');
-      label.append(input);
-      const updateTable = raidElement('button','Save loot table');
-      updateTable.addEventListener('click',()=>save(updateTable,{action:'reserve-loot-table',
-        items:input.value.split(/\r?\n/).map(item=>item.trim()).filter(Boolean)}));
-      table.append(raidElement('p','This table is shared across raids of this type that you organize.'),label,updateTable);
-    }
-    root.append(table);
     if (pendingReserves.length) root.append(raidElement('h4','Guest requests awaiting review'));
     for (const request of pendingReserves) {
       const row = raidElement('div',null,'raid-row');
@@ -103,63 +82,4 @@ export function renderRaidReserves(root,{event,organizer,roster,mine,reserves,pe
     history.addEventListener('click',()=>showReserveHistory(event.id,'',mine.character));
     root.append(history);
   }
-  if (event.reserves_locked || event.state === 'Cancelled') return;
-  if (!organizer && mine?.status !== 'Going') {
-    root.append(raidElement('p','Once your RSVP is confirmed, you can add your reserves.'));
-    return;
-  }
-
-  const form = raidElement('form',null,'raid-form');
-  if (!lootItems.length) {
-    root.append(raidElement('p','Reserves open once the organizer loads the raid loot table.'));
-    return;
-  }
-  const picks = Array.from({length:event.reserve_limit},(_,i)=>{
-    const label = raidElement('label','Pick '+(i+1));
-    const select = raidElement('select');
-    select.add(new Option('No item',''));
-    for (const item of lootItems) select.add(new Option(item,item));
-    label.append(select);
-    return {label,select};
-  });
-  function loadItems(items) {
-    picks.forEach(({select},i)=>{ select.value = items[i] ?? ''; if (!select.value) select.selectedIndex = 0; });
-  }
-  let player;
-  let guest;
-  if (organizer) {
-    const playerLabel = raidElement('label','Raider');
-    player = raidElement('select');
-    player.add(new Option('Guest without Discord',''));
-    for (const entry of roster.filter(row=>row.status === 'Going')) player.add(new Option(entry.character,entry.member));
-    if (player.options.length > 1) player.selectedIndex = 1;
-    playerLabel.append(player);
-    const guestLabel = raidElement('label','Guest character name');
-    guest = raidElement('input');
-    guest.maxLength = 61;
-    guestLabel.append(guest);
-    function loadPicks() {
-      guestLabel.hidden = Boolean(player.value);
-      guest.required = !player.value;
-      const key = player.value ? 'member:'+player.value : 'guest:'+guest.value.trim().replace(/\s+/g,' ').toLowerCase();
-      loadItems(reserves.find(entry=>entry.key === key)?.items ?? []);
-    }
-    player.addEventListener('change',loadPicks);
-    guest.addEventListener('change',loadPicks);
-    form.append(playerLabel,guestLabel);
-    loadPicks();
-  } else {
-    loadItems(myReserveItems);
-  }
-  const submit = raidElement('button','Save reserves','raid-primary');
-  form.append(...picks.map(pick=>pick.label),submit); root.append(form);
-  form.addEventListener('submit',e=>{
-    e.preventDefault();
-    const data = {action:'reserve-picks',items:picks.map(({select})=>select.value).filter(Boolean)};
-    if (organizer) {
-      if (player.value) data.member = player.value;
-      else data.guest = guest.value;
-    }
-    save(submit,data);
-  });
 }
