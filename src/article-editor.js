@@ -28,6 +28,11 @@ export function articleMarkup(body, format, escape) {
 }
 
 export function startArticleEditor() {
+  const deleteDialog = document.getElementById('articleDelete');
+  if (deleteDialog) {
+    document.getElementById('openArticleDelete').addEventListener('click', () => deleteDialog.showModal());
+    document.getElementById('cancelArticleDelete').addEventListener('click', () => deleteDialog.close());
+  }
   const editor = document.getElementById('articleContent');
   const body = document.getElementById('articleBody');
   const toolbar = document.getElementById('articleTools');
