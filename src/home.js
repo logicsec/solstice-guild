@@ -22,7 +22,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=ded271f68d9b"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=eb6a168e6ab9"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -47,14 +47,15 @@ export async function publicHome(env, url, session) {
   const { results } = await env.DB.prepare(`SELECT id, title, summary, published_at, body, body_format, category
     FROM articles WHERE published_at IS NOT NULL AND (? IS NULL OR category = ?)
     ORDER BY published_at DESC LIMIT 12`).bind(category,category).all();
-  const cards = results.map(article => {
+  const cards = results.map((article, index) => {
     const link = '/chronicle/' + escape(article.id);
     const { cover } = articleContent(article);
-    return `<article class="news-card chronicle-card"><a class="chronicle-card-link" href="${link}">
+    return `<article class="news-card chronicle-card${index === 0 ? ' chronicle-feature' : ''}"><a class="chronicle-card-link" href="${link}">
       ${cover ? `<div class="chronicle-card-cover">${cover}</div>` : ''}
-      <p class="chronicle-card-meta"><span class="eyebrow">${escape(article.category)}</span> <time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
+      <div class="chronicle-card-copy"><p class="chronicle-card-meta"><span class="eyebrow">${escape(article.category)}</span> <time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
       <h3>${escape(article.title)}</h3>
       ${article.summary ? `<p>${escape(article.summary)}</p>` : ''}
+      ${index === 0 ? '<span class="text-link">Read article <span aria-hidden="true">→</span></span>' : ''}</div>
     </a></article>`;
   }).join('');
   return html(shell('Home', `<main class="guild-home">
@@ -74,8 +75,10 @@ export async function publicHome(env, url, session) {
   </div></section>
   <section class="chronicle home-journal" id="chronicle" aria-labelledby="chronicle-title">
       <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
-      ${category ? `<p class="section-intro">${escape(category)} · <a class="text-link" href="/#chronicle">All posts</a></p>` :
-        '<p class="section-intro">Raid stories, announcements, and news from Solstice.</p>'}
+      <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
+      <nav class="chronicle-filters" aria-label="Chronicle categories">
+        ${[null, ...articleCategories].map(label => `<a href="${label ? categoryLink(label) : '/#chronicle'}"${label === category ? ' aria-current="true"' : ''}>${escape(label ?? 'All posts')}</a>`).join('')}
+      </nav>
       <div class="news-grid chronicle-grid">${cards || (category ? '<p class="empty">No posts in this category yet.</p>' : '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>')}</div>
   </section>
   </main>`, { session, editor: canEditArticles(env, session), next }));
