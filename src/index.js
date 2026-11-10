@@ -63,9 +63,9 @@ async function raidApi(request, db, url, user) {
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
       if (url.searchParams.get('guild') === '1') {
-        const {results} = await db.prepare(`SELECT name, class_name, spec, role, 1 AS armory_linked FROM armory_links
+        const {results} = await db.prepare(`SELECT name, class_name, spec, role, 1 AS armory_linked, slug AS armorySlug FROM armory_links
           UNION ALL
-          SELECT c.name, c.class_name, c.spec, c.role, 0 FROM raid_characters c
+          SELECT c.name, c.class_name, c.spec, c.role, 0, NULL FROM raid_characters c
           WHERE NOT EXISTS (SELECT 1 FROM armory_links a WHERE a.member = c.member AND a.name = c.name COLLATE NOCASE)
           ORDER BY name COLLATE NOCASE`).bind().all();
         return reply({ characters:results });
@@ -1131,7 +1131,12 @@ async function openRaidView(view, id, navigate = true) {
           const info = raidElement('div');
           info.append(raidElement('strong',character.name),raidElement('small',meta));
           identity.append(characterIcons(character.class_name,character.spec),info);
-          row.append(identity,raidElement('small',character.armory_linked ? 'Armory linked' : 'Manually added'));
+          const actions = raidElement('div',null,'raid-actions');
+          const open = raidElement('button','Open Character Sheet');
+          open.setAttribute('aria-label','Open character sheet for '+character.name);
+          open.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
+          actions.append(raidElement('small',character.armory_linked ? 'Armory linked' : 'Manually added'),open);
+          row.append(identity,actions);
           rows.append(row);
         }
         if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));

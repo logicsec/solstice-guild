@@ -175,30 +175,33 @@ export function openCharacterSheet(player, event, organizer) {
   header.append(heading,close,facts);
   const content = raidElement('div');
   content.append(raidElement('p','Loading character sheet…'));
-  const checks = reviewCharacter(event,player,organizer,async update=>{
-    await raidRequest('/'+event.id,update);
-    dialog.close();
-    if (raidView === 'roster' && workspaceGoal === event.id) await openRaidView('roster',null,false);
-  },true);
-  const review = raidElement('div',null,'character-raid-review');
-  const summary = raidElement('section',null,'raid-card raid-review-summary');
-  const readiness = readinessOf(player);
-  const ready = readinessChecks.filter(([key])=>player.readiness?.[key] === 'Ready').length;
-  const applicable = readinessChecks.filter(([key])=>player.readiness?.[key] !== 'Not applicable').length;
-  const state = raidElement('strong',readiness);
-  state.dataset.readiness = readiness;
-  summary.append(raidElement('p','Saved Raid Readiness','eyebrow'),raidElement('h3',event.title),state,
-    raidElement('p',(applicable ? ready+' of '+applicable+' applicable checks ready' : 'No applicable checks')+' · RSVP: '+player.status),
-    raidElement('small',player.reviewed_at ? 'Last reviewed '+raidDate(player.reviewed_at) : 'No review saved yet.'));
-  const evidence = raidElement('section',null,'raid-card raid-review-evidence');
-  evidence.append(raidElement('h3','Armory Evidence'),raidElement('p',player.armorySlug ?
-    'Loading Armory data…' : 'This character has no linked Armory profile. You can still complete the review.'));
-  review.append(summary,checks,evidence);
+  const review = event ? raidElement('div',null,'character-raid-review') : null;
+  const evidence = event ? raidElement('section',null,'raid-card raid-review-evidence') : null;
+  if (event) {
+    const checks = reviewCharacter(event,player,organizer,async update=>{
+      await raidRequest('/'+event.id,update);
+      dialog.close();
+      if (raidView === 'roster' && workspaceGoal === event.id) await openRaidView('roster',null,false);
+    },true);
+    const summary = raidElement('section',null,'raid-card raid-review-summary');
+    const readiness = readinessOf(player);
+    const ready = readinessChecks.filter(([key])=>player.readiness?.[key] === 'Ready').length;
+    const applicable = readinessChecks.filter(([key])=>player.readiness?.[key] !== 'Not applicable').length;
+    const state = raidElement('strong',readiness);
+    state.dataset.readiness = readiness;
+    summary.append(raidElement('p','Saved Raid Readiness','eyebrow'),raidElement('h3',event.title),state,
+      raidElement('p',(applicable ? ready+' of '+applicable+' applicable checks ready' : 'No applicable checks')+' · RSVP: '+player.status),
+      raidElement('small',player.reviewed_at ? 'Last reviewed '+raidDate(player.reviewed_at) : 'No review saved yet.'));
+    evidence.append(raidElement('h3','Armory Evidence'),raidElement('p',player.armorySlug ?
+      'Loading Armory data…' : 'This character has no linked Armory profile. You can still complete the review.'));
+    review.append(summary,checks,evidence);
+  }
   const professions = raidElement('div');
   professions.append(raidElement('p','Loading professions…'));
   const tabs = raidElement('nav',null,'character-review-tabs');
   tabs.setAttribute('aria-label','Character Sheet Sections');
-  const panels = [['Character',content],['Raid Review',review],['Professions',professions]].map(([label,panel])=>{
+  const sections = [['Character',content],...(review ? [['Raid Review',review]] : []),['Professions',professions]];
+  const panels = sections.map(([label,panel])=>{
     const button = raidElement('button',label);
     button.type = 'button';
     tabs.append(button);
@@ -214,9 +217,9 @@ export function openCharacterSheet(player, event, organizer) {
   for (const {button,panel} of panels) button.addEventListener('click',()=>selectPanel(panel));
   dialog.append(header);
   if (player.armorySlug) {
-    dialog.append(tabs,content,review,professions);
+    dialog.append(tabs,...panels.map(({panel})=>panel));
     selectPanel(content);
-  } else dialog.append(review);
+  } else dialog.append(review ?? raidElement('p','This character was added manually and has no linked Armory profile.','raid-card'));
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
@@ -245,6 +248,7 @@ export function openCharacterSheet(player, event, organizer) {
       row.append(raidElement('dt',label),raidElement('dd',String(value)));
       facts.append(row);
     }
+    if (!evidence) return;
     const gear = character.gear;
     const stats = raidElement('div',null,'raid-stats');
     raidStats(stats,[
@@ -257,7 +261,7 @@ export function openCharacterSheet(player, event, organizer) {
   }).catch(error=>{
     content.replaceChildren(raidElement('p',error.message));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
-    evidence.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
+    evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
   });
 }
 
