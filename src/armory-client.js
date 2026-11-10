@@ -153,45 +153,36 @@ export function renderArmoryProfile(character) {
   layout.append(attributes);
   root.append(layout);
   const professions = raidElement('div',null,'character-profession-sections');
-  const groups = {primary:raidElement('div',null,'character-professions'),secondary:raidElement('div',null,'character-professions')};
+  const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
   for (const entry of character.professions ?? []) {
-    const card = raidElement('section',null,'raid-card profession-progress-card');
+    const card = raidElement('div',null,'guild-dashboard-entry guild-profession-tile');
     const icon = professionIcon(entry.name,card);
-    const details = raidElement('div',null,'profession-progress-details');
-    details.append(raidElement('h3',entry.name));
+    const details = raidElement('div',null,'character-profession-name');
+    details.append(raidElement('strong',entry.name));
     const ranks = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null) : [entry];
-    for (const rank of ranks) {
-      const row = raidElement('div',null,'profession-progress-row');
-      if (rank !== entry && rank.name && rank.name !== entry.name) details.append(raidElement('small',rank.name));
-      if (rank.maxSkill > 0) {
-        const progress = raidElement('progress');
-        progress.max = rank.maxSkill;
-        progress.value = rank.skill;
-        progress.setAttribute('aria-label',rank.name || entry.name);
-        row.append(progress,raidElement('small',rank.skill+' / '+rank.maxSkill));
-      } else row.append(raidElement('small','Skill '+rank.skill));
-      details.append(row);
-    }
-    if (!ranks.length) details.append(raidElement('small','Skill Level Unavailable'));
     const skillCap = Math.max(0,...ranks.map(rank=>rank.maxSkill ?? 0));
     const professionRanks = {75:'Apprentice',150:'Journeyman',225:'Expert',300:'Artisan'};
     const professionRank = professionRanks[skillCap];
     if (professionRank) {
       const nextRank = professionRanks[skillCap+75];
-      const heading = raidElement('div',null,'profession-progress-rank');
-      heading.append(raidElement('span',professionRank,'eyebrow'),
-        raidElement('small',nextRank ? 'Next Rank: '+nextRank : 'Highest Rank'));
-      card.append(heading);
+      details.append(raidElement('small',professionRank+' · '+(nextRank ? 'Next Rank: '+nextRank : 'Highest Rank')));
     }
-    card.append(icon,details);
+    const badges = raidElement('div',null,'character-profession-skills');
+    for (const rank of ranks) {
+      const badge = raidElement('span',rank.maxSkill > 0 ? rank.skill+' / '+rank.maxSkill : String(rank.skill),'guild-dashboard-count');
+      badge.setAttribute('aria-label',(rank.name || entry.name)+' skill '+badge.textContent);
+      badges.append(badge);
+    }
+    if (!ranks.length) badges.append(raidElement('span','—','guild-dashboard-count'));
+    card.append(icon,details,badges);
     const category = entry.category ?? (['cooking','fishing','first aid'].includes(entry.name.toLowerCase()) ? 'secondary' : 'primary');
     groups[category].append(card);
   }
   if (!character.professions?.length) professions.append(raidElement('p','No profession data available.','raid-card'));
   else {
     for (const [category,label] of [['primary','Primary Professions'],['secondary','Secondary Professions']]) {
-      const section = raidElement('section',null,'character-profession-section');
-      section.append(raidElement('h3',label));
+      const section = raidElement('section',null,'guild-profession-group character-profession-section');
+      section.append(raidElement('h4',label));
       const cards = groups[category];
       section.append(cards.children.length ? cards : raidElement('p','No '+category+' professions reported.'));
       professions.append(section);
