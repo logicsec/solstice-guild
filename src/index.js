@@ -1035,9 +1035,9 @@ async function guildRequest(path,data) {
   const response = await fetch(path, data ? {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data),
   } : undefined);
-  const result = await response.json();
-  if (!response.ok) {
-    const error = new Error(result.error || 'Raid Planner request failed.');
+  const result = await response.json().catch(() => null);
+  if (!response.ok || result === null) {
+    const error = new Error(result?.error || (response.ok ? 'The guild server returned an invalid response.' : 'Guild request failed ('+response.status+').'));
     error.status = response.status;
     throw error;
   }
@@ -1109,7 +1109,7 @@ async function openRaidView(view, id, navigate = true) {
       return;
     }
     if (view === 'guildCharacters') {
-      const {characters} = await raidRequest('characters?guild=1');
+      const {characters} = await guildRequest('/api/raid-characters?guild=1');
       if (revision !== raidRevision) return;
       const list = raidElement('section',null,'raid-card');
       const search = raidElement('input');
