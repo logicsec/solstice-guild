@@ -1121,13 +1121,25 @@ async function openRaidView(view, id, navigate = true) {
       search.placeholder = 'Search by character, class, spec, or role';
       search.setAttribute('aria-label','Search guild characters');
       const filters = raidElement('div',null,'roster-filters');
-      filters.append(search);
+      const sort = raidElement('select');
+      sort.setAttribute('aria-label','Sort guild characters');
+      for (const [label,value] of [['Level: Highest First','level-desc'],['Level: Lowest First','level-asc'],['Name: A–Z','name']]) {
+        sort.add(new Option(label,value));
+      }
+      filters.append(search,sort);
       const rows = raidElement('div',null,'guild-character-list');
       list.append(filters,rows);
       const draw = () => {
         const query = search.value.trim().toLowerCase();
         rows.replaceChildren();
-        for (const character of characters) {
+        const ordered = [...characters].sort((a,b)=>{
+          const nameOrder = a.name.localeCompare(b.name);
+          if (sort.value === 'name' || (a.level == null && b.level == null)) return nameOrder;
+          if (a.level == null) return 1;
+          if (b.level == null) return -1;
+          return (sort.value === 'level-asc' ? a.level-b.level : b.level-a.level) || nameOrder;
+        });
+        for (const character of ordered) {
           const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
           if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
           const row = raidElement('button',null,'guild-character-row');
@@ -1157,6 +1169,7 @@ async function openRaidView(view, id, navigate = true) {
         if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
       };
       search.addEventListener('input',draw);
+      sort.addEventListener('change',draw);
       draw();
       byId('raidList').append(list);
       return;
