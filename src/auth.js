@@ -50,6 +50,16 @@ export async function sessionFor(request, env) {
     .bind(await hash(token), Date.now()).first();
 }
 
+export async function renewSession(request, env) {
+  const token = cookie(request, sessionCookie);
+  if (!/^[a-f0-9]{64}$/.test(token ?? '')) return errorPage('Sign in required.',401);
+  const now = Date.now();
+  const result = await env.DB.prepare('UPDATE discord_sessions SET expires_at = ? WHERE token_hash = ? AND expires_at > ?')
+    .bind(now + sessionSeconds * 1000,await hash(token),now).run();
+  if (!result.meta.changes) return errorPage('Sign in required.',401);
+  return new Response(null,{status:204,headers:{'Set-Cookie':setCookie(sessionCookie,token,sessionSeconds),'Cache-Control':'no-store'}});
+}
+
 export function sameOriginWrite(request, url) {
   const origin = request.headers.get('Origin');
   return origin === url.origin || ((origin === null || origin === 'null') && request.headers.get('Sec-Fetch-Site') === 'same-origin');
@@ -70,22 +80,31 @@ export async function discordAuth(request, env, url) {
   if (url.pathname === '/auth/discord') {
     const state = randomToken();
     const next = safeReturn(url.searchParams.get('next'), url.origin);
+    const silent = url.searchParams.get('consent') !== '1';
     const authorize = new URL('https://discord.com/oauth2/authorize');
     authorize.search = new URLSearchParams({
       client_id: env.DISCORD_CLIENT_ID, redirect_uri: callback, response_type: 'code',
-      scope: 'identify guilds.members.read', state,
+      scope: 'identify guilds.members.read', state, prompt: silent ? 'none' : 'consent',
     });
-    return redirect(authorize.href, [setCookie(flowCookie, state + '.' + encodeURIComponent(next), 600)]);
+    return redirect(authorize.href, [setCookie(flowCookie, state + '.' + encodeURIComponent(next) + (silent ? '.silent' : '.consent'), 600)]);
   }
   if (url.pathname !== '/auth/discord/callback') return errorPage('Not found.', 404);
   const flow = cookie(request, flowCookie);
   const delimiter = flow?.indexOf('.') ?? -1;
   const code = url.searchParams.get('code');
-  if (!code || delimiter !== 64 || flow.slice(0, delimiter) !== url.searchParams.get('state')) {
+  if (delimiter !== 64 || flow.slice(0, delimiter) !== url.searchParams.get('state')) {
     return redirect('/?login=expired', [setCookie(flowCookie, '', 0)]);
   }
-  const next = safeReturn(decodeURIComponent(flow.slice(delimiter + 1)), url.origin);
+  const silent = flow.endsWith('.silent');
+  const returnValue = flow.slice(delimiter + 1).replace(/\.(silent|consent)$/,'');
+  const next = safeReturn(decodeURIComponent(returnValue), url.origin);
   const clearFlow = setCookie(flowCookie, '', 0);
+  if (!code) {
+    if (silent && ['consent_required','interaction_required','login_required'].includes(url.searchParams.get('error'))) {
+      return redirect('/auth/discord?consent=1&next='+encodeURIComponent(next),[clearFlow]);
+    }
+    return redirect('/?login=expired',[clearFlow]);
+  }
   const tokenResponse = await fetch('https://discord.com/api/v10/oauth2/token', {
     method: 'POST', signal: AbortSignal.timeout(10000),
     body: new URLSearchParams({ grant_type: 'authorization_code', code, redirect_uri: callback,

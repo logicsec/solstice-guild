@@ -9,7 +9,7 @@ import { renderTonight } from './tonight.js';
 import { attachCharacterTooltip, characterIcons, openCharacterSheet, professionIcon, renderArmory, renderArmoryConfirmation, renderArmoryProfile, renderCharacterTalents } from './armory-client.js';
 import { articleImagePage } from './article-images.js';
 import { articlePage, canEditArticles, cmsPage, publicHome, publicRaidPage, solsticeFavicon, solsticeLockup, solsticeMark } from './home.js';
-import { authReady, discordAuth, sameOriginWrite, sessionFor } from './auth.js';
+import { authReady, discordAuth, renewSession, sameOriginWrite, sessionFor } from './auth.js';
 
 const auctionCategories = [
   ['weapon', 'Weapons', 'weapons'],
@@ -2032,6 +2032,15 @@ for (const [id, tool] of [['auctionTab','auction'],['professionTab','profession'
   byId(id).addEventListener('click',() => { writeRoute(tool); route(); });
 }
 route();
+let lastSessionRenewal = 0;
+async function keepSessionActive() {
+  if (document.hidden || Date.now()-lastSessionRenewal < 15*60*1000) return;
+  lastSessionRenewal = Date.now();
+  try { await fetch('/api/session',{method:'POST'}); } catch { /* Retry on the next activity check. */ }
+}
+keepSessionActive();
+setInterval(keepSessionActive,60*1000);
+document.addEventListener('visibilitychange',keepSessionActive);
 fetch('/api/session').then(response => response.ok ? response.json() : null)
   .then(session => { if (session) byId('guildIdentity').textContent = session.displayName; }).catch(() => {});
 byId('refreshCraft').addEventListener('click', () => {
@@ -2109,6 +2118,10 @@ export default {
       try {
         return Response.json(await scanVendorFlips(env.DB,market),{headers:{'Cache-Control':'no-store'}});
       } catch { return new Response('Vendor flip data is temporarily unavailable.',{status:503}); }
+    }
+    if (pathname === '/api/session' && request.method === 'POST') {
+      if (!sameOriginWrite(request,url)) return new Response('Invalid origin.',{status:403});
+      return renewSession(request,env);
     }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {

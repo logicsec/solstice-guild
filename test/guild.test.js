@@ -69,12 +69,21 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     const auth = new URL(begin.headers.get('location'));
     assert.equal(auth.origin, 'https://discord.com');
     assert.equal(auth.searchParams.get('scope'), 'identify guilds.members.read');
+    assert.equal(auth.searchParams.get('prompt'),'none');
     const state = wrongState ? 'invalid' : auth.searchParams.get('state');
     return send('/auth/discord/callback?code=mock&state=' + state, {
       headers: { Cookie: begin.headers.getSetCookie()[0].split(';')[0] },
     });
   }
   assert.equal((await signIn(invite, true)).headers.get('location'), '/?login=expired');
+  const silentStart = await send('/auth/discord?next='+encodeURIComponent(invite));
+  const silentState = new URL(silentStart.headers.get('location')).searchParams.get('state');
+  const consentRedirect = await send('/auth/discord/callback?error=consent_required&state='+silentState,{
+    headers:{Cookie:silentStart.headers.getSetCookie()[0].split(';')[0]},
+  });
+  const consentStart = await send(consentRedirect.headers.get('location'));
+  assert.equal(new URL(consentStart.headers.get('location')).searchParams.get('prompt'),'consent');
+
   isMember = false;
   assert.equal((await signIn(invite)).headers.get('location'), '/?login=membership');
   isMember = true;
@@ -93,6 +102,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
   assert.equal((await (await send('/api/session', options)).json()).displayName, 'Raider');
+  const renewedAt = Date.now();
+  const renewal = await send('/api/session',{method:'POST',headers:{Cookie:cookie,Origin:origin}});
+  assert.equal(renewal.status,204);
+  assert.match(renewal.headers.get('Set-Cookie'),/; Max-Age=86400;/);
+  assert.equal((await send('/api/session',{method:'POST',headers:{Cookie:cookie,Origin:'https://bad.example'}})).status,403);
+  assert.ok(db.prepare('SELECT MAX(expires_at) AS expiry FROM discord_sessions').get().expiry >= renewedAt+86400000);
+
   const post = (path, body, session = cookie) => send(path, {
     method: 'POST', headers: { Cookie: session, Origin: origin, 'Content-Type': 'application/json' }, body: JSON.stringify(body),
   });
