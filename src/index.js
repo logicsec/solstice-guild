@@ -361,7 +361,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildCharacters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v16H4z M8 8h8m-8 4h8m-8 4h5"/></svg>Guild Roster</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -1083,14 +1083,13 @@ function raidReset(view, id) {
   }
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
-  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildCharacters:'Guild Roster', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = dashboard ? 'Choose a working raid to see its readiness, roster, preparation, and loot.' : {
     guildDashboard:'See the guild’s class, role, and profession coverage.',
-    guildCharacters:'Browse characters saved or linked by guild members.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
-  const guildView = view === 'guildDashboard' || view === 'guildCharacters';
+  const guildView = view === 'guildDashboard';
   byId('newRaid').hidden = view === 'new' || guildView;
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
@@ -1106,7 +1105,7 @@ function raidStats(target, values) {
     target.append(box);
   }
 }
-function guildOverviewBanner(title, description, actionLabel, target, stats) {
+function guildOverviewBanner(title, description, actionLabel, onAction, stats) {
   const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
   const intro = raidElement('div');
   intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2',title),
@@ -1114,7 +1113,7 @@ function guildOverviewBanner(title, description, actionLabel, target, stats) {
   const crest = raidElement('div',null,'guild-dashboard-crest');
   crest.innerHTML = ${JSON.stringify(solsticeMark)};
   const action = raidElement('button',actionLabel,'raid-primary');
-  action.addEventListener('click',()=>openRaidView(target));
+  action.addEventListener('click',onAction);
   intro.append(action);
   const totals = raidElement('dl',null,'guild-dashboard-totals');
   for (const [label,value] of stats) {
@@ -1125,7 +1124,66 @@ function guildOverviewBanner(title, description, actionLabel, target, stats) {
   hero.append(intro,crest,totals);
   return hero;
 }
+function renderGuildRoster(list, characters) {
+  const search = raidElement('input');
+  search.type = 'search';
+  search.placeholder = 'Search by character, class, spec, or role';
+  search.setAttribute('aria-label','Search guild characters');
+  const filters = raidElement('div',null,'roster-filters');
+  const sort = raidElement('select');
+  sort.setAttribute('aria-label','Sort guild characters');
+  for (const [label,value] of [['Level: Highest First','level-desc'],['Level: Lowest First','level-asc'],['Name: A–Z','name']]) {
+    sort.add(new Option(label,value));
+  }
+  filters.append(search,sort);
+  const rows = raidElement('div',null,'guild-character-list');
+  list.append(filters,rows);
+  const draw = () => {
+    const query = search.value.trim().toLowerCase();
+    rows.replaceChildren();
+    const ordered = [...characters].sort((a,b)=>{
+      const nameOrder = a.name.localeCompare(b.name);
+      if (sort.value === 'name' || (a.level == null && b.level == null)) return nameOrder;
+      if (a.level == null) return 1;
+      if (b.level == null) return -1;
+      return (sort.value === 'level-asc' ? a.level-b.level : b.level-a.level) || nameOrder;
+    });
+    for (const character of ordered) {
+      const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
+      if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
+      const row = raidElement('button',null,'guild-character-row');
+      row.type = 'button';
+      row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+
+        (character.level == null ? '' : ', level '+character.level));
+      const level = raidElement('span',String(character.level ?? '—'),'guild-character-level');
+      level.title = character.level == null ? 'Level unavailable' : 'Level '+character.level;
+      if (character.level == null) level.classList.add('is-unknown');
+      const info = raidElement('span',null,'guild-character-name');
+      info.append(raidElement('strong',character.name),raidElement('small',character.role));
+      const arrow = raidElement('span','›','guild-character-arrow');
+      arrow.setAttribute('aria-hidden','true');
+      const icons = characterIcons(character.class_name,character.spec);
+      const specIcon = icons.children[1]?.cloneNode();
+      row.append(level,icons,info,arrow);
+      if (specIcon) {
+        specIcon.alt = '';
+        specIcon.removeAttribute('title');
+        specIcon.className = 'guild-character-watermark';
+        specIcon.setAttribute('aria-hidden','true');
+        row.append(specIcon);
+      }
+      row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
+      rows.append(row);
+    }
+    if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
+  };
+  search.addEventListener('input',draw);
+  sort.addEventListener('change',draw);
+  draw();
+}
 async function openRaidView(view, id, navigate = true) {
+  const showGuildRoster = view === 'guildCharacters';
+  if (showGuildRoster) view = 'guildDashboard';
   if (navigate) writeRoute('raid', view, id);
   setView('raid');
   raidReset(view, id);
@@ -1158,8 +1216,20 @@ async function openRaidView(view, id, navigate = true) {
       root.append(status);
       const data = await guildRequest('/api/raid-characters?dashboard=1');
       if (revision !== raidRevision) return;
+      const roster = raidElement('section',null,'raid-card guild-roster-directory');
+      roster.id = 'guildRoster';
+      roster.setAttribute('aria-labelledby','guildRosterTitle');
+      const heading = raidElement('h3','Guild Roster');
+      heading.id = 'guildRosterTitle';
+      heading.tabIndex = -1;
+      const rosterStatus = raidElement('p','Loading guild roster…');
+      roster.append(heading,rosterStatus);
+      const jumpToRoster = () => {
+        heading.focus({preventScroll:true});
+        roster.scrollIntoView({block:'start'});
+      };
       const hero = guildOverviewBanner('Life In Solstice','Meet the characters and trades that make up the guild.',
-        'Open Guild Roster →','guildCharacters',[
+        'Jump To Guild Roster ↓',jumpToRoster,[
           ['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length],
         ]);
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
@@ -1189,74 +1259,16 @@ async function openRaidView(view, id, navigate = true) {
         else tile.append(raidElement('p',empty));
         tiles.append(tile);
       }
-      root.replaceChildren(hero,tiles);
-      return;
-    }
-    if (view === 'guildCharacters') {
-      const {characters} = await guildRequest('/api/raid-characters?guild=1');
-      if (revision !== raidRevision) return;
-      const hero = guildOverviewBanner('Meet The Guild','Browse the roster and open a character sheet to see gear, stats, and professions.',
-        'View Guild Dashboard →','guildDashboard',[
-          ['Guild Characters',characters.length],['Armory Linked',characters.filter(character=>character.armory_linked).length],
-          ['Classes Represented',new Set(characters.map(character=>character.class_name)).size],
-        ]);
-      const list = raidElement('section',null,'raid-card guild-roster-directory');
-      const search = raidElement('input');
-      search.type = 'search';
-      search.placeholder = 'Search by character, class, spec, or role';
-      search.setAttribute('aria-label','Search guild characters');
-      const filters = raidElement('div',null,'roster-filters');
-      const sort = raidElement('select');
-      sort.setAttribute('aria-label','Sort guild characters');
-      for (const [label,value] of [['Level: Highest First','level-desc'],['Level: Lowest First','level-asc'],['Name: A–Z','name']]) {
-        sort.add(new Option(label,value));
+      root.replaceChildren(hero,tiles,roster);
+      if (showGuildRoster) jumpToRoster();
+      try {
+        const {characters} = await guildRequest('/api/raid-characters?guild=1');
+        if (revision !== raidRevision) return;
+        rosterStatus.remove();
+        renderGuildRoster(roster,characters);
+      } catch {
+        rosterStatus.textContent = 'The guild roster is temporarily unavailable.';
       }
-      filters.append(search,sort);
-      const rows = raidElement('div',null,'guild-character-list');
-      list.append(filters,rows);
-      const draw = () => {
-        const query = search.value.trim().toLowerCase();
-        rows.replaceChildren();
-        const ordered = [...characters].sort((a,b)=>{
-          const nameOrder = a.name.localeCompare(b.name);
-          if (sort.value === 'name' || (a.level == null && b.level == null)) return nameOrder;
-          if (a.level == null) return 1;
-          if (b.level == null) return -1;
-          return (sort.value === 'level-asc' ? a.level-b.level : b.level-a.level) || nameOrder;
-        });
-        for (const character of ordered) {
-          const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
-          if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
-          const row = raidElement('button',null,'guild-character-row');
-          row.type = 'button';
-          row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+
-            (character.level == null ? '' : ', level '+character.level));
-          const level = raidElement('span',String(character.level ?? '—'),'guild-character-level');
-          level.title = character.level == null ? 'Level unavailable' : 'Level '+character.level;
-          if (character.level == null) level.classList.add('is-unknown');
-          const info = raidElement('span',null,'guild-character-name');
-          info.append(raidElement('strong',character.name),raidElement('small',character.role));
-          const arrow = raidElement('span','›','guild-character-arrow');
-          arrow.setAttribute('aria-hidden','true');
-          const icons = characterIcons(character.class_name,character.spec);
-          const specIcon = icons.children[1]?.cloneNode();
-          row.append(level,icons,info,arrow);
-          if (specIcon) {
-            specIcon.alt = '';
-            specIcon.removeAttribute('title');
-            specIcon.className = 'guild-character-watermark';
-            specIcon.setAttribute('aria-hidden','true');
-            row.append(specIcon);
-          }
-          row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
-          rows.append(row);
-        }
-        if (!rows.childElementCount) rows.append(raidElement('p',query ? 'No characters match your search.' : 'No guild characters have been added yet.'));
-      };
-      search.addEventListener('input',draw);
-      sort.addEventListener('change',draw);
-      draw();
-      byId('raidList').append(hero,list);
       return;
     }
     if (view === 'characters') {
