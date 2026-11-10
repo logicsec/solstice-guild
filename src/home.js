@@ -1,3 +1,4 @@
+import { articleMarkup, startArticleEditor } from './article-editor.js';
 import { raidReserves } from './reserves.js';
 import { sameOriginWrite } from './auth.js';
 
@@ -19,7 +20,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=88960cd90b2c"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=edb08d5d434a"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -124,7 +125,7 @@ export async function publicRaidPage(db, id, roles, session, requested) {
 export async function articlePage(env, id, session) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND published_at IS NOT NULL').bind(id).first();
   if (!article) return html(shell('Article unavailable', '<main class="article-page"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
-  const paragraphs = article.body.split(/\r?\n\s*\r?\n/).map(paragraph => '<p>' + escape(paragraph) + '</p>').join('');
+  const paragraphs = articleMarkup(article.body, article.body_format, escape);
   return html(shell(article.title, `<main class="article-page"><a class="text-link" href="/#chronicle">← Back to the Chronicle</a><p class="eyebrow">${dateLabel(article.published_at)}</p><h1>${escape(article.title)}</h1><p class="article-summary">${escape(article.summary)}</p><div class="article-body">${paragraphs}</div></main>`, { session, editor: canEditArticles(env, session) }));
 }
 
@@ -138,17 +139,18 @@ export async function cmsPage(request, env, url, session) {
     const title = String(data.get('title') ?? '').trim();
     const summary = String(data.get('summary') ?? '').trim();
     const body = String(data.get('body') ?? '').trim();
+    const format = data.get('body_format') === 'rich' ? 'rich' : 'plain';
     if (!['draft','publish'].includes(action) || !title || title.length > 110 || summary.length > 240 || !body || body.length > 16000) {
       return new Response('Enter a title and article body within the editor limits.', { status: 400 });
     }
     const now = new Date().toISOString();
     if (id) {
-      const result = await env.DB.prepare('UPDATE articles SET title = ?, summary = ?, body = ?, published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?')
-        .bind(title, summary, body, Number(action === 'publish'), now, now, id).run();
+      const result = await env.DB.prepare('UPDATE articles SET title = ?, summary = ?, body = ?, body_format = ?, published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?')
+        .bind(title, summary, body, format, Number(action === 'publish'), now, now, id).run();
       if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
     } else {
-      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,published_at,updated_at) VALUES (?,?,?,?,?,?)')
-        .bind(crypto.randomUUID(), title, summary, body, action === 'publish' ? now : null, now).run();
+      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,published_at,updated_at) VALUES (?,?,?,?,?,?,?)')
+        .bind(crypto.randomUUID(), title, summary, body, format, action === 'publish' ? now : null, now).run();
     }
     return new Response(null, { status: 303, headers: { Location: '/cms', 'Cache-Control': 'no-store' } });
   }
@@ -161,8 +163,20 @@ export async function cmsPage(request, env, url, session) {
   <div class="editor-grid"><form method="post" action="/cms" enctype="multipart/form-data"><h2>${article ? 'Edit article' : 'New article'}</h2><input type="hidden" name="id" value="${escape(article?.id)}">
   <label>Title<input required name="title" maxlength="110" value="${escape(article?.title)}"></label>
   <label>Summary<input name="summary" maxlength="240" value="${escape(article?.summary)}"></label>
-  <label>Article<textarea required name="body" maxlength="16000" rows="13">${escape(article?.body)}</textarea></label>
-  <p>Use a blank line to start a new paragraph. Saving as a draft takes a published article offline.</p>
+  <input type="hidden" name="body_format" value="${escape(article?.body_format ?? 'plain')}">
+  <label for="articleBody" id="articleBodyLabel">Article</label>
+  <div id="articleTools" class="editor-tools" role="group" aria-label="Article formatting" hidden>
+    <button type="button" data-command="bold">Bold</button>
+    <button type="button" data-command="italic">Italic</button>
+    <button type="button" data-command="formatBlock" data-value="h2">Heading</button>
+    <button type="button" data-command="formatBlock" data-value="p">Paragraph</button>
+    <button type="button" data-command="insertUnorderedList">Bullet list</button>
+    <button type="button" data-command="insertOrderedList">Numbered list</button>
+    <button type="button" data-command="image">Add image</button>
+  </div>
+  <div id="articleContent" class="article-body editor-content" contenteditable="true" role="textbox" aria-multiline="true" aria-labelledby="articleBodyLabel" hidden>${article ? articleMarkup(article.body, article.body_format, escape) : ''}</div>
+  <textarea id="articleBody" required name="body" maxlength="16000" rows="13">${escape(article?.body)}</textarea>
+  <p>Saving as a draft takes a published article offline.</p>
   <div class="actions"><button class="button gold" name="action" value="publish">Publish article</button><button class="button outline" name="action" value="draft">Save as draft</button></div></form>
-  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div></main>`, { session, editor: true }));
+  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})();</script></main>`, { session, editor: true }));
 }

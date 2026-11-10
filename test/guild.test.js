@@ -230,6 +230,19 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const published = await (await send('/chronicle/' + articleId)).text();
   assert.match(published, /&lt;script&gt;unsafe/);
   assert.doesNotMatch(published, /<script>unsafe/);
+  article.set('body_format','rich');
+  article.set('body','<h2>Raid recap</h2><p><strong>Well done!</strong></p>' +
+    '<img src="https://example.com/raid.png?one=1&amp;two=2" alt="Guild &amp; friends">' +
+    '<img src="javascript:alert(1)" alt="Bad"><img src="https://example.com/bad.png" alt="Bad" onerror="alert(1)">');
+  assert.equal((await save()).status,303);
+  const rich = await (await send('/chronicle/' + articleId)).text();
+  assert.match(rich,/<h2>Raid recap<\/h2>/);
+  assert.match(rich,/<strong>Well done!<\/strong>/);
+  assert.match(rich,/<img src="https:\/\/example.com\/raid.png\?one=1&amp;two=2" alt="Guild &amp; friends"/);
+  assert.doesNotMatch(rich,/<img[^>]*(?:onerror|javascript:)/);
+  const editor = await (await send('/cms?edit=' + articleId,options)).text();
+  assert.match(editor,/data-command="image">Add image/);
+  assert.match(editor,/<h2>Raid recap<\/h2>/);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'https://bad.example','Sec-Fetch-Site':'cross-site'}})).status,403);
   assert.equal((await send('/auth/logout',{method:'POST',headers:{Cookie:cookie,Origin:'null','Sec-Fetch-Site':'same-origin'}})).status,303);
   assert.equal((await send('/api/session', options)).status, 401);
