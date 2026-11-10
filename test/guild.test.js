@@ -229,7 +229,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await save()).status, 303);
   assert.match(await (await send('/')).text(), /First &amp; Dawn/);
   const published = await (await send('/chronicle/' + articleId)).text();
-  assert.match(published, /Recent posts/);
+  assert.match(published, /Recent Posts/);
   assert.match(published, /Raid Recaps<\/span><span>1/);
   assert.match(await (await send('/?category=Raid%20recaps')).text(), /First &amp; Dawn/);
   assert.doesNotMatch(await (await send('/?category=Guides')).text(), /First &amp; Dawn/);
@@ -275,7 +275,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   article.set('action','draft');
   assert.equal((await save()).status,303);
   assert.equal((await send(imagePath)).status,404);
-  assert.match(await (await send('/cms?edit=' + articleId,options)).text(), /Delete this article/);
+  assert.match(await (await send('/cms?edit=' + articleId,options)).text(), /Delete This Article/);
   const deleteArticle = (editorCookie, requestOrigin = origin) => send('/cms', {
     method:'POST', headers:{ Cookie:editorCookie, Origin:requestOrigin },
     body:new URLSearchParams({id:articleId,action:'delete'}),
