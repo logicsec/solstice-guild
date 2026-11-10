@@ -249,7 +249,9 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   });
   assert.equal((await upload(member)).status,403);
   assert.equal((await upload(cookie,new Uint8Array([1,2,3]))).status,415);
-  const uploaded = await upload(cookie);
+  const largeImage = new Uint8Array(2 * 1024 * 1024);
+  largeImage.set(png);
+  const uploaded = await upload(cookie,largeImage);
   assert.equal(uploaded.status,201);
   const { path:imagePath } = await uploaded.json();
   assert.equal((await send(imagePath)).status,404);
@@ -259,7 +261,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.ok((await (await send('/chronicle/' + articleId)).text()).includes('<img src="' + imagePath + '"'));
   const publicImage = await send(imagePath);
   assert.equal(publicImage.headers.get('Content-Type'),'image/png');
-  assert.deepEqual(new Uint8Array(await publicImage.arrayBuffer()),png);
+  assert.deepEqual(new Uint8Array(await publicImage.arrayBuffer()),largeImage);
   article.set('action','draft');
   assert.equal((await save()).status,303);
   assert.equal((await send(imagePath)).status,404);
