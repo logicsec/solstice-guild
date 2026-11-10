@@ -156,7 +156,7 @@ export function renderArmoryProfile(character) {
   const groups = {primary:raidElement('div',null,'character-professions'),secondary:raidElement('div',null,'character-professions')};
   for (const entry of character.professions ?? []) {
     const card = raidElement('section',null,'raid-card profession-progress-card');
-    const icon = professionIcon(entry.name);
+    const icon = professionIcon(entry.name,card);
     const details = raidElement('div',null,'profession-progress-details');
     details.append(raidElement('h3',entry.name));
     const ranks = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null) : [entry];
