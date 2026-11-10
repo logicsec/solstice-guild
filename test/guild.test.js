@@ -47,6 +47,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
       const suffix = profile.pathname.split('/').at(-1);
       if (suffix === 'equipment') return Response.json({equipped_items:[{item:{id:123},name:'Staff',slot:{name:'Main Hand',type:'MAIN_HAND'},level:{value:27},
         quality:{type:'RARE'},enchantments:[{display_string:'Intellect'}]}]});
+      if (suffix === 'specializations') return Response.json({specialization_groups:[{is_active:true,specializations:[
+        {specialization_name:'Arcane',spent_points:2,talents:[{talent:{id:105815,name:'Wand Specialization'},talent_rank:2,
+          spell_tooltip:{description:'Wand damage increased.'}}]},
+      ]}]});
       if (suffix === 'statistics') return Response.json({intellect:{effective:42},health:900});
       if (suffix === 'professions') return Response.json({primaries:[{profession:{name:'Alchemy'},skill_points:100}]});
       if (suffix === 'character-media') return Response.json({assets:[{key:'main-raw',value:'https://render.worldofwarcraft.com/us/test.png'}]});
@@ -143,6 +147,9 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' }, member)).status, 403);
   assert.equal((await post(raid, { action: 'review', member: '31', status: 'Going' })).status, 200);
   const armory = await (await send('/api/armory?name=Astra+Mortis',{headers:{Cookie:member}})).json();
+  assert.deepEqual(armory.character.talents,[{active:true,trees:[{name:'Arcane',points:2,talents:[
+    {id:105815,name:'Wand Specialization',rank:2,description:'Wand damage increased.'},
+  ]}]}]);
   assert.equal(armory.character.gear[0].enchants[0],'Intellect');
   assert.equal(armory.character.gear[0].id,123);
   assert.equal(armory.character.gear[0].slotType,'MAIN_HAND');

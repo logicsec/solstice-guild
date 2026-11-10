@@ -99,6 +99,23 @@ export async function guildProfessionSummary(env, slugs) {
   return { reviewed, professions };
 }
 
+function parseTalents(data) {
+  if (!Array.isArray(data?.specialization_groups)) return null;
+  return data.specialization_groups.map(group => ({
+    active: group.is_active === true,
+    trees: (Array.isArray(group.specializations) ? group.specializations : []).map(tree => ({
+      name: localized(tree.specialization_name || tree.specialization?.name),
+      points: Number.isSafeInteger(tree.spent_points) && tree.spent_points >= 0 ? tree.spent_points : null,
+      talents: (Array.isArray(tree.talents) ? tree.talents : []).filter(talent=>Number.isSafeInteger(talent.talent_rank) && talent.talent_rank > 0).map(talent=>({
+        id: talent.talent?.id ?? null,
+        name: localized(talent.talent?.name ?? talent.spell_tooltip?.spell?.name),
+        rank: talent.talent_rank,
+        description: localized(talent.spell_tooltip?.description),
+      })),
+    })).filter(tree=>tree.name),
+  }));
+}
+
 async function loadCharacter(env, slug) {
   const token = await battleNetToken(env);
   const requestProfile = suffix => requestCharacterProfile(token,slug,suffix);
@@ -114,8 +131,8 @@ async function loadCharacter(env, slug) {
       return result.ok ? await result.json() : null;
     } catch { return null; }
   }
-  const [data, equipment, media, statistics] = await Promise.all([
-    optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'),
+  const [data, equipment, media, statistics, specializations] = await Promise.all([
+    optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'), optional('/specializations'),
   ]);
   const professions = parseProfessions(data);
   const renders = Array.isArray(media?.assets) ? media.assets : [];
@@ -152,7 +169,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, attributes, portrait: mediaUrl(['avatar','inset']) ?? null, render: mediaUrl(['main-raw','main','inset']) ?? null,
+    professions, gear, attributes, talents:parseTalents(specializations), portrait: mediaUrl(['avatar','inset']) ?? null, render: mediaUrl(['main-raw','main','inset']) ?? null,
   };
 }
 

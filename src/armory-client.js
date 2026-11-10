@@ -168,6 +168,92 @@ export function renderArmoryProfile(character) {
   return { gearPanel:root, professions };
 }
 
+export function renderCharacterTalents(character) {
+  const panel = raidElement('section',null,'raid-card character-talents');
+  panel.append(raidElement('h3','Talent Trees'));
+  if (!character.talents?.length) {
+    panel.append(raidElement('p',character.talents ? 'No talent builds reported by the Armory.' : 'Talent data is unavailable from the Armory.'));
+    return panel;
+  }
+  const layout = Object.hasOwn(foreverTalentLayout,character.className) ? foreverTalentLayout[character.className] : [];
+  const builds = raidElement('div',null,'raid-actions');
+  const trees = raidElement('div',null,'character-talent-trees');
+  const detail = raidElement('div',null,'character-talent-detail');
+  detail.setAttribute('aria-live','polite');
+  const source = raidElement('a','Tree layout from The Forever Era','text-link');
+  source.href = 'https://theforeverera.com/en/talents/';
+  source.target = '_blank';
+  source.rel = 'noopener noreferrer';
+  panel.append(builds,trees,detail,source);
+  function select(index) {
+    for (const [i,button] of [...builds.children].entries()) button.setAttribute('aria-pressed',String(i === index));
+    trees.replaceChildren();
+    detail.replaceChildren(raidElement('p','Select a talent to see its rank and any Armory details.'));
+    const build = character.talents[index];
+    const labels = new Map(layout.map(tree=>[tree[0].toLowerCase(),tree]));
+    for (const tree of build.trees) {
+      if (!labels.has(tree.name.toLowerCase())) labels.set(tree.name.toLowerCase(),[tree.name,'',[]]);
+    }
+    for (const [key,[name,icon,nodes]] of labels) {
+      const tree = build.trees.find(entry=>entry.name.toLowerCase() === key);
+      const learned = tree?.talents ?? [];
+      const points = tree?.points ?? learned.reduce((sum,talent)=>sum+talent.rank,0);
+      const card = raidElement('section',null,'character-talent-tree');
+      const title = raidElement('h4',name+' · '+points+' pts');
+      if (icon) {
+        const image = raidElement('img');
+        image.alt = '';
+        image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+icon+'.jpg';
+        title.prepend(image);
+      }
+      card.append(title);
+      const grid = raidElement('div',null,'character-talent-grid');
+      const matched = new Set();
+      for (const [id,talentName,row,col,maxRank,asset] of nodes) {
+        const talent = learned.find(entry=>entry.id === id || entry.name.toLowerCase() === talentName.toLowerCase());
+        if (talent) matched.add(talent);
+        const rank = talent?.rank ?? 0;
+        const node = raidElement('button',null,'character-talent-node');
+        node.type = 'button';
+        node.dataset.learned = String(rank > 0);
+        node.style.gridArea = (row+1)+' / '+(col+1);
+        const rankText = rank+'/'+maxRank;
+        node.setAttribute('aria-label',talentName+', rank '+rankText);
+        node.title = talentName+' · '+rankText;
+        if (asset) {
+          const image = raidElement('img');
+          image.alt = '';
+          image.loading = 'lazy';
+          image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
+          node.append(image);
+        }
+        node.append(raidElement('span',rankText));
+        const showTalent = () => detail.replaceChildren(raidElement('strong',talentName+' · '+rankText),
+          ...(talent?.description ? [raidElement('p',talent.description)] : []));
+        node.addEventListener('click',showTalent);
+        node.addEventListener('focus',showTalent);
+        grid.append(node);
+      }
+      if (nodes.length) card.append(grid);
+      for (const talent of learned.filter(entry=>!matched.has(entry))) {
+        card.append(raidElement('p',talent.name+' · Rank '+talent.rank));
+      }
+      trees.append(card);
+    }
+    if (!labels.size) trees.append(raidElement('p','No talents reported for this build.'));
+  }
+  for (const [i,build] of character.talents.entries()) {
+    const label = 'Build '+(i+1)+(build.active ? ' · Active' : '');
+    const button = raidElement('button',label);
+    button.type = 'button';
+    button.addEventListener('click',()=>select(i));
+    builds.append(button);
+  }
+  builds.hidden = character.talents.length < 2;
+  select(Math.max(0,character.talents.findIndex(build=>build.active)));
+  return panel;
+}
+
 export function openCharacterSheet(player, event, organizer) {
   const dialog = raidElement('dialog',null,'workspace-drawer character-drawer');
   const title = raidElement('h2',player.character);
@@ -214,7 +300,9 @@ export function openCharacterSheet(player, event, organizer) {
   professions.append(raidElement('p','Loading professions…'));
   const tabs = raidElement('nav',null,'character-review-tabs');
   tabs.setAttribute('aria-label','Character Sheet Sections');
-  const sections = [['Character',content],...(review ? [['Raid Review',review]] : []),['Professions',professions]];
+  const talents = raidElement('div');
+  talents.append(raidElement('p','Loading talents…'));
+  const sections = [['Character',content],['Talents',talents],...(review ? [['Raid Review',review]] : []),['Professions',professions]];
   const panels = sections.map(([label,panel])=>{
     const button = raidElement('button',label);
     button.type = 'button';
@@ -261,6 +349,7 @@ export function openCharacterSheet(player, event, organizer) {
     const { gearPanel, professions:skills } = renderArmoryProfile(character);
     content.replaceChildren(gearPanel);
     professions.replaceChildren(skills);
+    talents.replaceChildren(renderCharacterTalents(character));
     if (character.portrait) {
       const image = raidElement('img');
       image.alt = '';
@@ -285,6 +374,7 @@ export function openCharacterSheet(player, event, organizer) {
   }).catch(error=>{
     content.replaceChildren(raidElement('p',error.message));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
+    talents.replaceChildren(raidElement('p','Talents are unavailable.'));
     evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
   });
 }
