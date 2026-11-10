@@ -553,25 +553,31 @@ body:has(> .guild-home) { background: var(--surface); }
 .armory-spec input { position: absolute; opacity: 0; }
 .armory-spec:has(input:focus-visible) { outline: 2px solid var(--accent); outline-offset: 2px; }
 
-.public-raid-banner { min-height: 360px; }
-.public-raid-banner .home-banner-content { display: block; padding-bottom: 48px; }
-.public-raid-banner h1 { font-size: clamp(38px, 7vw, 76px); overflow-wrap: anywhere; }
+.public-raid-banner { min-height: 0; }
+.public-raid-banner .home-banner-content { display: block; padding-bottom: clamp(30px,4vw,54px); }
+.public-raid-banner h1 { font-size: clamp(38px, 6vw, 68px); overflow-wrap: anywhere; }
 .public-raid-banner p + p { margin-top: 4px; }
-.public-raid-composition { margin-bottom: 28px; }
+.public-raid-banner .home-banner-content > p:last-child { max-width: 72ch; margin-top: 8px; color: var(--muted); }
+.public-raid .public-raid-sections { display: grid; gap: clamp(22px,3vw,36px); }
+.public-raid-section { min-width: 0; display: grid; gap: 12px; }
+.public-raid .public-raid-section h2 { margin: 0; font-size: clamp(23px, 3vw, 34px); }
+.public-raid .public-raid-composition { grid-template-columns: repeat(4,minmax(0,1fr)); margin: 0; }
+.public-raid-composition .news-card { padding: 12px 16px; }
 .public-raid-composition dd { margin: 4px 0 0; color: var(--gold); font-size: 23px; font-weight: 700; }
-.public-raid-table { margin-top: 14px; overflow-x: auto; padding: 0; }
+.public-raid-table { overflow-x: auto; padding: 0; }
 .public-raid-table table { width: 100%; border-collapse: collapse; text-align: start; }
-.public-raid-table :is(th,td) { padding: 10px 14px; text-align: start; white-space: nowrap; }
+.public-raid-table :is(th,td) { padding: 12px 20px; text-align: start; }
+.public-raid-table thead { background: var(--field); }
 .public-raid-table tr + tr, .public-raid-table tbody { border-top: 1px solid var(--line); }
+.public-raid-reserve-info { display: grid; gap: 6px; }
+.public-raid-reserve-info .public-raid-reserve-status { color: var(--accent); font-weight: 700; }
 
 body:has(> .public-raid) { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
 .public-raid { flex: 1; --home-width: min(83vw,1320px); }
 .public-raid .home-journal { padding-block: clamp(24px,3vw,42px) clamp(40px,5vw,72px); }
-.public-raid-roster-heading { margin-bottom: 14px; }
-.public-raid-table { margin-top: 0; }
-.public-raid-table :is(th,td) { padding: 12px 20px; }
 @media (max-width: 760px) {
   .public-raid { --home-width: 92vw; }
+  .public-raid .public-raid-composition { grid-template-columns: repeat(2,minmax(0,1fr)); }
   .public-raid-table :is(th,td) { padding-inline: 12px; }
 }
 
