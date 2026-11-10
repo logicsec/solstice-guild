@@ -14,11 +14,13 @@ export function articleMarkup(body, format, escape) {
       continue;
     }
     try {
-      const source = new URL(match[1].replaceAll('&amp;', '&'));
-      if (source.protocol === 'https:' && !source.username && !source.password) {
+      const path = match[1].replaceAll('&amp;', '&');
+      const local = /^\/chronicle\/images\/[0-9a-f-]{36}$/.test(path);
+      const source = local ? null : new URL(path);
+      if (local || (source.protocol === 'https:' && !source.username && !source.password)) {
         const alt = match[2].replace(/&(amp|lt|gt|quot|#39|nbsp);/g, (_, key) =>
           ({ amp:'&', lt:'<', gt:'>', quot:'"', '#39':"'", nbsp:' ' })[key]);
-        output += '<img src="' + escape(source.href) + '" alt="' + escape(alt) + '" loading="lazy" referrerpolicy="no-referrer">';
+        output += '<img src="' + escape(local ? path : source.href) + '" alt="' + escape(alt) + '" loading="lazy" referrerpolicy="no-referrer">';
       }
     } catch { /* Ignore invalid image URLs. */ }
   }
@@ -71,12 +73,50 @@ export function startArticleEditor() {
     }
     document.execCommand(command === 'image' ? 'insertHTML' : command, false, value);
   });
-  editor.addEventListener('paste', event => {
+  const imageStatus = document.getElementById('articleImageStatus');
+  let uploading = false;
+  editor.addEventListener('paste', async event => {
     event.preventDefault();
-    document.execCommand('insertText', false, event.clipboardData.getData('text/plain'));
+    const image = [...event.clipboardData.files].find(file => file.type.startsWith('image/'));
+    if (!image) {
+      document.execCommand('insertText', false, event.clipboardData.getData('text/plain'));
+      return;
+    }
+    if (uploading) return;
+    if (image.size > 1536 * 1024) {
+      imageStatus.textContent = 'Image is too large. The limit is 1.5 MB.';
+      return;
+    }
+    const range = window.getSelection().getRangeAt(0).cloneRange();
+    uploading = true;
+    imageStatus.textContent = 'Adding image…';
+    try {
+      const response = await fetch('/cms/images', { method:'POST', body:image });
+      if (!response.ok) throw new Error(await response.text());
+      const { path } = await response.json();
+      const inserted = document.createElement('img');
+      inserted.setAttribute('src', path);
+      inserted.setAttribute('alt', '');
+      editor.focus();
+      if (editor.contains(range.commonAncestorContainer)) {
+        const current = window.getSelection();
+        current.removeAllRanges();
+        current.addRange(range);
+      }
+      document.execCommand('insertHTML', false, inserted.outerHTML);
+      imageStatus.textContent = 'Image added.';
+    } catch (error) {
+      imageStatus.textContent = error.message;
+    } finally {
+      uploading = false;
+    }
   });
   editor.addEventListener('drop', event => event.preventDefault());
   body.form.addEventListener('submit', event => {
+    if (uploading) {
+      event.preventDefault();
+      return;
+    }
     if (!editor.textContent.trim() && !editor.querySelector('img')) {
       event.preventDefault();
       editor.focus();
