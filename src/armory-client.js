@@ -116,15 +116,43 @@ export function renderArmoryProfile(character) {
   if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.','character-stat-card'));
   layout.append(attributes);
   root.append(layout);
-  const professions = raidElement('section',null,'raid-card');
-  professions.append(raidElement('h3','Professions'));
+  const professions = raidElement('div',null,'character-professions');
+  const icons = {
+    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
+    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
+    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
+    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
+  };
   for (const entry of character.professions ?? []) {
-    const skills = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null)
-      .map(tier=>[tier.name,tier.skill+(tier.maxSkill ? ' / '+tier.maxSkill : '')].filter(Boolean).join(' ')).join(' · ') :
-      entry.skill+(entry.maxSkill ? ' / '+entry.maxSkill : '');
-    professions.append(raidElement('p',[entry.name,skills].filter(Boolean).join(' · ')));
+    const card = raidElement('section',null,'raid-card profession-progress-card');
+    const icon = raidElement('span',entry.name.slice(0,1),'profession-progress-icon');
+    const asset = icons[entry.name.toLowerCase()];
+    if (asset) {
+      const image = raidElement('img');
+      image.alt = '';
+      image.addEventListener('load',()=>icon.replaceChildren(image),{once:true});
+      image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
+    }
+    const details = raidElement('div',null,'profession-progress-details');
+    details.append(raidElement('h3',entry.name));
+    const ranks = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null) : [entry];
+    for (const rank of ranks) {
+      const row = raidElement('div',null,'profession-progress-row');
+      if (rank !== entry && rank.name && rank.name !== entry.name) details.append(raidElement('small',rank.name));
+      if (rank.maxSkill > 0) {
+        const progress = raidElement('progress');
+        progress.max = rank.maxSkill;
+        progress.value = rank.skill;
+        progress.setAttribute('aria-label',rank.name || entry.name);
+        row.append(progress,raidElement('small',rank.skill+' / '+rank.maxSkill));
+      } else row.append(raidElement('small','Skill '+rank.skill));
+      details.append(row);
+    }
+    if (!ranks.length) details.append(raidElement('small','Skill Level Unavailable'));
+    card.append(icon,details);
+    professions.append(card);
   }
-  if (!character.professions?.length) professions.append(raidElement('p','No profession data available.'));
+  if (!character.professions?.length) professions.append(raidElement('p','No profession data available.','raid-card'));
   root.append(raidElement('small','Source: Blizzard Armory'));
   return { gearPanel:root, professions };
 }
