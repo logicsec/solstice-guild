@@ -191,7 +191,8 @@ export function openCharacterSheet(player, event, organizer) {
     raidElement('p',(applicable ? ready+' of '+applicable+' applicable checks ready' : 'No applicable checks')+' · RSVP: '+player.status),
     raidElement('small',player.reviewed_at ? 'Last reviewed '+raidDate(player.reviewed_at) : 'No review saved yet.'));
   const evidence = raidElement('section',null,'raid-card raid-review-evidence');
-  evidence.append(raidElement('h3','Armory Evidence'),raidElement('p','Loading Armory data…'));
+  evidence.append(raidElement('h3','Armory Evidence'),raidElement('p',player.armorySlug ?
+    'Loading Armory data…' : 'This character has no linked Armory profile. You can still complete the review.'));
   review.append(summary,checks,evidence);
   const professions = raidElement('div');
   professions.append(raidElement('p','Loading professions…'));
@@ -211,14 +212,18 @@ export function openCharacterSheet(player, event, organizer) {
     }
   }
   for (const {button,panel} of panels) button.addEventListener('click',()=>selectPanel(panel));
-  dialog.append(header,tabs,content,review,professions);
-  selectPanel(content);
+  dialog.append(header);
+  if (player.armorySlug) {
+    dialog.append(tabs,content,review,professions);
+    selectPanel(content);
+  } else dialog.append(review);
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
   document.body.append(dialog);
   dialog.addEventListener('close',()=>dialog.remove(),{once:true});
   dialog.showModal();
+  if (!player.armorySlug) return;
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
     if (!dialog.open) return;
     const { gearPanel, professions:skills } = renderArmoryProfile(character);
