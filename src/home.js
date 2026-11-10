@@ -5,6 +5,8 @@ import { sameOriginWrite } from './auth.js';
 const escape = value => String(value ?? '').replace(/[&<>"']/g, char => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[char]);
+const articleCategories = ['Guild news', 'Raid recaps', 'Guides', 'Events'];
+const categoryLink = category => '/?category=' + encodeURIComponent(category) + '#chronicle';
 const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'UTC' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
 export const solsticeMark = '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70"><path d="M30 3C23 9 13 12 5 12c-1 23 3 38 25 54 22-16 26-31 25-54-8 0-18-3-25-9Z" fill="#0c1b31" stroke="#d4a85d" stroke-width="3.5"/><g fill="#edbb65"><path d="m30 13 3 19h-6Zm-14 8 10 13-5 3Zm28 0-5 16-5-3ZM8 30l13 8-2 4Zm44 0-11 12-2-4Z"/><path d="M20 44a10 10 0 0 1 20 0Zm-7 4c10-5 24-5 34 0l-2 3c-11-4-19-4-30 0Z"/></g></svg>';
@@ -20,7 +22,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=f4a20d4b4b78"></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=ded271f68d9b"></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
@@ -40,13 +42,17 @@ export async function publicHome(env, url, session) {
   params.delete('login');
   const next = params.has('tool') || params.has('raid') ? '/?' + params : '/?tool=raid';
   const notice = { membership: 'Use a Discord account that belongs to the Solstice server.', expired: 'Your sign-in expired. Please try again.', unavailable: 'Discord sign-in is temporarily unavailable.' }[login];
-  const { results } = await env.DB.prepare('SELECT id, title, summary, published_at, body, body_format FROM articles WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 12').bind().all();
+  const requestedCategory = params.get('category');
+  const category = articleCategories.includes(requestedCategory) ? requestedCategory : null;
+  const { results } = await env.DB.prepare(`SELECT id, title, summary, published_at, body, body_format, category
+    FROM articles WHERE published_at IS NOT NULL AND (? IS NULL OR category = ?)
+    ORDER BY published_at DESC LIMIT 12`).bind(category,category).all();
   const cards = results.map(article => {
     const link = '/chronicle/' + escape(article.id);
     const { cover } = articleContent(article);
     return `<article class="news-card chronicle-card"><a class="chronicle-card-link" href="${link}">
       ${cover ? `<div class="chronicle-card-cover">${cover}</div>` : ''}
-      <time class="eyebrow" datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time>
+      <p class="chronicle-card-meta"><span class="eyebrow">${escape(article.category)}</span> <time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
       <h3>${escape(article.title)}</h3>
       ${article.summary ? `<p>${escape(article.summary)}</p>` : ''}
     </a></article>`;
@@ -68,8 +74,9 @@ export async function publicHome(env, url, session) {
   </div></section>
   <section class="chronicle home-journal" id="chronicle" aria-labelledby="chronicle-title">
       <p class="eyebrow">From the guild</p><h2 id="chronicle-title">The Chronicle</h2>
-      <p class="section-intro">Raid stories, announcements, and news from Solstice.</p>
-      <div class="news-grid chronicle-grid">${cards || '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>'}</div>
+      ${category ? `<p class="section-intro">${escape(category)} · <a class="text-link" href="/#chronicle">All posts</a></p>` :
+        '<p class="section-intro">Raid stories, announcements, and news from Solstice.</p>'}
+      <div class="news-grid chronicle-grid">${cards || (category ? '<p class="empty">No posts in this category yet.</p>' : '<p class="empty">Guild news and raid recaps will appear here as they’re published.</p>')}</div>
   </section>
   </main>`, { session, editor: canEditArticles(env, session), next }));
 }
@@ -140,20 +147,38 @@ function articleContent(article) {
 export async function articlePage(env, id, session) {
   const article = await env.DB.prepare('SELECT * FROM articles WHERE id = ? AND published_at IS NOT NULL').bind(id).first();
   if (!article) return html(shell('Article unavailable', '<main class="article-page chronicle-article"><h1>Article unavailable</h1><a href="/#chronicle">Back to the Chronicle</a></main>', { session }), 404);
+  const [{ results: recent }, { results: counts }] = await Promise.all([
+    env.DB.prepare(`SELECT id, title, published_at, body, body_format FROM articles
+      WHERE published_at IS NOT NULL ORDER BY published_at DESC LIMIT 3`).bind().all(),
+    env.DB.prepare(`SELECT category, COUNT(*) AS total FROM articles
+      WHERE published_at IS NOT NULL GROUP BY category`).bind().all(),
+  ]);
   const { cover, content } = articleContent(article);
   const byline = article.publisher_name ? `<span>Published by <strong>${escape(article.publisher_name)}</strong></span>` : '';
   return html(shell(article.title, `<main class="article-page chronicle-article">
     <a class="text-link" href="/#chronicle">← Back to the Chronicle</a>
-    <article>
+    <div class="chronicle-reading-layout"><article>
       ${cover ? `<div class="chronicle-article-cover">${cover}</div>` : ''}
       <header class="chronicle-article-header">
-        <p class="eyebrow">Guild Chronicle</p>
+        <a class="eyebrow text-link" href="${categoryLink(article.category)}">${escape(article.category)}</a>
         <h1>${escape(article.title)}</h1>
         ${article.summary ? `<p class="article-summary">${escape(article.summary)}</p>` : ''}
         <p class="chronicle-article-meta">${byline}<time datetime="${escape(article.published_at)}">${dateLabel(article.published_at)}</time></p>
       </header>
       <div class="article-body">${content}</div>
     </article>
+    <aside class="chronicle-sidebar" aria-label="Explore the Chronicle">
+      <section class="news-card"><h2>Recent posts</h2><ul>${recent.map(post => {
+        const thumbnail = articleContent(post).cover;
+        return `<li><a class="chronicle-recent" href="/chronicle/${escape(post.id)}"${post.id === id ? ' aria-current="page"' : ''}>
+          ${thumbnail ? `<span class="chronicle-thumbnail">${thumbnail}</span>` : ''}
+          <span><time datetime="${escape(post.published_at)}">${dateLabel(post.published_at)}</time><strong>${escape(post.title)}</strong></span>
+        </a></li>`;
+      }).join('')}</ul></section>
+      <section class="news-card"><h2>Categories</h2><ul>${articleCategories.map(category =>
+        `<li><a class="chronicle-category" href="${categoryLink(category)}"><span>${escape(category)}</span><span>${counts.find(row => row.category === category)?.total ?? 0}</span></a></li>`
+      ).join('')}</ul></section>
+    </aside></div>
   </main>`, { session, editor: canEditArticles(env, session) }));
 }
 
@@ -173,6 +198,8 @@ export async function cmsPage(request, env, url, session) {
     const title = String(data.get('title') ?? '').trim();
     const summary = String(data.get('summary') ?? '').trim();
     const body = String(data.get('body') ?? '').trim();
+    const category = String(data.get('category') ?? 'Guild news');
+    if (!articleCategories.includes(category)) return new Response('Choose a valid category.', { status: 400 });
     const format = data.get('body_format') === 'rich' ? 'rich' : 'plain';
     if (!['draft','publish'].includes(action) || !title || title.length > 110 || summary.length > 240 || !body || body.length > 16000) {
       return new Response('Enter a title and article body within the editor limits.', { status: 400 });
@@ -180,14 +207,14 @@ export async function cmsPage(request, env, url, session) {
     const now = new Date().toISOString();
     const publishing = action === 'publish';
     if (id) {
-      const result = await env.DB.prepare(`UPDATE articles SET title = ?, summary = ?, body = ?, body_format = ?,
+      const result = await env.DB.prepare(`UPDATE articles SET title = ?, summary = ?, body = ?, body_format = ?, category = ?,
         publisher_name = CASE WHEN ? AND published_at IS NULL THEN ? ELSE publisher_name END,
         published_at = CASE WHEN ? THEN COALESCE(published_at, ?) ELSE NULL END, updated_at = ? WHERE id = ?`)
-        .bind(title, summary, body, format, Number(publishing), session.display_name, Number(publishing), now, now, id).run();
+        .bind(title, summary, body, format, category, Number(publishing), session.display_name, Number(publishing), now, now, id).run();
       if (!result.meta.changes) return new Response('Article unavailable.', { status: 404 });
     } else {
-      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,publisher_name,published_at,updated_at) VALUES (?,?,?,?,?,?,?,?)')
-        .bind(crypto.randomUUID(), title, summary, body, format, publishing ? session.display_name : null, publishing ? now : null, now).run();
+      await env.DB.prepare('INSERT INTO articles (id,title,summary,body,body_format,category,publisher_name,published_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?)')
+        .bind(crypto.randomUUID(), title, summary, body, format, category, publishing ? session.display_name : null, publishing ? now : null, now).run();
     }
     return new Response(null, { status: 303, headers: { Location: '/cms', 'Cache-Control': 'no-store' } });
   }
@@ -199,6 +226,10 @@ export async function cmsPage(request, env, url, session) {
   return html(shell('Article editor', `<main class="article-page editor"><p class="eyebrow">Guild Chronicle</p><h1>Article editor</h1>
   <div class="editor-grid"><form method="post" action="/cms" enctype="multipart/form-data"><h2>${article ? 'Edit article' : 'New article'}</h2><input type="hidden" name="id" value="${escape(article?.id)}">
   <label>Title<input required name="title" maxlength="110" value="${escape(article?.title)}"></label>
+  <label for="articleCategory">Category</label>
+  <select id="articleCategory" name="category">${articleCategories.map(category =>
+    `<option${category === (article?.category ?? 'Guild news') ? ' selected' : ''}>${escape(category)}</option>`
+  ).join('')}</select>
   <label for="articleSummary">Summary</label><textarea id="articleSummary" name="summary" maxlength="240" rows="2">${escape(article?.summary)}</textarea>
   <input type="hidden" name="body_format" value="${escape(article?.body_format ?? 'plain')}">
   <label for="articleBody" id="articleBodyLabel">Article</label>
