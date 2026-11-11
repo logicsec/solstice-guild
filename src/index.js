@@ -333,6 +333,18 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .journal-map{min-height:300px;position:relative;border:1px solid var(--line);border-radius:12px;background:radial-gradient(ellipse at 55% 35%,#426567 0%,#354343 19%,#293522 36%,#25231a 75%)}
 .journal-map-point{position:absolute;transform:translate(-50%,-50%);max-width:25%;text-align:center;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#191916;color:var(--gold);font-size:clamp(10px,1.4vw,14px)}
 .journal-library select{max-width:100%}
+ .journal-icon{width:25px;height:25px;object-fit:cover;border:1px solid var(--line);border-radius:5px;vertical-align:middle;margin-right:8px}
+.journal-header h3 .journal-icon{width:36px;height:36px}
+.journal-tabs button{display:inline-flex;align-items:center}
+.journal-map-image{display:block;width:100%;max-width:1002px;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--field)}
+.journal-boss-layout{display:grid;grid-template-columns:minmax(185px,1fr) minmax(220px,1.5fr);gap:14px;align-items:start}
+.journal-boss-list{display:grid;gap:6px;max-height:440px;overflow:auto;padding:2px}
+.journal-boss-button{display:flex;align-items:center;gap:10px;text-align:left;width:100%}
+.journal-boss-button[aria-pressed=true]{color:var(--gold);border-color:var(--gold);background:#59381d45}
+.journal-portrait{width:44px;height:44px;object-fit:contain;flex:none;border:1px solid var(--line);border-radius:50%;background:#12100e}
+.journal-boss-detail>.journal-portrait{width:100px;height:100px;border-color:var(--gold)}
+.journal-boss-detail h4{margin:8px 0 4px}
+@media(max-width:660px){.journal-boss-layout{grid-template-columns:1fr}.journal-boss-list{max-height:225px}}
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
