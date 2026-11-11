@@ -325,7 +325,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=415caf50576a"></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=mobile-layout-1"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -344,7 +344,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <h2 id="vendorFlipsTitle">Vendor Flips</h2>
 <p>Compare the lowest unit buyout with the vendor payout. Check the current in-game price before buying.</p>
 <p class="status" id="vendorFlipStatus" role="status"></p>
-<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col">Lowest Buyout</th><th scope="col">Vendor Payout</th><th scope="col">Profit per Item</th></tr></thead><tbody id="vendorFlipRows"></tbody></table></div>
+<div class="scroll"><table data-mobile-summary="3"><thead><tr><th scope="col">Item</th><th scope="col">Lowest Buyout</th><th scope="col">Vendor Payout</th><th scope="col">Profit per Item</th></tr></thead><tbody id="vendorFlipRows"></tbody></table></div>
 <p class="status"><a href="https://ahledger.com/">Prices from AHledger</a></p>
 </section>
 <div id="auctionListings" class="auction-layout">
@@ -379,9 +379,13 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar">
+<button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
+<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+<span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+</button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
-<header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
+<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
 <div id="raidDashboardControls" class="raid-dashboard-controls raid-card" hidden>
 <label class="working-raid">Working Raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label>
@@ -1103,6 +1107,9 @@ function raidReset(view, id) {
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
   byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidMenuLabel').textContent = byId('raidTitle').textContent;
+  byId('raidMenuToggle').setAttribute('aria-label','Guild Hall menu, current view: ' + byId('raidTitle').textContent);
+  byId('raidMenuToggle').setAttribute('aria-expanded','false');
   byId('raidSubtitle').textContent = dashboard ? 'Choose a working raid to see its readiness, roster, preparation, and loot.' : {
     guildDashboard:'See the guild’s class, role, and profession coverage.',
     guildChat:'Recent messages from World of Warcraft guild chat.',
@@ -1943,7 +1950,19 @@ for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch'])
   });
 }
 byId('raidTab').addEventListener('click',()=>openRaidView('guildDashboard'));
-for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidView));
+const raidMenuToggle = byId('raidMenuToggle');
+raidMenuToggle.addEventListener('click', () => {
+  raidMenuToggle.setAttribute('aria-expanded', String(raidMenuToggle.getAttribute('aria-expanded') !== 'true'));
+});
+byId('raidMenu').addEventListener('keydown', event => {
+  if (event.key !== 'Escape' || !raidMenuToggle.getClientRects().length) return;
+  raidMenuToggle.setAttribute('aria-expanded','false');
+  raidMenuToggle.focus();
+});
+for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventListener('click', () => {
+  openRaidView(node.dataset.raidView);
+  if (raidMenuToggle.getClientRects().length) byId('raidTitle').focus();
+});
 for (const node of document.querySelectorAll('[data-raid-tab]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidTab));
 byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
 byId('raidNext').addEventListener('click',()=>{
@@ -2090,14 +2109,16 @@ function showDiscordAccount(open) {
   discordCard.hidden = !open;
   discordTrigger.setAttribute('aria-expanded',String(open));
 }
-discordAccount.addEventListener('mouseenter',()=>showDiscordAccount(true));
+const discordHover = matchMedia('(hover: hover)');
+discordAccount.addEventListener('mouseenter', () => {
+  if (discordHover.matches) showDiscordAccount(true);
+});
 discordAccount.addEventListener('mouseleave',()=>{
   discordHideTimer = setTimeout(()=>{
     if (!discordAccount.contains(document.activeElement)) showDiscordAccount(false);
   },180);
 });
-discordTrigger.addEventListener('focus',()=>showDiscordAccount(true));
-discordTrigger.addEventListener('click',()=>showDiscordAccount(true));
+discordTrigger.addEventListener('click', () => showDiscordAccount(discordHover.matches || discordCard.hidden));
 discordAccount.addEventListener('focusout',event=>{
   if (!discordAccount.contains(event.relatedTarget)) showDiscordAccount(false);
 });

@@ -910,3 +910,85 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-discord-card dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 .guild-discord-card small { display: block; color: var(--muted); font-size: 11px; }
 .guild-discord-card form { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+
+.guild-app #raidMenuToggle, .mobile-row-toggle { display: none; }
+
+@media (max-width: 760px) {
+  .guild-topbar { position: relative; }
+  .guild-app .masthead { min-height: 60px; padding: 7px 130px 7px 12px; }
+  .guild-app .brand .solstice-shield { width: 30px; height: 35px; }
+  .guild-app .brand .solstice-wordmark strong { font-size: 20px; }
+  .guild-app .brand .solstice-wordmark small { font-size: 8px; }
+  .guild-app .guild-nav { flex-basis: 100%; padding: 0 8px 6px; }
+  .guild-nav-items { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; gap: 2px; }
+  .guild-app .guild-nav-items :is(a,button) { justify-content: center; min-height: 44px; padding: 4px 2px; font-size: clamp(11px,3.35vw,14px); white-space: normal; text-align: center; }
+  .guild-app .guild-account { position: absolute; inset: 7px 12px auto auto; padding: 0; }
+  .guild-app .guild-discord-trigger { min-height: 44px; gap: 5px; }
+  .guild-discord-account #guildIdentity { max-width: 71px; }
+
+  .guild-app .hero { grid-template-columns: minmax(0,1fr); gap: 9px; padding: 12px; }
+  .guild-app .hero h1 { margin: 2px 0 5px; font-size: clamp(25px,6vw,34px); }
+  .guild-app .hero-stats { justify-self: start; max-width: 100%; }
+  .guild-app .hero-stats div { min-width: 0; padding: 4px 9px; }
+  .guild-app .hero-stats strong { font-size: 13px; }
+  #raidHero .eyebrow, #raidHero p { display: none; }
+  #raidHero .hero-stats { font-size: 12px; }
+  #raidHero .hero-stats div { display: flex; align-items: baseline; gap: 4px; }
+  #raidHero .hero-stats span { font-size: 8px; }
+
+  .guild-app .raid-shell { grid-template-columns: minmax(0,1fr); align-content: start; }
+  .guild-app .raid-sidebar { display: block; padding: 7px 12px; border-inline-end: 0; border-bottom: 1px solid var(--line); }
+  .guild-app #raidMenuToggle { display: flex; width: 100%; min-height: 44px; margin: 0; padding: 6px 10px; border-color: var(--line); color: var(--accent); background: var(--field); }
+  #raidMenuToggle .raid-menu-chevron { margin-inline-start: auto; }
+  #raidMenuToggle[aria-expanded="true"] .raid-menu-chevron { transform: rotate(180deg); }
+  #raidMenuToggle[aria-expanded="false"] + nav { display: none; }
+  .raid-sidebar nav { display: grid; gap: 10px; padding-top: 10px; }
+  .raid-nav-group { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 3px; }
+  .raid-nav-group .eyebrow { grid-column: 1 / -1; padding: 0 6px; }
+  .guild-app .raid-sidebar nav button { min-height: 44px; margin: 0; padding: 5px 6px; gap: 6px; }
+  .guild-app .raid-content { padding: 14px 12px 24px; }
+  .guild-app .raid-heading { flex-wrap: wrap; align-items: flex-start; gap: 8px; }
+  .guild-app :where(.raid-shell) :is(button,a.raid-primary) { min-height: 44px; }
+  .guild-app .raid-dashboard-tabs button { min-height: 44px; }
+  .guild-app :where(.raid-content, .board, dialog) :is(input:not([type=checkbox],[type=radio]), select, textarea) { min-width: 0; max-width: 100%; font-size: 16px; }
+  .guild-app .workspace-drawer { border-radius: 0; padding-bottom: max(16px,env(safe-area-inset-bottom)); }
+  .guild-app #auctionPanel { margin-bottom: 16px; }
+  .guild-app #marketFooter { padding: 14px 12px; }
+  .guild-app .auction-layout { grid-template-columns: minmax(0,1fr); }
+  .guild-app .categories { border-inline-end: 0; border-bottom: 1px solid var(--line); }
+  .guild-app #category { display: flex; flex-wrap: wrap; overflow: visible; }
+  .guild-app .categories button, .guild-app :is(.toolbar,.auction-toolbar,.pager) button { min-height: 44px; }
+  .guild-app .auction-toolbar input, .guild-app .toolbar .search { flex-basis: 100%; min-width: 0; }
+  .guild-app .filters summary { min-height: 44px; padding-block: 10px; }
+  .guild-app .filters > div { inset-inline: 0 auto; max-width: calc(100vw - 44px); }
+  .guild-app .recipe-card summary { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .guild-app .recipe-card summary strong { grid-column: 1 / -1; }
+  .guild-app .recipe-card summary::after { grid-column: 1 / -1; justify-self: end; }
+
+  .site-header { flex-wrap: wrap; gap: 6px 12px; padding-block: 9px; }
+  .site-header nav { flex-wrap: wrap; justify-content: start; }
+  .site-header nav a { display: inline-flex; align-items: center; min-height: 44px; }
+  .site-header:has(+ .guild-home) { position: relative; background: var(--container); }
+  .article-body { overflow-wrap: anywhere; }
+  .site-header + main + footer { flex-wrap: wrap; }
+  .guild-app .log-grid { grid-template-columns: minmax(0,1fr); gap: 10px; }
+  .guild-app :is(.log-hero,.log-panel) { padding: 12px; }
+  .guild-app .log-bar-row { grid-template-columns: minmax(0,1fr) minmax(28px,1fr) auto; gap: 6px; overflow-wrap: anywhere; }
+  .guild-app .log-controls label { min-width: min(180px,100%); }
+
+  .mobile-table, .mobile-table tbody { display: block; width: 100%; }
+  .mobile-table { white-space: normal; text-align: start; }
+  .mobile-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+  .mobile-table-row { display: grid; grid-template-columns: minmax(0,1fr); gap: 1px; padding: 7px 9px; border-bottom: 1px solid var(--line); }
+  .mobile-table .mobile-table-row > :is(td,th) { white-space: normal; display: none; min-width: 0; padding: 4px 0; border: 0; text-align: start; overflow-wrap: anywhere; }
+  .mobile-table .mobile-table-row > :first-child { display: flex; align-items: center; gap: 8px; min-height: 44px; }
+  .mobile-table-row > :is(.mobile-row-summary,[data-mobile-label]):not(:first-child) { text-align: end; }
+  .mobile-table .mobile-table-row > .mobile-row-summary,
+  .mobile-table-row.mobile-row-open > [data-mobile-label] { display: grid; grid-template-columns: minmax(0,1fr) minmax(0,1.4fr); gap: 10px; }
+  .mobile-table-row > [data-mobile-label]::before { content: attr(data-mobile-label); text-align: start; color: var(--muted); }
+  .mobile-table-row .item-label { min-width: 0; }
+  .mobile-table-row .mobile-row-toggle, .guild-app .mobile-table-row .mobile-row-toggle {
+    display: inline-flex; align-items: center; flex: none; margin-inline-start: auto; min-height: 44px;
+    padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--accent); background: var(--field); cursor: pointer;
+  }
+}

@@ -18,6 +18,7 @@ const DB = openSqlite(process.env.SQLITE_PATH ?? '/data/solstice.sqlite');
 const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET, GUILD_CHAT_BOT_TOKEN, GUILD_CHAT_CHANNEL_ID };
 const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
+  ['/assets/mobile-tables.js', ['mobile-tables.js', 'text/javascript; charset=utf-8']],
   ['/assets/solstice-dawn.webp', ['solstice-dawn.webp', 'image/webp']],
   ['/assets/solstice-twilight.webp', ['solstice-twilight.webp', 'image/webp']],
   ...['barrow-deeps','hyjal-summit','onyxias-lair'].map(raid=>[
