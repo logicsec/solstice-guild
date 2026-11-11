@@ -6,7 +6,7 @@ import worker from './index.js';
 import { authReady } from './auth.js';
 import { openSqlite } from './sqlite.js';
 
-const { PUBLIC_ORIGIN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET } = process.env;
+const { PUBLIC_ORIGIN, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET, GUILD_CHAT_BOT_TOKEN, GUILD_CHAT_CHANNEL_ID } = process.env;
 const origin = new URL(PUBLIC_ORIGIN ?? 'https://solsticeguild.net');
 if (origin.protocol !== 'https:' || origin.href !== origin.origin + '/' || origin.username || origin.password) {
   throw new Error('PUBLIC_ORIGIN must be an HTTPS origin with no path.');
@@ -15,7 +15,7 @@ if (!/^\d+$/.test(DISCORD_CLIENT_ID ?? '') || !authReady({ DB: true, DISCORD_CLI
   throw new Error('Set DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET and DISCORD_GUILD_ID.');
 }
 const DB = openSqlite(process.env.SQLITE_PATH ?? '/data/solstice.sqlite');
-const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET };
+const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET, GUILD_CHAT_BOT_TOKEN, GUILD_CHAT_CHANNEL_ID };
 const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
   ['/assets/solstice-dawn.webp', ['solstice-dawn.webp', 'image/webp']],
