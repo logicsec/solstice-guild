@@ -992,3 +992,60 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
     padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; color: var(--accent); background: var(--field); cursor: pointer;
   }
 }
+
+.site-menu-toggle { display: none; }
+
+@media (max-width: 760px) {
+  .site-header:has(.site-menu-toggle:not([hidden])) {
+    flex-wrap: nowrap;
+    gap: 10px;
+    padding: 8px max(4vw, 12px);
+  }
+  .site-header > .brand { gap: 7px; }
+  .site-header > .brand .solstice-shield { width: 29px; height: 34px; }
+  .site-header > .brand .solstice-wordmark strong { font-size: 20px; }
+  .site-header > .brand .solstice-wordmark small { font-size: 8px; }
+  .site-menu-toggle:not([hidden]) {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 44px;
+    padding: 0 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--field);
+    color: var(--ink);
+    font: 650 14px/1 var(--site-font);
+  }
+  .site-menu-toggle svg {
+    width: 18px;
+    height: 18px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.7;
+    stroke-linecap: round;
+  }
+  .site-menu-toggle[aria-expanded="true"] { color: var(--accent); border-color: var(--accent); }
+  .site-header:has(.site-menu-toggle:not([hidden])) { position: relative; z-index: 2; }
+  .site-header .site-menu-toggle:not([hidden]) + nav {
+    position: absolute;
+    z-index: 1;
+    inset: calc(100% + 5px) max(4vw, 12px) auto auto;
+    display: none;
+    min-width: min(220px, calc(100vw - 24px));
+    gap: 4px;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--container);
+    box-shadow: 0 10px 24px #0008;
+  }
+  .site-header .site-menu-toggle[aria-expanded="true"] + nav { display: grid; }
+  .site-header .site-menu-toggle + nav a {
+    justify-content: flex-start;
+    padding: 8px 12px;
+    border-radius: 6px;
+  }
+  .site-header .site-menu-toggle + nav a:is(:hover, :focus-visible) { background: var(--hover); }
+  .guild-home .home-banner-content { padding-top: clamp(32px, 8vw, 60px); }
+}

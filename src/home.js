@@ -24,12 +24,42 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=mobile-layout-1"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=mobile-layout-2"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
-  <nav aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
+  <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    Menu
+  </button>
+  <nav id="site-navigation" aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
   ${session ? '<a class="button discord" href="' + escape(hall) + '">Guild Hall</a>' : '<a class="button discord" href="' + escape(loginLink(next)) + '">Sign in with Discord</a>'}</nav></header>
   ${body}
   ${raidView ? '' : `<footer><a class="brand" href="/">${solsticeLockup}</a><span>World of Warcraft: Forever · US Normal Alliance</span></footer>`}
+  <script>
+    (() => {
+      const navigation = document.getElementById('site-navigation');
+      const header = navigation.closest('.site-header');
+      const toggle = header.querySelector('.site-menu-toggle');
+      const close = () => toggle.setAttribute('aria-expanded', 'false');
+      toggle.hidden = false;
+      toggle.addEventListener('click', () => {
+        toggle.setAttribute('aria-expanded', String(toggle.getAttribute('aria-expanded') !== 'true'));
+      });
+      header.addEventListener('keydown', event => {
+        if (event.key !== 'Escape' || toggle.getAttribute('aria-expanded') !== 'true') return;
+        close();
+        toggle.focus();
+      });
+      navigation.addEventListener('click', event => {
+        if (!event.target.closest('a')) return;
+        if (toggle.getAttribute('aria-expanded') === 'true') toggle.focus({ preventScroll: true });
+        close();
+      });
+      document.addEventListener('pointerdown', event => {
+        if (!header.contains(event.target)) close();
+      });
+      matchMedia('(max-width: 760px)').addEventListener('change', close);
+    })();
+  </script>
   </body></html>`;
 }
 function html(body, status = 200) {
