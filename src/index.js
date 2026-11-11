@@ -1107,7 +1107,7 @@ function raidReset(view, id) {
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
-  const guildView = view === 'guildDashboard';
+  const guildView = ['guildDashboard','guildChat'].includes(view);
   byId('newRaid').hidden = view === 'new' || guildView;
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
