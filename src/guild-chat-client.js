@@ -34,7 +34,19 @@ export function renderGuildChat(root, isCurrent) {
           const time = raidElement('time', date.toLocaleString([], { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }));
           time.dateTime = message.timestamp;
           meta.append(raidElement('strong', message.author), time);
-          row.append(meta, raidElement('p', message.content));
+          const content = raidElement('p');
+          for (const part of message.parts ?? [{ text: message.content }]) {
+            if (!part.url) {
+              content.append(document.createTextNode(part.text));
+              continue;
+            }
+            const link = raidElement('a', part.text);
+            link.href = part.url;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            content.append(link);
+          }
+          row.append(meta, content);
           return row;
         }));
         if (follow) feed.scrollTop = feed.scrollHeight;
@@ -57,3 +69,4 @@ export function renderGuildChat(root, isCurrent) {
   refresh.addEventListener('click', load);
   void load();
 }
+

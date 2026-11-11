@@ -1,3 +1,5 @@
+import { linkGuildMessages } from './guild-chat-links.js';
+
 const cache = new Map();
 const viewHistory = (1n << 10n) | (1n << 16n);
 
@@ -62,16 +64,18 @@ export async function guildChatApi(request, env, userId) {
       return reply({ error: 'You need access to the linked Discord channel to view guild chat.' }, 403);
     }
     const messages = await get('/channels/' + channelId + '/messages?limit=75');
-    return reply({ messages: messages.filter(message => message.application_id === '1384671873593512078' &&
+    const feed = messages.filter(message => message.application_id === '1384671873593512078' &&
       (message.flags & (1 << 16)) && typeof message.content === 'string' && message.content.trim())
       .map(message => ({
         id: message.id,
         author: message.member?.nick || message.author?.global_name || message.author?.username || 'Guild member',
         content: message.content.slice(0, 2000),
         timestamp: message.timestamp,
-      })).reverse() });
+      })).reverse();
+    return reply({ messages: linkGuildMessages(feed) });
   } catch (error) {
     if (error.status === 404) return reply({ error: 'The linked Discord channel or membership is unavailable.' }, 403);
     return reply({ error: 'Guild chat is temporarily unavailable.' }, 502);
   }
 }
+
