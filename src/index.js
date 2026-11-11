@@ -1,5 +1,3 @@
-import { dungeonJournal, dungeonQuestSource } from './dungeon-journal-data.js';
-import { renderDungeonJournal } from './dungeon-journal-client.js';
 import { craftingDirectory } from './crafting-directory.js';
 import { renderCraftingDirectory } from './crafting-directory-client.js';
 import { guildChatApi } from './guild-chat.js';
@@ -324,27 +322,6 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .guild-chat-meta{flex-wrap:wrap}
 .guild-chat-meta strong{color:var(--gold)}
 .guild-chat-message p{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:4px}
- .journal-header{margin-top:16px;padding:20px;border:1px solid var(--line);border-radius:12px;background:linear-gradient(125deg,#56361c48,var(--panel))}
-.journal-header h3{font-size:clamp(20px,3vw,30px);margin:6px 0;color:var(--gold)}
-.journal-tabs{margin:12px 0;flex-wrap:wrap}
-.journal-tabs button[aria-pressed=true]{border-color:var(--gold);color:var(--gold)}
-.journal-body{display:grid;gap:12px}
-.journal-body select{justify-self:start}
-.journal-map{min-height:300px;position:relative;border:1px solid var(--line);border-radius:12px;background:radial-gradient(ellipse at 55% 35%,#426567 0%,#354343 19%,#293522 36%,#25231a 75%)}
-.journal-map-point{position:absolute;transform:translate(-50%,-50%);max-width:25%;text-align:center;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:#191916;color:var(--gold);font-size:clamp(10px,1.4vw,14px)}
-.journal-library select{max-width:100%}
- .journal-icon{width:25px;height:25px;object-fit:cover;border:1px solid var(--line);border-radius:5px;vertical-align:middle;margin-right:8px}
-.journal-header h3 .journal-icon{width:36px;height:36px}
-.journal-tabs button{display:inline-flex;align-items:center}
-.journal-map-image{display:block;width:100%;max-width:1002px;height:auto;border:1px solid var(--line);border-radius:12px;background:var(--field)}
-.journal-boss-layout{display:grid;grid-template-columns:minmax(185px,1fr) minmax(220px,1.5fr);gap:14px;align-items:start}
-.journal-boss-list{display:grid;gap:6px;max-height:440px;overflow:auto;padding:2px}
-.journal-boss-button{display:flex;align-items:center;gap:10px;text-align:left;width:100%}
-.journal-boss-button[aria-pressed=true]{color:var(--gold);border-color:var(--gold);background:#59381d45}
-.journal-portrait{width:44px;height:44px;object-fit:contain;flex:none;border:1px solid var(--line);border-radius:50%;background:#12100e}
-.journal-boss-detail>.journal-portrait{width:100px;height:100px;border-color:var(--gold)}
-.journal-boss-detail h4{margin:8px 0 4px}
-@media(max-width:660px){.journal-boss-layout{grid-template-columns:1fr}.journal-boss-list{max-height:225px}}
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
@@ -402,7 +379,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button><button data-raid-view="dungeonJournal"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2z M9 3v16 M15 5v16"/></svg>Dungeon Journal</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+<aside class="raid-sidebar"><nav aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -1125,16 +1102,15 @@ function raidReset(view, id) {
   }
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
-  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', dungeonJournal:'Dungeon Journal', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
   byId('raidSubtitle').textContent = dashboard ? 'Choose a working raid to see its readiness, roster, preparation, and loot.' : {
     guildDashboard:'See the guild’s class, role, and profession coverage.',
     guildChat:'Recent messages from World of Warcraft guild chat.',
     craftingDirectory:'Find a guildmate who can craft what you need.',
-    dungeonJournal:'WoW Forever dungeon, quest, and attunement reference.',
   }[view] ?? 'World of Warcraft: Forever · US Normal Alliance';
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
-  const guildView = ['guildDashboard','guildChat','craftingDirectory','dungeonJournal'].includes(view);
+  const guildView = ['guildDashboard','guildChat','craftingDirectory'].includes(view);
   byId('newRaid').hidden = view === 'new' || guildView;
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
@@ -1256,10 +1232,6 @@ async function openRaidView(view, id, navigate = true) {
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
-    if (view === 'dungeonJournal') {
-      renderDungeonJournal(byId('raidList'), dungeonJournal, dungeonQuestSource);
-      return;
-    }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));
       return;
@@ -1477,9 +1449,6 @@ ${renderTonight.toString()}
 ${renderRaidLogs.toString()}
 ${renderGuildChat.toString()}
 ${renderCraftingDirectory.toString()}
-${renderDungeonJournal.toString()}
-const dungeonJournal = ${JSON.stringify(dungeonJournal).replace(/</g,'\\u003c')};
-const dungeonQuestSource = ${JSON.stringify(dungeonQuestSource)};
 const armorySpecs = ${JSON.stringify(armorySpecs)};
 ${renderArmoryConfirmation.toString()}
 ${renderArmory.toString()}
@@ -2083,7 +2052,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','guildDashboard','guildChat','craftingDirectory','dungeonJournal','guildCharacters','manage','new'].includes(view) ? view : 'guildDashboard',id,false);
+    openRaidView(id ? 'detail' : [...workspaceViews,'calendar','discover','characters','guildDashboard','guildChat','craftingDirectory','guildCharacters','manage','new'].includes(view) ? view : 'guildDashboard',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
