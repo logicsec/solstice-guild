@@ -276,6 +276,17 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 #marketDealsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
 .market-deals-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
 .market-deals-nav{display:flex;gap:4px;flex-wrap:wrap}
+.gold-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:12px;margin:0 0 14px}
+.gold-chart{margin:0;min-width:0;padding:12px;background:var(--field);border:1px solid var(--line)}
+.gold-chart figcaption{font-weight:700;margin-bottom:8px}
+.gold-chart ol{list-style:none;padding:0;margin:0;display:grid;gap:7px}
+.gold-chart li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 8px;font-size:12px}
+.gold-chart-value{font-variant-numeric:tabular-nums}
+.gold-chart-track{grid-column:1/-1;height:5px;background:var(--raised);position:relative}
+.gold-chart-track i{position:absolute;top:0;bottom:0;left:var(--bar-start,0%);width:var(--bar-size);background:var(--accent)}
+.gold-chart-track[data-direction="up"] i{background:#77c391}
+.gold-chart-track[data-direction="down"] i{background:#e29488}
+.gold-chart-track[data-direction]::after{content:"";position:absolute;left:var(--bar-zero);top:0;bottom:0;border-left:1px solid var(--muted)}
 .weekly-gold-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}
 .weekly-gold-grid>section{min-width:0;border:1px solid var(--line);background:var(--field)}
 .weekly-gold-grid h3{margin:0;padding:8px 10px;font-size:14px}
@@ -417,6 +428,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div><dt>Best unit savings</dt><dd id="weeklyGoldSaving">—</dd></div>
 <div><dt>Top craft margin</dt><dd id="weeklyGoldMargin">—</dd></div>
 </dl>
+<div class="gold-charts">
+<figure class="gold-chart"><figcaption>Price moves vs. 7-day median</figcaption><ol id="goldMoversChart"></ol></figure>
+<figure class="gold-chart"><figcaption>Best buys by savings per item</figcaption><ol id="goldBuysChart"></ol></figure>
+<figure class="gold-chart"><figcaption>Estimated profit by profession</figcaption><ol id="goldCraftsChart"></ol></figure>
+</div>
 <div class="weekly-gold-grid">
 <section aria-labelledby="GoldMoversTitle"><h3 id="GoldMoversTitle">Market Movers</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldMoversTitle"><table data-mobile-summary="3"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Change</th></tr></thead><tbody id="GoldMoversRows"></tbody></table></div></section>
 <section aria-labelledby="GoldBuysTitle"><h3 id="GoldBuysTitle">Best Buys</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldBuysTitle"><table data-mobile-summary="2"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">Unit savings</th><th scope="col">Listed</th></tr></thead><tbody id="GoldBuysRows"></tbody></table></div></section>
@@ -1048,12 +1064,50 @@ async function refreshWeeklyGold() {
       recipe.recipe.skillRequired ?? '—', money(recipe.cost), money(recipe.margin),
     ], report.crafts ? 'No profitable crafts in the latest data.' : 'Crafting prices are temporarily unavailable.');
     byId('weeklyGoldMargin').replaceChildren(money(picks[0]?.margin));
+    drawGoldChart('goldCraftsChart', picks.slice(0, 6).map(recipe => ({ name: recipe.recipe.profession, value: recipe.margin })), money);
   } catch {
     byId('weeklyGoldStatus').textContent = 'The weekly edition is temporarily unavailable.';
     fillGoldRows('GoldCraftsRows', [], () => [], 'Crafting prices are temporarily unavailable.');
     byId('weeklyGoldMargin').replaceChildren('—');
+    drawGoldChart('goldCraftsChart', [], money, { empty: 'Crafting prices unavailable.' });
   } finally {
     weeklyRequest = false;
+  }
+}
+
+function drawGoldChart(id, entries, formatValue, { diverging = false, empty = 'No qualifying data in this scan.' } = {}) {
+  const list = byId(id);
+  list.replaceChildren();
+  if (!entries.length) {
+    const row = document.createElement('li');
+    row.textContent = empty;
+    list.append(row);
+    return;
+  }
+  const low = diverging ? Math.min(-1, ...entries.map(entry => entry.value)) : 0;
+  const high = Math.max(0, ...entries.map(entry => entry.value)) || 1;
+  const scale = value => 100 * (value - low) / (high - low);
+  const zero = scale(0);
+  for (const { name, value } of entries) {
+    const row = document.createElement('li');
+    const label = document.createElement('span');
+    label.textContent = name;
+    const reading = document.createElement('strong');
+    reading.className = 'gold-chart-value';
+    reading.append(formatValue(value));
+    const track = document.createElement('span');
+    track.className = 'gold-chart-track';
+    track.setAttribute('aria-hidden', 'true');
+    if (diverging) {
+      track.dataset.direction = value < 0 ? 'down' : 'up';
+      track.style.setProperty('--bar-zero', zero + '%');
+    }
+    const bar = document.createElement('i');
+    bar.style.setProperty('--bar-start', Math.min(zero, scale(value)) + '%');
+    bar.style.setProperty('--bar-size', Math.abs(scale(value) - zero) + '%');
+    track.append(bar);
+    row.append(label, reading, track);
+    list.append(row);
   }
 }
 
@@ -1083,6 +1137,9 @@ function renderWeeklyGold() {
     .sort((a, b) => b.min - a.min).slice(0, 8);
   const percent = value => (value > 0 ? '+' : '') + Math.round(value * 100) + '%';
   const empty = scan ? 'No qualifying listings in this scan.' : 'Waiting for the auction scan…';
+  const chartMovers = [...movers].sort((a, b) => b.change - a.change);
+  drawGoldChart('goldMoversChart', chartMovers.map(({ item, change }) => ({ name: label(item.id), value: change })), percent, { diverging: true, empty });
+  drawGoldChart('goldBuysChart', bestBuys.slice(0, 6).map(({ item, savings }) => ({ name: label(item.id), value: savings })), money, { empty });
   fillGoldRows('GoldMoversRows', movers, ({ item, change }) => [listingLink(item), money(item.min), money(item.week), percent(change)], empty);
   fillGoldRows('GoldBuysRows', bestBuys, ({ item, savings }) => [listingLink(item), money(item.min), money(savings), format.format(item.quantity)], empty);
   fillGoldRows('GoldFarmRows', materials, item => [listingLink(item), money(item.min), money(item.week), format.format(item.quantity)], empty);
