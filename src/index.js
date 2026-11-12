@@ -406,12 +406,12 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="market-deals-heading">
 <h2 id="marketDealsTitle">Market Deals</h2>
 <div class="market-deals-nav" role="group" aria-label="Deal type">
-<button type="button" id="auctionDealsTab" aria-pressed="true" aria-controls="auctionDeals">Below Median</button>
-<button type="button" id="weeklyGoldTab" aria-pressed="false" aria-controls="weeklyGold">Weekly Gold Report</button>
+<button type="button" id="weeklyGoldTab" aria-pressed="true" aria-controls="weeklyGold">Weekly Gold Report</button>
+<button type="button" id="auctionDealsTab" aria-pressed="false" aria-controls="auctionDeals">Below Median</button>
 <button type="button" id="vendorDealsTab" aria-pressed="false" aria-controls="vendorFlips">Vendor Profit</button>
 </div>
 </div>
-<section id="auctionDeals" aria-label="Below-median auctions">
+<section id="auctionDeals" hidden aria-label="Below-median auctions">
 <dl class="market-deals-stats">
 <div><dt>Matching items</dt><dd id="dealCount">—</dd></div>
 <div><dt>Best unit savings</dt><dd id="dealSavings">—</dd></div>
@@ -424,7 +424,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="scroll market-scroll" tabindex="0" role="region" aria-label="Below-median results"><table data-mobile-summary="4"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Under</th><th scope="col">Unit savings</th><th scope="col">Listed</th></tr></thead><tbody id="auctionDealRows"></tbody></table></div>
 <p class="status">Buyouts at least 20% below the 7-day median. Prices are per item and reflect the latest scan.</p>
 </section>
-<section id="weeklyGold" hidden aria-label="Weekly Gold Report">
+<section id="weeklyGold" aria-label="Weekly Gold Report">
 <div class="weekly-gold-links"><p id="weeklyGoldStatus" role="status">Loading the latest edition…</p><a id="weeklyGoldSource" href="https://ahledger.com/guides/gold/meta">AHledger Gold Meta</a><a href="https://ahledger.com/reports">Past Reports</a></div>
 <dl class="market-deals-stats">
 <div><dt>Biggest rise</dt><dd id="weeklyGoldRise">—</dd></div>
@@ -734,7 +734,7 @@ const dealsPanel = byId('marketDeals');
 const dealsToggle = byId('marketDealsToggle');
 const auctionDeals = byId('auctionDeals');
 const weeklyGold = byId('weeklyGold');
-let dealType = 'auction';
+let dealType = 'weekly';
 function vendorFlipsVisible() {
   return !dealsPanel.hidden && !vendorPanel.hidden && !byId('auctionPanel').hidden;
 }
