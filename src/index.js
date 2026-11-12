@@ -977,9 +977,84 @@ function money(copper) {
   return price;
 }
 function catalogIconUrl(reference) {
-  const match = typeof reference === 'string' && reference.match(/^(classic1x-us|us)\|([a-z][a-z0-9_]+)$/i);
+  const match = typeof reference === 'string' && reference.match(/^(classic1x-us|us)\|((?:[a-z][a-z0-9_]+|[1-9][0-9]*))$/i);
   if (!match) return null;
   return 'https://render.worldofwarcraft.com/' + match[1].toLowerCase() + '/icons/56/' + match[2].toLowerCase() + '.jpg';
+}
+
+const iconLookups = new Map();
+const iconQueue = [];
+let iconRequests = 0;
+
+function runIconQueue() {
+  while (iconRequests < 4 && iconQueue.length) {
+    const { id, resolve } = iconQueue.shift();
+    iconRequests++;
+    fetch('https://nether.wowhead.com/forever/tooltip/item/' + id, {
+      referrerPolicy: 'no-referrer', signal: AbortSignal.timeout(15000),
+    }).then(async response => {
+      if (response.status === 404) return null;
+      if (!response.ok) throw new Error('Item icon unavailable');
+      const { icon } = await response.json();
+      return typeof icon === 'string' && /^[a-z0-9_]+$/i.test(icon)
+        ? 'https://wow.zamimg.com/images/wow/icons/medium/' + icon.toLowerCase() + '.jpg' : null;
+    }).then(resolve, () => {
+      iconLookups.delete(id);
+      resolve(null);
+    }).finally(() => {
+      iconRequests--;
+      runIconQueue();
+    });
+  }
+}
+
+function lookupItemIcon(id) {
+  if (!iconLookups.has(id)) {
+    const pending = new Promise(resolve => iconQueue.push({ id, resolve }));
+    iconLookups.set(id, pending);
+    runIconQueue();
+  }
+  return iconLookups.get(id);
+}
+
+const observedIcons = new WeakMap();
+const iconObserver = typeof IntersectionObserver === 'function' ? new IntersectionObserver(entries => {
+  for (const entry of entries) {
+    if (!entry.isIntersecting) continue;
+    iconObserver.unobserve(entry.target);
+    const load = observedIcons.get(entry.target);
+    observedIcons.delete(entry.target);
+    if (entry.target.isConnected) load?.();
+  }
+}, { rootMargin: '80px' }) : null;
+
+function setItemIcon(tile, itemId) {
+  const id = Number(itemId);
+  if (!Number.isSafeInteger(id) || id <= 0) return;
+  function loadImage(source, onError) {
+    if (!source) return;
+    const image = document.createElement('img');
+    image.alt = '';
+    image.decoding = 'async';
+    image.referrerPolicy = 'no-referrer';
+    image.addEventListener('load', () => tile.replaceChildren(image), { once: true });
+    if (onError) image.addEventListener('error', onError, { once: true });
+    image.src = source;
+  }
+  function fallback() {
+    lookupItemIcon(id).then(source => {
+      if (tile.isConnected) loadImage(source);
+    });
+  }
+  const load = () => {
+    const primary = itemIcons.get(id);
+    if (primary) loadImage(primary, fallback);
+    else fallback();
+  };
+  if (iconObserver) {
+    observedIcons.set(tile, load);
+    iconObserver.observe(tile);
+  } else load();
 }
 
 function itemLabel(id, name, quality) {
@@ -995,16 +1070,7 @@ function itemLabel(id, name, quality) {
   const frame = document.createElement('span');
   frame.className = 'item-icon';
   frame.setAttribute('aria-hidden', 'true');
-  const source = itemIcons.get(Number(id));
-  if (source) {
-    const image = document.createElement('img');
-    image.alt = '';
-    image.loading = 'lazy';
-    image.decoding = 'async';
-    image.addEventListener('error', () => image.remove(), { once: true });
-    image.src = source;
-    frame.append(image);
-  }
+  setItemIcon(frame, id);
   label.append(frame, name);
   return label;
 }

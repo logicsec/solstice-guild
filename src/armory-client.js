@@ -97,7 +97,6 @@ export function renderArmoryProfile(character) {
     } else button.type = 'button';
     button.setAttribute('aria-label',item.slot+': '+item.name+(linked ? ' (opens Wowhead in a new tab)' : ''));
     button.style.setProperty('--gear-quality',rarityColor(item.id,item.quality));
-    const icon = itemIcons.get(item.id);
     const tile = raidElement('span',null,'character-slot-icon');
     tile.append(raidElement('span',item.slot,'character-slot-caption'));
     const copy = raidElement('span',null,'character-slot-copy');
@@ -106,12 +105,7 @@ export function renderArmoryProfile(character) {
     copy.append(label,raidElement('small',[item.slot,item.level != null ? 'iLvl '+item.level : ''].filter(Boolean).join(' · ')));
     if (item.enchants.length) copy.append(raidElement('small',item.enchants.join(' · '),'character-slot-enchant'));
     button.append(tile,copy);
-    if (icon) {
-      const image = raidElement('img');
-      image.alt = '';
-      image.addEventListener('load',()=>tile.replaceChildren(image),{once:true});
-      image.src = icon;
-    }
+    setItemIcon(tile, item.id);
     const level = item.level != null ? 'Item Level '+item.level : '';
     const enchants = item.enchants.map(enchant=>/^enchanted:/i.test(enchant) ? enchant : 'Enchanted: '+enchant);
     const lines = [level,item.slot,...item.details,...enchants,...(item.effects ?? [])].filter(Boolean);
