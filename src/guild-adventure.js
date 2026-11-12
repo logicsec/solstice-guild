@@ -9,17 +9,46 @@ export function adventureRules() {
     { name: 'Westfall', quest: 'Defias Trouble', enemy: 'Defias Highwayman', health: 29, damage: 6, level: 2, reward: 'Westfall Steel' },
     { name: 'The Deadmines', quest: 'The Defias Kingpin', enemy: 'Edwin VanCleef', health: 58, damage: 9, level: 3, reward: 'Cruel Barb', boss: true },
   ];
+  const chapters = [
+    { title: 'A Light in the Woods', art: 'elwynn', speaker: 'Marshal McBride',
+      briefing: 'The lanterns went out along the Northshire road. A courier rode out to check them and never came back. Find him before the wolves do.',
+      choices: ['Take the supply satchel', 'Follow the tracks quietly'],
+      encounter: 'A wolf steps between you and a torn courier’s satchel. The mud around it is stamped with bootprints.',
+      turnIn: 'The courier is safe. His satchel held a map marked with a red bandana. McBride sends you west to find out who drew it.',
+      complete: 'The road is open again. The courier’s map points toward Westfall.' },
+    { title: 'The Red Bandana', art: 'westfall', speaker: 'Gryan Stoutmantle',
+      briefing: 'They’ve taken grain from every farm on this road. Now we know where it went. Bring me proof from the highwaymen before they move the next wagon.',
+      choices: ['Help load the militia wagon', 'Scout the abandoned windmill'],
+      encounter: 'A highwayman swings down from a stolen grain cart. A brass key hangs from his belt.',
+      turnIn: 'The key fits the gate beneath Moonbrook. The wagons are heading underground. Stoutmantle gives you the key and asks you to follow them.',
+      complete: 'The militia has its grain back. The key opens the way into the Deadmines.' },
+    { title: 'The Ship Beneath Moonbrook', art: 'deadmines', speaker: 'Edwin VanCleef',
+      briefing: 'You came all this way for a few sacks of grain? Look below you. When this ship sails, Stormwind will finally hear from the people who built its walls.',
+      choices: ['Search the smuggler’s cache', 'Climb the rigging unseen'],
+      encounter: 'VanCleef draws his blades on the ship’s deck. The ropes above you creak as the crew falls silent.',
+      turnIn: 'VanCleef falls. You cut the ship’s mooring lines and bring his orders back to the militia. The coast has one less warship to fear.',
+      complete: 'The Deadmines are secure. Cruel Barb is yours, and the road back to Northshire is open.' },
+  ];
   const weapons = { 'Training Weapon': 0, 'Militia Blade': 2, 'Westfall Steel': 4, 'Cruel Barb': 7 };
   const maxHealth = hero => classes[hero.className].health + (hero.level - 1) * 7 + (hero.talent === 'Fortitude' ? 10 : 0);
   const create = className => ({
     className, level: 1, xp: 0, gold: 0, potions: 2, health: classes[className].health,
     energy: 3, talent: null, weapon: 'Training Weapon', bag: ['Training Weapon'], kills: [0, 0, 0],
-    claimed: [false, false, false], zone: 0, enemy: null, log: [],
+    claimed: [false, false, false], approaches: [null, null, null], zone: 0, enemy: null, log: [],
   });
   function act(hero, action, option) {
     const spec = classes[hero.className];
     const zone = zones[hero.zone];
     const report = message => { hero.log.unshift(message); hero.log.length = Math.min(6, hero.log.length); };
+    if (action === 'approach') {
+      hero.approaches ??= [null, null, null];
+      if (!hero.enemy && !hero.claimed[hero.zone] && !hero.approaches[hero.zone] && ['supplies', 'ambush'].includes(option)) {
+        hero.approaches[hero.zone] = option;
+        if (option === 'supplies') hero.potions += 2;
+        report(option === 'supplies' ? 'You packed two extra healing potions.' : 'Your scouting gives you the first strike in this chapter.');
+      }
+      return;
+    }
     if (action === 'rest') {
       if (hero.enemy) return;
       hero.health = maxHealth(hero); hero.energy = 3;
@@ -55,9 +84,10 @@ export function adventureRules() {
     }
     if (action === 'hunt') {
       if (hero.enemy || hero.health <= 0 || (zone.boss && hero.kills[hero.zone])) return;
-      hero.enemy = { health: zone.health, turn: 0 };
+      const openingHit = hero.approaches?.[hero.zone] === 'ambush' ? 5 : 0;
+      hero.enemy = { health: zone.health - openingHit, turn: 0 };
       hero.energy = 3;
-      report(zone.enemy + ' approaches.');
+      report(openingHit ? 'You ambush ' + zone.enemy + ' for 5 damage.' : zone.enemy + ' approaches.');
       return;
     }
     if (!hero.enemy) return;
@@ -115,7 +145,7 @@ export function adventureRules() {
       report('You fell in battle. Rest at the inn to recover.');
     }
   }
-  return { classes, zones, weapons, maxHealth, create, act };
+  return { classes, zones, chapters, weapons, maxHealth, create, act };
 }
 
 export function renderGuildAdventure(root) {
@@ -163,17 +193,30 @@ export function renderGuildAdventure(root) {
     box.append(bar);
     return box;
   }
+  function illustratedScene(chapter, location, title) {
+    const art = el('div', null, 'adventure-art');
+    art.dataset.region = chapter.art;
+    const copy = el('div', null, 'adventure-art-caption');
+    const titleNode = el('h3', title);
+    titleNode.tabIndex = -1;
+    copy.append(el('p', location, 'eyebrow'), titleNode);
+    art.append(copy);
+    return art;
+  }
   function draw() {
     content.replaceChildren();
     if (!hero) {
-      content.append(el('h3', 'Choose your class'));
+      content.append(illustratedScene(rules.chapters[0], 'Solstice Adventures', 'The Red Bandana'),
+        el('p', 'A missing courier draws you from Northshire into a plot beneath the coast. Choose your class to begin.', 'adventure-intro'));
       const choices = el('div', null, 'adventure-actions');
       for (const name of Object.keys(rules.classes)) {
-        choices.append(button(name, () => {
+        const control = button(name, () => {
           hero = rules.create(name);
           save(); draw();
           content.querySelector('h3').focus();
-        }));
+        });
+        control.append(el('small', rules.classes[name].skill + ' · ' + rules.classes[name].utility));
+        choices.append(control);
       }
       content.append(choices);
       status.textContent = '';
@@ -181,21 +224,35 @@ export function renderGuildAdventure(root) {
     }
     const zone = rules.zones[hero.zone];
     const spec = rules.classes[hero.className];
-    const heading = el('h3', zone.name);
-    heading.tabIndex = -1;
-    content.append(heading, el('p', 'Level ' + hero.level + ' ' + hero.className + ' · ' + hero.gold + ' gold · ' + hero.potions + ' potions'));
+    const chapter = rules.chapters[hero.zone];
+    const completed = hero.claimed.every(Boolean);
+    content.append(illustratedScene(chapter, zone.name, completed ? 'Campaign complete' : chapter.title));
+    const route = el('ol', null, 'adventure-chapters');
+    rules.zones.forEach((place, index) => {
+      const step = el('li', place.name);
+      if (index === hero.zone) step.setAttribute('aria-current', 'step');
+      if (hero.claimed[index]) step.dataset.complete = 'true';
+      route.append(step);
+    });
+    content.append(route, el('p', 'Level ' + hero.level + ' ' + hero.className + ' · ' + hero.gold + ' gold · ' + hero.potions + ' potions'));
     const meters = el('div', null, 'adventure-meters');
     meters.append(meter('Health', hero.health, rules.maxHealth(hero), 'health'),
       meter('XP', hero.level === 5 ? 30 : hero.xp, 30, 'xp'));
     content.append(meters);
     const scene = el('section', null, 'adventure-scene');
     if (hero.enemy) {
-      scene.append(el('h4', zone.enemy), meter('Enemy health', hero.enemy.health, zone.health, 'enemy'),
+      scene.append(el('p', chapter.encounter, 'adventure-narration'), el('h4', zone.enemy), meter('Enemy health', hero.enemy.health, zone.health, 'enemy'),
         el('p', spec.resource + ' · ' + hero.energy + '/3'));
       if (zone.boss && (hero.enemy.turn + 1) % 3 === 0) scene.append(el('p', 'VanCleef is preparing Cleave. Guard to reduce the damage.', 'adventure-warning'));
     } else {
       const goal = zone.boss ? 1 : 3;
-      scene.append(el('h4', zone.quest), el('p', hero.claimed[hero.zone] ? 'Quest complete · ' + zone.reward :
+      const dialogue = el('blockquote', null, 'adventure-dialogue');
+      if (hero.claimed[hero.zone] || hero.kills[hero.zone] >= goal) {
+        dialogue.append(el('p', hero.claimed[hero.zone] ? chapter.complete : chapter.turnIn));
+      } else {
+        dialogue.append(el('cite', chapter.speaker), el('p', chapter.briefing));
+      }
+      scene.append(dialogue, el('h4', zone.quest), el('p', hero.claimed[hero.zone] ? 'Quest complete · ' + zone.reward :
         'Defeat ' + zone.enemy + ' · ' + Math.min(hero.kills[hero.zone], goal) + '/' + goal));
     }
     const actions = el('div', null, 'adventure-actions');
@@ -206,10 +263,19 @@ export function renderGuildAdventure(root) {
         command('Retreat', 'flee'));
     } else {
       const ready = hero.kills[hero.zone] >= (zone.boss ? 1 : 3) && !hero.claimed[hero.zone];
+      if (!hero.claimed[hero.zone] && !ready && !hero.approaches?.[hero.zone]) {
+        const decisions = el('div', null, 'adventure-actions adventure-decisions');
+        decisions.append(command(chapter.choices[0] + ' · +2 potions', 'approach', 'supplies'),
+          command(chapter.choices[1] + ' · 5 opening damage', 'approach', 'ambush'));
+        scene.append(decisions);
+      }
       actions.append(command(zone.boss ? 'Challenge VanCleef' : 'Find a fight', 'hunt', null, !hero.health || (zone.boss && Boolean(hero.kills[hero.zone]))),
         command('Rest at the inn', 'rest', null, hero.health === rules.maxHealth(hero)),
         command('Buy potion · 5 gold', 'buy', null, hero.gold < 5));
       if (ready) actions.append(command('Claim quest reward', 'claim'));
+      if (hero.claimed[hero.zone] && rules.zones[hero.zone + 1] && hero.level >= rules.zones[hero.zone + 1].level) {
+        actions.append(command('Continue to ' + rules.zones[hero.zone + 1].name, 'travel', hero.zone + 1));
+      }
     }
     scene.append(actions);
     content.append(scene);
