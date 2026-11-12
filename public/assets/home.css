@@ -307,7 +307,7 @@ body:has(> .guild-home) { background: var(--surface); }
   font: 14px/1.55 var(--site-font);
 }
 .guild-app > main { max-width: none; border: 0; background: var(--night); }
-.guild-topbar { display: flex; align-items: center; background: var(--container); border-bottom: 1px solid var(--line); }
+.guild-topbar { position: relative; display: flex; align-items: center; background: var(--container); border-bottom: 1px solid var(--line); }
 .guild-app .masthead, .guild-app .guild-nav { background: transparent; border: 0; }
 .guild-app .masthead { flex: 0 0 248px; padding: 12px 24px; }
 .guild-app .guild-nav { flex: 1; min-width: 0; padding: 10px clamp(12px,3vw,36px); }
@@ -898,11 +898,10 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-discord-status { width: 8px; height: 8px; flex: none; border-radius: 50%; background: #86bd8a; box-shadow: 0 0 7px #86bd8a55; }
 .guild-discord-status[data-expired="true"] { background: var(--muted); box-shadow: none; }
 
-.guild-discord-account { position: relative; }
 .guild-app .guild-discord-trigger { display: inline-flex; align-items: center; gap: 8px; padding: 0; border: 0; background: transparent; color: var(--ink); }
 .guild-discord-icon-square { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid #5865f266; border-radius: 8px; background: #5865f21f; }
 .guild-discord-card:not([hidden]) { display: block; }
-.guild-discord-card { position: absolute; z-index: 100; right: 0; top: 100%; width: min(310px,calc(100vw - 24px)); padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--container); box-shadow: 0 12px 32px #0008; text-align: left; }
+.guild-discord-card { position: absolute; z-index: 100; inset-inline-end: clamp(12px,3vw,36px); inset-block-start: 100%; width: min(310px,calc(100vw - 24px)); padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--container); box-shadow: 0 12px 32px #0008; text-align: left; }
 .guild-discord-card > strong { display: block; overflow-wrap: anywhere; }
 .guild-discord-card p { margin: 6px 0 12px; color: #86bd8a; font-size: 12px; }
 .guild-discord-card dl { display: grid; grid-template-columns: auto minmax(0,1fr); gap: 9px 14px; margin: 12px 0; font-size: 12px; }
@@ -914,7 +913,6 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-app #raidMenuToggle, .mobile-row-toggle { display: none; }
 
 @media (max-width: 760px) {
-  .guild-topbar { position: relative; }
   .guild-app .masthead { min-height: 60px; padding: 7px 130px 7px 12px; }
   .guild-app .brand .solstice-shield { width: 30px; height: 35px; }
   .guild-app .brand .solstice-wordmark strong { font-size: 20px; }
@@ -922,8 +920,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .guild-app .guild-nav { flex-basis: 100%; padding: 0 8px 6px; }
   .guild-nav-items { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); width: 100%; gap: 2px; }
   .guild-app .guild-nav-items :is(a,button) { justify-content: center; min-height: 44px; padding: 4px 2px; font-size: clamp(11px,3.35vw,14px); white-space: normal; text-align: center; }
-  .guild-app .guild-account { position: absolute; inset: 7px 12px auto auto; padding: 0; }
-  .guild-app .guild-discord-trigger { min-height: 44px; gap: 5px; }
+  .guild-app .guild-account { padding: 0; }
+  .guild-app .guild-discord-trigger { position: absolute; inset: 7px 12px auto auto; min-height: 44px; gap: 5px; }
+  .guild-discord-card { inset-inline-end: 12px; }
   .guild-discord-account #guildIdentity { max-width: 71px; }
 
   .guild-app .hero { grid-template-columns: minmax(0,1fr); gap: 9px; padding: 12px; }
