@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import worker from './index.js';
+import { refreshGoldEdition } from './weekly-gold.js';
 import { authReady } from './auth.js';
 import { openSqlite } from './sqlite.js';
 
@@ -72,5 +73,7 @@ const server = createServer(async (req, res) => {
     else res.destroy();
   }
 });
+refreshGoldEdition();
+setInterval(refreshGoldEdition, 60_000).unref();
 server.listen(Number(process.env.PORT ?? 3000), '0.0.0.0');
 for (const signal of ['SIGINT', 'SIGTERM']) process.once(signal, () => server.close(() => DB.close()));

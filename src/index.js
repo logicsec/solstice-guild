@@ -1,3 +1,4 @@
+import { weeklyGoldReport } from './weekly-gold.js';
 import { craftingDirectory } from './crafting-directory.js';
 import { renderCraftingDirectory } from './crafting-directory-client.js';
 import { guildChatApi } from './guild-chat.js';
@@ -271,8 +272,24 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .guild-app #auctionPanel{margin-bottom:24px}
 .guild-app #marketFooter{padding:20px 24px;gap:12px 24px}
 .auction-toolbar,.toolbar{display:flex;align-items:end;gap:8px;flex-wrap:wrap;padding:10px;background:var(--raised);border-bottom:1px solid var(--line)}
-#searchForm:has(#vendorFlipsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
-#vendorFlipsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
+#searchForm:has(#marketDealsToggle[aria-pressed=true]) :is(#query,.filters,.search-button){display:none}
+#marketDealsToggle[aria-pressed=true]{color:var(--accent);border-color:var(--accent)}
+.market-deals-heading{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.market-deals-nav{display:flex;gap:4px;flex-wrap:wrap}
+.weekly-gold-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}
+.weekly-gold-grid>section{min-width:0;border:1px solid var(--line);background:var(--field)}
+.weekly-gold-grid h3{margin:0;padding:8px 10px;font-size:14px}
+.weekly-gold-grid .market-scroll{max-block-size:19rem}
+.weekly-gold-links{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 0}
+.weekly-gold-links p{flex-basis:100%}
+.market-deals-nav [aria-pressed=true]{color:var(--gold);border-color:var(--accent);background:var(--field)}
+.market-deals-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:14px 0}
+.market-deals-stats div{min-width:0;border:1px solid var(--line);padding:9px 11px;background:var(--field)}
+.market-deals-stats dt{color:var(--muted);font-size:11px;letter-spacing:.055em;text-transform:uppercase}
+.market-deals-stats dd{margin:4px 0 0;font-size:15px;font-weight:700;font-variant-numeric:tabular-nums}
+.market-deals-controls{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.market-deals-controls label{margin:0;display:flex;align-items:center;gap:8px}
+@media(max-width:760px){.market-deals-stats{gap:4px}.market-deals-stats div{padding:6px}.market-deals-stats dd{font-size:13px}.market-deals-nav button{min-height:44px}}
 .guild-roster-directory{margin-top:14px}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
 .search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
@@ -296,14 +313,45 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .profession-grid button{display:grid;justify-items:center;gap:8px;padding:12px 5px;color:var(--ink);background:#22201e;font-size:12px;font-weight:700}
 .profession-grid button[aria-pressed=true]{background:#342912;border-color:var(--gold);color:var(--gold)}
 .profession-grid svg{width:37px;height:37px;padding:6px;border:1px solid #6c542d;border-radius:5px;background:radial-gradient(circle at top,#574021,#231b13);color:var(--gold)}
-.recipe-list{display:grid;gap:5px;padding:0 12px 10px}.recipe-card{background:var(--raised);border:1px solid var(--line);border-radius:4px}
-.recipe-card[open]{border-color:#806021}.recipe-card summary{list-style:none;display:grid;grid-template-columns:minmax(100px,1fr) repeat(4,minmax(57px,auto)) 13px;gap:12px;align-items:center;padding:8px 11px}
-.recipe-card summary::-webkit-details-marker{display:none}.recipe-card summary::after{content:"▾";color:var(--gold)}.recipe-card[open] summary::after{transform:rotate(180deg)}
-.recipe-metric{font-size:12px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}.recipe-metric small{display:block;font-size:10px;text-transform:uppercase}
-.recipe-card ul{border-top:1px solid var(--line);margin:0;padding:8px 12px 8px 29px;color:var(--muted)}.recipe-card p{padding:8px 12px}
+.market-scroll{max-block-size:min(62vh,36rem);overflow:auto;scrollbar-gutter:stable;background:var(--panel);border-block:1px solid var(--line)}
+.guild-app .market-scroll :is(th,td){padding:5px 10px;border-top:0;border-bottom:1px solid var(--line)}
+.guild-app .market-scroll thead th,.recipe-columns{position:sticky;top:0;z-index:1;background:var(--raised);color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.075em;text-transform:uppercase}
+.guild-app .market-scroll .item-icon{width:20px;height:20px}
+.guild-app .market-scroll :is(th,td:first-child){white-space:normal;overflow-wrap:anywhere}
+.guild-app .market-scroll tbody tr:nth-child(even){background:transparent}
+.guild-app .market-scroll tbody tr:hover,.guild-app .recipe-card summary:hover{background:var(--hover)}
+.recipe-list{min-width:0}
+.guild-app #craftRows .recipe-card{border:0;border-bottom:1px solid var(--line);border-radius:0;background:transparent}
+.recipe-columns,.guild-app #craftRows .recipe-card summary{display:grid;grid-template-columns:minmax(0,1fr) repeat(3,8.6rem) 3.5rem 12px;gap:8px;align-items:center;padding:5px 10px;list-style:none}
+.recipe-columns{border-bottom:1px solid var(--line)}
+.recipe-columns span:not(:first-child),.recipe-metric{text-align:right}
+.recipe-card summary strong{min-width:0;font-weight:600;overflow-wrap:anywhere}
+.recipe-card summary::-webkit-details-marker{display:none}
+.recipe-card summary::after{content:"▾";color:var(--gold);text-align:center}
+.recipe-card[open] summary::after{transform:rotate(180deg)}
+.recipe-metric{font-size:13px;font-variant-numeric:tabular-nums;white-space:nowrap}
+.recipe-metric small{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}
+.recipe-card ul{border-top:1px solid var(--line);margin:0;padding:8px 12px 8px 29px;color:var(--muted)}.recipe-card p,.recipe-list>p{padding:8px 12px}
+.coin-value,.coin-part{display:inline-flex;align-items:center;gap:.2em;white-space:nowrap;font-variant-numeric:tabular-nums}
+.coin-value{gap:.42em;justify-self:end}
+.coin{display:inline-block;width:.76em;height:.76em;border-radius:50%;border:1px solid var(--coin-edge);background:radial-gradient(circle at 36% 29%,var(--coin-light) 0%,var(--coin-face) 47%,var(--coin-edge) 100%);box-shadow:inset 0 0 0 1px #fff2;flex:none}
+.coin-gold{--coin-light:#ffe89b;--coin-face:#e7af3e;--coin-edge:#976016}
+.coin-silver{--coin-light:#f4f6ff;--coin-face:#b6bdcc;--coin-edge:#6f7788}
+.coin-copper{--coin-light:#efb082;--coin-face:#c77a49;--coin-edge:#895133}
+@media(max-width:760px){
+  .market-scroll{max-block-size:min(60vh,31rem)}
+  .guild-app .market-scroll .mobile-table :is(td,th){padding:4px 0;border:0}
+  .recipe-columns{display:none}
+  .guild-app #craftRows .recipe-card summary{grid-template-columns:repeat(4,minmax(0,1fr)) 12px;gap:5px;padding:8px}
+  .guild-app #craftRows .recipe-card summary strong{grid-column:1/-1}
+  .guild-app #craftRows .recipe-card summary::after{grid-column:auto;justify-self:center}
+  .recipe-metric{text-align:left;font-size:12px;white-space:normal}
+  .recipe-metric small{position:static;width:auto;height:auto;overflow:visible;clip-path:none;display:block;font-size:9px;text-transform:uppercase}
+  .recipe-metric .coin-value{flex-wrap:wrap;column-gap:.3em}
+}
 .category-group{display:grid;gap:3px}.subcategory-list{display:grid;gap:3px;padding:2px 0 3px 12px}.subcategory-list button{font-size:12px;background:#1d1b19}
 .category-group[aria-expanded=false] .subcategory-list{display:none}
-@media(max-width:640px){.recipe-card summary{grid-template-columns:repeat(4,minmax(0,1fr)) 12px;gap:5px}.recipe-card summary strong{grid-column:1/-1}.recipe-metric{text-align:left}.category-group{flex:none;align-content:start}.subcategory-list{padding-left:0}}
+@media(max-width:640px){.category-group{flex:none;align-content:start}.subcategory-list{padding-left:0}}
 .item-label{display:inline-flex;align-items:center;gap:7px;vertical-align:middle}
 .item-icon{display:inline-grid;place-items:center;position:relative;width:25px;height:25px;flex:none;border:1px solid #64533c;border-radius:4px;background:#28231c;color:#d8af53}
 .item-icon::before{content:"◇";font-size:14px}.item-icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px}
@@ -327,7 +375,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
 <link rel="stylesheet" href="/assets/home.css?v=mobile-layout-1"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button><button id="raidTab" aria-pressed="false">Guild Hall</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
+<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -338,13 +386,51 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <input id="query" type="search" aria-label="Item name or ID" placeholder="Search by item name or ID" autocomplete="off">
 <details class="filters"><summary>Filter</summary><div><label for="sort">Sort by</label><select id="sort"><option value="name">Item name</option><option value="min">Lowest buyout</option><option value="quantity">Most units</option><option value="discount">Biggest discount vs. 30d</option></select></div></details>
 <button type="submit" class="search-button">Search</button>
-<button type="button" id="vendorFlipsToggle" aria-pressed="false" aria-controls="vendorFlips">Vendor Flips</button>
+<button type="button" id="marketDealsToggle" aria-pressed="false" aria-controls="marketDeals">Market Deals</button>
 </form>
-<section id="vendorFlips" class="craft-section" hidden aria-labelledby="vendorFlipsTitle">
-<h2 id="vendorFlipsTitle">Vendor Flips</h2>
+<section id="marketDeals" class="craft-section" hidden aria-labelledby="marketDealsTitle">
+<div class="market-deals-heading">
+<h2 id="marketDealsTitle">Market Deals</h2>
+<div class="market-deals-nav" role="group" aria-label="Deal type">
+<button type="button" id="auctionDealsTab" aria-pressed="true" aria-controls="auctionDeals">Below Median</button>
+<button type="button" id="weeklyGoldTab" aria-pressed="false" aria-controls="weeklyGold">Weekly Gold Report</button>
+<button type="button" id="vendorDealsTab" aria-pressed="false" aria-controls="vendorFlips">Vendor Profit</button>
+</div>
+</div>
+<section id="auctionDeals" aria-label="Below-median auctions">
+<dl class="market-deals-stats">
+<div><dt>Matching items</dt><dd id="dealCount">—</dd></div>
+<div><dt>Best unit savings</dt><dd id="dealSavings">—</dd></div>
+<div><dt>Latest scan</dt><dd id="dealScan">—</dd></div>
+</dl>
+<div class="market-deals-controls">
+<p id="dealStatus" class="status" role="status">Loading the auction snapshot…</p>
+<label for="dealSort">Sort by <select id="dealSort"><option value="savings">Unit savings</option><option value="discount">Percent under median</option><option value="quantity">Units listed</option></select></label>
+</div>
+<div class="scroll market-scroll" tabindex="0" role="region" aria-label="Below-median results"><table data-mobile-summary="4"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Under</th><th scope="col">Unit savings</th><th scope="col">Listed</th></tr></thead><tbody id="auctionDealRows"></tbody></table></div>
+<p class="status">Buyouts at least 20% below the 7-day median. Prices are per item and reflect the latest scan.</p>
+</section>
+<section id="weeklyGold" hidden aria-label="Weekly Gold Report">
+<div class="weekly-gold-links"><p id="weeklyGoldStatus" role="status">Loading the latest edition…</p><a id="weeklyGoldSource" href="https://ahledger.com/guides/gold/meta">AHledger Gold Meta</a><a href="https://ahledger.com/reports">Past Reports</a></div>
+<dl class="market-deals-stats">
+<div><dt>Biggest rise</dt><dd id="weeklyGoldRise">—</dd></div>
+<div><dt>Best unit savings</dt><dd id="weeklyGoldSaving">—</dd></div>
+<div><dt>Top craft margin</dt><dd id="weeklyGoldMargin">—</dd></div>
+</dl>
+<div class="weekly-gold-grid">
+<section aria-labelledby="GoldMoversTitle"><h3 id="GoldMoversTitle">Market Movers</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldMoversTitle"><table data-mobile-summary="3"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Change</th></tr></thead><tbody id="GoldMoversRows"></tbody></table></div></section>
+<section aria-labelledby="GoldBuysTitle"><h3 id="GoldBuysTitle">Best Buys</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldBuysTitle"><table data-mobile-summary="2"><thead><tr><th scope="col">Item</th><th scope="col">Min buyout</th><th scope="col">Unit savings</th><th scope="col">Listed</th></tr></thead><tbody id="GoldBuysRows"></tbody></table></div></section>
+<section aria-labelledby="GoldCraftsTitle"><h3 id="GoldCraftsTitle">Crafting Picks</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldCraftsTitle"><table data-mobile-summary="3"><thead><tr><th scope="col">Recipe</th><th scope="col">Skill</th><th scope="col">Cost</th><th scope="col">Profit</th></tr></thead><tbody id="GoldCraftsRows"></tbody></table></div></section>
+<section aria-labelledby="GoldFarmTitle"><h3 id="GoldFarmTitle">Materials to Farm</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldFarmTitle"><table data-mobile-summary="1"><thead><tr><th scope="col">Material</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Listed</th></tr></thead><tbody id="GoldFarmRows"></tbody></table></div></section>
+</div>
+<p id="weeklyGoldAuctionScan" class="status"></p>
+<p class="status">Changes compare the latest buyout with the 7-day median. Craft margins include the Auction House cut. Farm picks compare listed prices for common materials.</p>
+</section>
+<section id="vendorFlips" hidden aria-label="Vendor profit opportunities">
 <p>Compare the lowest unit buyout with the vendor payout. Check the current in-game price before buying.</p>
 <p class="status" id="vendorFlipStatus" role="status"></p>
-<div class="scroll"><table data-mobile-summary="3"><thead><tr><th scope="col">Item</th><th scope="col">Lowest Buyout</th><th scope="col">Vendor Payout</th><th scope="col">Profit per Item</th></tr></thead><tbody id="vendorFlipRows"></tbody></table></div>
+<div class="scroll market-scroll" tabindex="0" role="region" aria-label="Vendor flip results"><table data-mobile-summary="3"><thead><tr><th scope="col">Item</th><th scope="col">Lowest Buyout</th><th scope="col">Vendor Payout</th><th scope="col">Profit per Item</th></tr></thead><tbody id="vendorFlipRows"></tbody></table></div>
+</section>
 <p class="status"><a href="https://ahledger.com/">Prices from AHledger</a></p>
 </section>
 <div id="auctionListings" class="auction-layout">
@@ -354,7 +440,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </aside>
 <div class="results">
 <p class="status" id="status" role="status">Loading the market feed…</p>
-<div class="scroll"><table><thead><tr><th scope="col">Item</th><th scope="col">Lowest buyout</th><th scope="col">Scan median</th><th scope="col">7-day median</th><th scope="col">30-day median</th><th scope="col">Units listed</th></tr></thead><tbody id="rows"></tbody></table></div>
+<div id="auctionResultsScroll" class="scroll market-scroll" tabindex="0" role="region" aria-label="Auction House results"><table><thead><tr><th scope="col">Item</th><th scope="col">Lowest buyout</th><th scope="col">Scan median</th><th scope="col">7-day median</th><th scope="col">30-day median</th><th scope="col">Units listed</th></tr></thead><tbody id="rows"></tbody></table></div>
 <div class="pager"><button id="previous">Previous</button><small id="count"></small><button id="next">Next</button></div>
 </div></div>
 </section>
@@ -370,9 +456,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <button id="refreshCraft">Refresh</button>
 </div>
 <p id="craftStatus" class="status" role="status">Choose a profession to see prices.</p>
-<div id="craftRows" class="recipe-list"></div>
-<div class="craft-section"><h2>Materials on the Auction House</h2><p>Listed reagents used by recipes in the selected profession. Buyouts and quantities are from the latest price table.</p></div>
-<div class="scroll"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
+<div class="market-scroll" tabindex="0" role="region" aria-labelledby="recipeHeading"><div class="recipe-columns" aria-hidden="true"><span>Recipe</span><span>Cost</span><span>Net sale</span><span>Profit</span><span>Skill</span></div><div id="craftRows" class="recipe-list"></div></div>
+<div class="craft-section"><h2 id="materialHeading">Materials on the Auction House</h2><p>Listed reagents used by recipes in the selected profession. Buyouts and quantities are from the latest price table.</p></div>
+<div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="materialHeading"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
 </section>
 <section id="raidHero" class="hero" hidden aria-labelledby="raidPlannerTitle">
 <div><div class="eyebrow">Solstice Guild Tools</div><h1 id="raidPlannerTitle">Solstice Guild Hall</h1><p>Explore the guild roster, see profession coverage, and plan raids.</p></div>
@@ -620,9 +706,13 @@ for (const [name, iconPath] of professionTiles) {
 let vendorFlipTimer;
 let vendorFlipPending = false;
 const vendorPanel = byId('vendorFlips');
-const vendorToggle = byId('vendorFlipsToggle');
+const dealsPanel = byId('marketDeals');
+const dealsToggle = byId('marketDealsToggle');
+const auctionDeals = byId('auctionDeals');
+const weeklyGold = byId('weeklyGold');
+let dealType = 'auction';
 function vendorFlipsVisible() {
-  return !vendorPanel.hidden && !byId('auctionPanel').hidden;
+  return !dealsPanel.hidden && !vendorPanel.hidden && !byId('auctionPanel').hidden;
 }
 async function refreshVendorFlips() {
   if (!vendorFlipsVisible() || vendorFlipPending) return;
@@ -639,11 +729,11 @@ async function refreshVendorFlips() {
     rows.replaceChildren();
     for (const flip of data.flips) {
       const row = rows.insertRow();
-      const name = document.createElement('a');
+      const name = itemLabel(flip.id, flip.name);
       name.href = 'https://ahledger.com/items/'+flip.id;
-      name.textContent = flip.name;
+      name.removeAttribute('target');
       row.insertCell().append(name);
-      for (const value of [flip.min,flip.vendor,flip.profit]) row.insertCell().textContent = money(value);
+      for (const value of [flip.min,flip.vendor,flip.profit]) row.insertCell().append(money(value));
       row.cells[3].className = 'price is-sale';
     }
     const time = new Intl.DateTimeFormat('en-US',{timeZone:'America/New_York',dateStyle:'medium',timeStyle:'short'}).format(new Date(data.timestamp));
@@ -660,12 +750,32 @@ async function refreshVendorFlips() {
     if (vendorFlipsVisible()) vendorFlipTimer = setTimeout(refreshVendorFlips,delay);
   }
 }
-vendorToggle.addEventListener('click',()=>{
-  vendorPanel.hidden = !vendorPanel.hidden;
-  byId('auctionListings').hidden = !vendorPanel.hidden;
-  vendorToggle.setAttribute('aria-pressed',String(!vendorPanel.hidden));
+function setDealType(type) {
+  dealType = type;
+  vendorPanel.hidden = type !== 'vendor';
+  auctionDeals.hidden = type !== 'auction';
+  weeklyGold.hidden = type !== 'weekly';
+  byId('auctionDealsTab').setAttribute('aria-pressed', String(type === 'auction'));
+  byId('vendorDealsTab').setAttribute('aria-pressed', String(type === 'vendor'));
+  byId('weeklyGoldTab').setAttribute('aria-pressed', String(type === 'weekly'));
   if (vendorFlipsVisible()) refreshVendorFlips();
   else clearTimeout(vendorFlipTimer);
+  renderAuctionDeals();
+  if (weeklyGoldVisible()) { renderWeeklyGold(); refreshWeeklyGold(); }
+}
+
+dealsToggle.addEventListener('click', () => {
+  dealsPanel.hidden = !dealsPanel.hidden;
+  byId('auctionListings').hidden = !dealsPanel.hidden;
+  dealsToggle.setAttribute('aria-pressed', String(!dealsPanel.hidden));
+  setDealType(dealType);
+});
+byId('auctionDealsTab').addEventListener('click', () => setDealType('auction'));
+byId('vendorDealsTab').addEventListener('click', () => setDealType('vendor'));
+byId('weeklyGoldTab').addEventListener('click', () => setDealType('weekly'));
+byId('dealSort').addEventListener('change', () => {
+  byId('auctionDealRows').closest('.market-scroll').scrollTop = 0;
+  renderAuctionDeals();
 });
 
 function setView(view) {
@@ -680,6 +790,7 @@ function setView(view) {
   byId('professionPanel').hidden = !showProfessions;
   byId('auctionTab').setAttribute('aria-pressed', String(view === 'auction'));
   byId('professionTab').setAttribute('aria-pressed', String(showProfessions));
+  if (weeklyGoldVisible()) refreshWeeklyGold();
   if (showProfessions && !craftData && !craftRequest) loadCrafts();
   if (vendorFlipsVisible()) refreshVendorFlips();
   else clearTimeout(vendorFlipTimer);
@@ -708,7 +819,7 @@ async function loadCrafts() {
 
 function appendCell(row, value, className) {
   const cell = row.insertCell();
-  cell.textContent = value;
+  cell.append(value);
   if (className) cell.className = className;
 }
 
@@ -775,7 +886,7 @@ function renderCrafts() {
       const entry = document.createElement('li');
       const reagentName = reagent.name || label(reagent.id);
       const reagentLabel = itemLabel(reagent.id, reagentName);
-      entry.append(reagent.qty + ' × ', reagentLabel, ' · ' + money(reagent.price) + ' each');
+      entry.append(reagent.qty + ' × ', reagentLabel, ' · ', money(reagent.price), ' each');
       list.append(entry);
     }
     if (list.childElementCount) details.append(list);
@@ -817,12 +928,29 @@ function renderCrafts() {
 ${parseTable.toString()}
 
 function money(copper) {
-  if (copper == null) return '—';
-  const sign = copper < 0 ? '−' : '';
-  copper = Math.round(Math.abs(copper));
-  const gold = Math.floor(copper / 10000);
-  const silver = Math.floor(copper / 100) % 100;
-  return sign + [gold && format.format(gold) + 'g', silver && silver + 's', (copper % 100) + 'c'].filter(Boolean).join(' ');
+  if (!Number.isFinite(copper)) return '—';
+  const amount = Math.round(Math.abs(copper));
+  const parts = [
+    [Math.floor(amount / 10000), 'gold'],
+    [Math.floor(amount / 100) % 100, 'silver'],
+    [amount % 100, 'copper'],
+  ].filter(([value]) => value > 0);
+  if (!parts.length) parts.push([0, 'copper']);
+  const price = document.createElement('span');
+  price.className = 'coin-value';
+  price.setAttribute('role', 'img');
+  const negative = copper < 0 && amount > 0;
+  price.setAttribute('aria-label', (negative ? 'minus ' : '') + parts.map(([value, unit]) => format.format(value) + ' ' + unit).join(', '));
+  if (negative) price.append('−');
+  for (const [value, unit] of parts) {
+    const part = document.createElement('span');
+    part.className = 'coin-part';
+    const coin = document.createElement('span');
+    coin.className = 'coin coin-' + unit;
+    part.append(format.format(value), coin);
+    price.append(part);
+  }
+  return price;
 }
 function catalogIconUrl(reference) {
   const match = typeof reference === 'string' && reference.match(/^(classic1x-us|us)\|([a-z][a-z0-9_]+)$/i);
@@ -864,6 +992,114 @@ function rarityColor(id, quality) {
 
 const label = id => names.get(id) || 'Item #' + id;
 const discount = item => item.month > 0 && item.min != null ? 1 - item.min / item.month : -Infinity;
+function findAuctionDeals(listings, sortMode) {
+  return listings.filter(item => item.quantity > 0 && item.min > 0 && item.week > 0 && item.min * 5 <= item.week * 4)
+    .map(item => ({ item, savings: item.week - item.min, under: 1 - item.min / item.week }))
+    .sort((a, b) => {
+      if (sortMode === 'discount' && a.under !== b.under) return b.under - a.under;
+      if (sortMode === 'quantity' && a.item.quantity !== b.item.quantity) return b.item.quantity - a.item.quantity;
+      return b.savings - a.savings || a.item.id - b.item.id;
+    });
+}
+
+function renderAuctionDeals() {
+  if (dealsPanel.hidden || auctionDeals.hidden) return;
+  const deals = findAuctionDeals(items, byId('dealSort').value);
+  const limit = 100;
+  const dealRows = byId('auctionDealRows');
+  dealRows.replaceChildren();
+  for (const { item, savings, under } of deals.slice(0, limit)) {
+    const row = dealRows.insertRow();
+    row.insertCell().append(listingLink(item));
+    appendCell(row, money(item.min));
+    appendCell(row, money(item.week));
+    appendCell(row, Math.round(under * 100) + '%', 'positive');
+    appendCell(row, money(savings), 'price is-sale');
+    appendCell(row, format.format(item.quantity));
+  }
+  byId('dealCount').textContent = scan ? format.format(deals.length) : '—';
+  byId('dealSavings').replaceChildren(money(deals.length ? deals.reduce((best, deal) => Math.max(best, deal.savings), 0) : null));
+  byId('dealScan').textContent = scan ? scan.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '—';
+  byId('dealStatus').textContent = !scan ? (loading ? 'Loading the auction snapshot…' : message || 'Waiting for the auction snapshot…') :
+    !deals.length ? 'No items meet the discount threshold.' :
+    deals.length > limit ? 'Showing ' + limit + ' of ' + format.format(deals.length) + ' matches.' : '';
+}
+
+function weeklyGoldVisible() {
+  return !weeklyGold.hidden && !dealsPanel.hidden && !byId('auctionPanel').hidden;
+}
+
+let weeklyRequest = false;
+async function refreshWeeklyGold() {
+  if (weeklyRequest) return;
+  weeklyRequest = true;
+  try {
+    const response = await fetch('/api/weekly-gold');
+    if (!response.ok) throw new Error();
+    const report = await response.json();
+    const editionLabel = report.edition ? 'Week ending ' + report.edition.date : 'Waiting for an AHledger edition';
+    byId('weeklyGoldStatus').textContent = editionLabel + ' · US Normal Alliance' +
+      (report.nextEditionPending && report.edition ? ' · Next edition pending' : '') +
+      (report.crafts?.pricesAsOf ? ' · Craft scan ' + new Date(report.crafts.pricesAsOf).toLocaleString() : '');
+    byId('weeklyGoldSource').href = report.edition?.url || 'https://ahledger.com/guides/gold/meta';
+    const picks = report.crafts?.recipes ?? [];
+    fillGoldRows('GoldCraftsRows', picks, recipe => [
+      itemLabel(recipe.result?.id, recipe.recipe.name + ' · ' + recipe.recipe.profession, recipe.result?.quality),
+      recipe.recipe.skillRequired ?? '—', money(recipe.cost), money(recipe.margin),
+    ], report.crafts ? 'No profitable crafts in the latest data.' : 'Crafting prices are temporarily unavailable.');
+    byId('weeklyGoldMargin').replaceChildren(money(picks[0]?.margin));
+  } catch {
+    byId('weeklyGoldStatus').textContent = 'The weekly edition is temporarily unavailable.';
+    fillGoldRows('GoldCraftsRows', [], () => [], 'Crafting prices are temporarily unavailable.');
+    byId('weeklyGoldMargin').replaceChildren('—');
+  } finally {
+    weeklyRequest = false;
+  }
+}
+
+function fillGoldRows(id, entries, cells, emptyMessage) {
+  const body = byId(id);
+  body.replaceChildren();
+  for (const entry of entries) {
+    const row = body.insertRow();
+    cells(entry).forEach(value => appendCell(row, value));
+  }
+  if (!entries.length) {
+    const cell = body.insertRow().insertCell();
+    cell.colSpan = 4;
+    cell.textContent = emptyMessage;
+  }
+}
+
+const farmMaterials = new Set([2589,2592,4306,4338,14047,14256,2770,2771,2772,3858,10620,765,785,2447,2449,2450,2452,3355,3356,3818,3820,4625,8838,8846,13463,13464,13465,13466]);
+function renderWeeklyGold() {
+  if (!weeklyGoldVisible()) return;
+  byId('weeklyGoldAuctionScan').textContent = scan ? 'Auction scan ' + scan.toLocaleString() : '';
+  const bestBuys = findAuctionDeals(items, 'savings').slice(0, 8);
+  const changes = items.filter(item => item.min > 0 && item.week > 0 && item.quantity >= 5 && item.min !== item.week)
+    .map(item => ({ item, change: item.min / item.week - 1 })).sort((a, b) => b.change - a.change);
+  const movers = [...changes.filter(entry => entry.change > 0).slice(0, 4), ...changes.filter(entry => entry.change < 0).slice(-4).reverse()];
+  const materials = items.filter(item => farmMaterials.has(item.id) && item.min > 0 && item.quantity > 0)
+    .sort((a, b) => b.min - a.min).slice(0, 8);
+  const percent = value => (value > 0 ? '+' : '') + Math.round(value * 100) + '%';
+  const empty = scan ? 'No qualifying listings in this scan.' : 'Waiting for the auction scan…';
+  fillGoldRows('GoldMoversRows', movers, ({ item, change }) => [listingLink(item), money(item.min), money(item.week), percent(change)], empty);
+  fillGoldRows('GoldBuysRows', bestBuys, ({ item, savings }) => [listingLink(item), money(item.min), money(savings), format.format(item.quantity)], empty);
+  fillGoldRows('GoldFarmRows', materials, item => [listingLink(item), money(item.min), money(item.week), format.format(item.quantity)], empty);
+  byId('weeklyGoldRise').textContent = changes[0]?.change > 0 ? percent(changes[0].change) : '—';
+  byId('weeklyGoldSaving').replaceChildren(money(bestBuys[0]?.savings));
+}
+
+function listingLink(item) {
+  const link = itemLabel(item.id, label(item.id));
+  link.addEventListener('click', event => {
+    if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    showItem(item);
+  });
+  return link;
+}
+
 function render() {
   const search = query.value.trim().toLowerCase();
   const matches = items.filter(item =>
@@ -881,14 +1117,8 @@ function render() {
   rows.replaceChildren();
   for (const item of matches.slice(pageIndex * pageSize, (pageIndex + 1) * pageSize)) {
     const row = rows.insertRow();
-    const button = itemLabel(item.id, label(item.id));
-    button.addEventListener('click', event => {
-      if (event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return;
-      event.preventDefault();
-      showItem(item);
-    });
-    row.insertCell().append(button);
-    for (const value of [item.min, item.median, item.week, item.month]) row.insertCell().textContent = money(value);
+    row.insertCell().append(listingLink(item));
+    for (const value of [item.min, item.median, item.week, item.month]) row.insertCell().append(money(value));
     row.cells[1].className = discount(item) > 0 ? 'price is-sale' : 'price';
     row.insertCell().textContent = item.quantity == null ? '—' : format.format(item.quantity);
   }
@@ -896,6 +1126,8 @@ function render() {
   byId('previous').disabled = pageIndex === 0;
   byId('next').disabled = pageIndex + 1 >= totalPages;
   status.textContent = [scan && !matches.length && 'No listings match these filters.', loading ? 'Loading the market feed…' : message, scan && 'Source scan ' + scan.toLocaleString(), lastFeedCheck && 'Checked ' + new Date(lastFeedCheck).toLocaleTimeString(), catalogState].filter(Boolean).join(' · ');
+  renderAuctionDeals();
+  renderWeeklyGold();
 }
 
 function useTable(raw, source) {
@@ -1011,7 +1243,7 @@ async function showItem(item, name = label(item.id)) {
       metric.className = 'metric';
       metric.textContent = key;
       const number = document.createElement('strong');
-      number.textContent = value;
+      number.append(value);
       metric.append(number);
       metrics.append(metric);
     }
@@ -1028,8 +1260,8 @@ byId('searchForm').addEventListener('submit', event => {
 });
 query.addEventListener('search', () => { pageIndex = 0; render(); });
 sort.addEventListener('change', () => { pageIndex = 0; render(); });
-byId('previous').addEventListener('click', () => { pageIndex--; render(); });
-byId('next').addEventListener('click', () => { pageIndex++; render(); });
+byId('previous').addEventListener('click', () => { pageIndex--; byId('auctionResultsScroll').scrollTop = 0; render(); });
+byId('next').addEventListener('click', () => { pageIndex++; byId('auctionResultsScroll').scrollTop = 0; render(); });
 const raidClasses = ${JSON.stringify(raidClasses)};
 const raidRoles = ${JSON.stringify(raidRoles)};
 const raidForm = byId('raidCreate');
@@ -2162,6 +2394,7 @@ byId('profitable').addEventListener('change', renderCrafts);
 function refreshFeeds() {
   refresh();
   if (!byId('professionPanel').hidden) loadCrafts();
+  if (weeklyGoldVisible()) refreshWeeklyGold();
 }
 
 refreshFeeds();
@@ -2226,6 +2459,9 @@ export default {
     if (pathname === '/api/armory') {
       try { return await armoryApi(request, env, url, session.discord_id); }
       catch { return Response.json({ error:'The Armory is temporarily unavailable.' }, { status:502, headers:{ 'Cache-Control':'no-store' } }); }
+    }
+    if (pathname === '/api/weekly-gold' && request.method === 'GET') {
+      return Response.json(await weeklyGoldReport(), { headers: { 'Cache-Control': 'no-store' } });
     }
     if (pathname === '/api/vendor-flips') {
       if (request.method !== 'POST') return new Response('Method not allowed.',{status:405});
