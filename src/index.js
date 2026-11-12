@@ -291,6 +291,9 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .weekly-gold-grid>section{min-width:0;border:1px solid var(--line);background:var(--field)}
 .weekly-gold-grid h3{margin:0;padding:8px 10px;font-size:14px}
 .weekly-gold-grid .market-scroll{max-block-size:19rem}
+.weekly-market-hours{margin-top:14px;border:1px solid var(--line);background:var(--field)}
+.weekly-market-hours h3{margin:0;padding:8px 10px;font-size:14px}
+.weekly-market-hours .market-scroll{max-block-size:25rem;font-variant-numeric:tabular-nums}
 .weekly-gold-links{display:flex;flex-wrap:wrap;gap:8px 16px;padding:10px 0}
 .weekly-gold-links p{flex-basis:100%}
 .market-deals-nav [aria-pressed=true]{color:var(--gold);border-color:var(--accent);background:var(--field)}
@@ -439,6 +442,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <section aria-labelledby="GoldCraftsTitle"><h3 id="GoldCraftsTitle">Crafting Picks</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldCraftsTitle"><table data-mobile-summary="3"><thead><tr><th scope="col">Recipe</th><th scope="col">Skill</th><th scope="col">Cost</th><th scope="col">Profit</th></tr></thead><tbody id="GoldCraftsRows"></tbody></table></div></section>
 <section aria-labelledby="GoldFarmTitle"><h3 id="GoldFarmTitle">Materials to Farm</h3><div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="GoldFarmTitle"><table data-mobile-summary="1"><thead><tr><th scope="col">Material</th><th scope="col">Min buyout</th><th scope="col">7-day median</th><th scope="col">Listed</th></tr></thead><tbody id="GoldFarmRows"></tbody></table></div></section>
 </div>
+<section class="weekly-market-hours" aria-labelledby="weeklyMarketHoursTitle">
+<h3 id="weeklyMarketHoursTitle">Market by Hour · US Normal Alliance</h3>
+<div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="weeklyMarketHoursTitle"><table data-mobile-summary="2"><thead><tr><th scope="col">Hour (UTC)</th><th scope="col">Eastern Time</th><th scope="col">Price index</th><th scope="col">Listings index</th><th scope="col">Days sampled</th></tr></thead><tbody id="weeklyMarketHoursRows"><tr><td colspan="5">Loading hourly market data…</td></tr></tbody></table></div>
+<p class="status">An average hour is 1.000. A lower price index means prices tended to be lower, while a higher listings index means more listings were available. Eastern times use the current daylight-saving offset. <a href="https://ahledger.com/timing?market=forever%2Fnormal%2Falliance%2Fus">Prices from AHledger</a></p>
+</section>
 <p id="weeklyGoldAuctionScan" class="status"></p>
 <p class="status">Changes compare the latest buyout with the 7-day median. Craft margins include the Auction House cut. Farm picks compare listed prices for common materials.</p>
 </section>
@@ -1058,6 +1066,7 @@ async function refreshWeeklyGold() {
       (report.nextEditionPending && report.edition ? ' · Next edition pending' : '') +
       (report.crafts?.pricesAsOf ? ' · Craft scan ' + new Date(report.crafts.pricesAsOf).toLocaleString() : '');
     byId('weeklyGoldSource').href = report.edition?.url || 'https://ahledger.com/guides/gold/meta';
+    renderMarketHours(report.marketHours ?? []);
     const picks = report.crafts?.recipes ?? [];
     fillGoldRows('GoldCraftsRows', picks, recipe => [
       itemLabel(recipe.result?.id, recipe.recipe.name + ' · ' + recipe.recipe.profession, recipe.result?.quality),
@@ -1067,6 +1076,7 @@ async function refreshWeeklyGold() {
     drawGoldChart('goldCraftsChart', picks.slice(0, 6).map(recipe => ({ name: recipe.recipe.profession, value: recipe.margin })), money);
   } catch {
     byId('weeklyGoldStatus').textContent = 'The weekly edition is temporarily unavailable.';
+    renderMarketHours([]);
     fillGoldRows('GoldCraftsRows', [], () => [], 'Crafting prices are temporarily unavailable.');
     byId('weeklyGoldMargin').replaceChildren('—');
     drawGoldChart('goldCraftsChart', [], money, { empty: 'Crafting prices unavailable.' });
@@ -1108,6 +1118,29 @@ function drawGoldChart(id, entries, formatValue, { diverging = false, empty = 'N
     track.append(bar);
     row.append(label, reading, track);
     list.append(row);
+  }
+}
+
+function renderMarketHours(hours) {
+  const body = byId('weeklyMarketHoursRows');
+  body.replaceChildren();
+  if (!hours.length) {
+    const cell = body.insertRow().insertCell();
+    cell.colSpan = 5;
+    cell.textContent = 'Hourly market data is temporarily unavailable.';
+    return;
+  }
+  const now = new Date();
+  const eastern = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', minute: '2-digit' });
+  for (const { hour, price, listings, days } of hours) {
+    const time = new Date(now);
+    time.setUTCHours(Number(hour.slice(0, 2)), 0, 0, 0);
+    const row = body.insertRow();
+    appendCell(row, hour);
+    appendCell(row, eastern.format(time));
+    appendCell(row, price.toFixed(3), price < 1 ? 'positive' : '');
+    appendCell(row, listings.toFixed(3));
+    appendCell(row, format.format(days));
   }
 }
 

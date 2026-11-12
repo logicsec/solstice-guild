@@ -73,11 +73,39 @@ async function loadCraftPicks() {
   return craftRequest;
 }
 
+const timingPage = 'https://ahledger.com/timing?market=forever%2Fnormal%2Falliance%2Fus';
+
+export function parseMarketHours(html) {
+  const table = html.match(/<table\b[^>]*\bdata-market-hours=["']true["'][^>]*>([\s\S]*?)<\/table>/i)?.[1] ?? '';
+  const hours = new Map();
+  for (const [, row] of table.matchAll(/<tr\b[^>]*>([\s\S]*?)<\/tr>/gi)) {
+    const cells = [...row.matchAll(/<td\b[^>]*>([\s\S]*?)<\/td>/gi)]
+      .map(([, cell]) => cell.replace(/<[^>]*>/g, '').trim());
+    const [hour, , price, listings, days] = cells;
+    if (cells.length !== 5 || !/^(?:[01]\d|2[0-3]):00$/.test(hour) ||
+        ![price, listings].every(value => /^\d+(?:\.\d+)?$/.test(value) && Number.isFinite(Number(value))) ||
+        !/^\d+$/.test(days) || !Number.isSafeInteger(Number(days))) continue;
+    hours.set(hour, { hour, price: Number(price), listings: Number(listings), days: Number(days) });
+  }
+  return [...hours.values()].sort((a, b) => a.hour.localeCompare(b.hour));
+}
+
+let hoursRequest;
+function loadMarketHours() {
+  hoursRequest ??= (async () => {
+    const response = await fetch(timingPage, { signal: AbortSignal.timeout(8000) });
+    if (!response.ok) throw new Error('Market timing unavailable');
+    return parseMarketHours(await response.text());
+  })().finally(() => { hoursRequest = undefined; });
+  return hoursRequest;
+}
+
 export async function weeklyGoldReport() {
-  const [, crafts] = await Promise.allSettled([refreshGoldEdition(), loadCraftPicks()]);
+  const [, crafts, marketHours] = await Promise.allSettled([refreshGoldEdition(), loadCraftPicks(), loadMarketHours()]);
   return {
     edition,
     nextEditionPending: edition?.date !== latestTuesday(new Date()),
+    marketHours: marketHours.status === 'fulfilled' ? marketHours.value : [],
     crafts: crafts.status === 'fulfilled' ? crafts.value : null,
   };
 }
