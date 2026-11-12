@@ -93,15 +93,21 @@ export function parseMarketHours(html) {
 let hoursRequest;
 function loadMarketHours() {
   hoursRequest ??= (async () => {
-    const response = await fetch(timingPage, { signal: AbortSignal.timeout(8000) });
-    if (!response.ok) throw new Error('Market timing unavailable');
-    return parseMarketHours(await response.text());
+    const response = await fetch(timingPage, {
+      headers: { Accept: 'text/html' },
+      signal: AbortSignal.timeout(25_000),
+    });
+    if (!response.ok) throw new Error('AHledger timing HTTP ' + response.status);
+    const hours = parseMarketHours(await response.text());
+    if (!hours.length) throw new Error('AHledger timing returned no hourly rows');
+    return hours;
   })().finally(() => { hoursRequest = undefined; });
   return hoursRequest;
 }
 
 export async function weeklyGoldReport() {
   const [, crafts, marketHours] = await Promise.allSettled([refreshGoldEdition(), loadCraftPicks(), loadMarketHours()]);
+  if (marketHours.status === 'rejected') console.warn('Weekly Gold Report hourly data:', marketHours.reason?.message);
   return {
     edition,
     nextEditionPending: edition?.date !== latestTuesday(new Date()),
