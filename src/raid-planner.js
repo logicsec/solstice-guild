@@ -20,7 +20,7 @@ export function normalizeGroupPlan(plan, size, classes, roles) {
   return result;
 }
 
-export function createGroupPlanner(root) {
+export function createGroupPlanner(root, initialRoster = []) {
   const buffs = [
     ['Stats','Blessing of Kings','Paladin','Raid','spell_magic_magearmor'],
     ['Stamina','Power Word: Fortitude','Priest','Raid','spell_holy_wordfortitude'],
@@ -34,6 +34,7 @@ export function createGroupPlanner(root) {
   let players = [];
   let className = '';
   let size = 10;
+  let roster = initialRoster;
   const make = raidElement;
   function button(label, run) {
     const node = make('button', label);
@@ -45,6 +46,37 @@ export function createGroupPlanner(root) {
     const node = make(tag, null, 'group-plan-panel');
     node.append(make('h4', title));
     return node;
+  }
+  function addFromRoster(className, group = null) {
+    if (players.length >= size) return;
+    const available = roster.filter(entry => entry.class_name === className && !players.some(player => player.name.toLowerCase() === entry.name.toLowerCase()));
+    const dialog = document.createElement('dialog');
+    dialog.className = 'group-plan-dialog';
+    const heading = make('h3', 'Add '+className);
+    const select = make('select');
+    select.add(new Option('Choose a saved character', ''));
+    for (const entry of available) select.add(new Option(entry.name+' · '+entry.role, entry.name));
+    const manual = make('input');
+    manual.placeholder = 'Or enter a character name';
+    manual.maxLength = 61;
+    const role = make('select');
+    for (const value of raidRoles) role.add(new Option(value, value));
+    role.value = { Warrior:'Tank', Paladin:'Healer', Priest:'Healer', Rogue:'Melee DPS' }[className] ?? 'Ranged DPS';
+    const error = make('p');
+    const confirm = button('Add character', () => {
+      const saved = available.find(entry => entry.name === select.value);
+      const name = saved?.name || manual.value.trim();
+      if (!name || players.some(player => player.name.toLowerCase() === name.toLowerCase())) {
+        error.textContent = name ? 'That character is already in the plan.' : 'Choose a saved character or enter a name.';
+        return;
+      }
+      players.push({ name, className, role: saved?.role || role.value, group });
+      dialog.close(); dialog.remove(); draw();
+    });
+    const cancel = button('Cancel', () => { dialog.close(); dialog.remove(); });
+    dialog.append(heading, select, manual, role, confirm, cancel, error);
+    root.append(dialog);
+    dialog.showModal();
   }
   function groups() {
     return Array.from({length: Math.ceil(size / 5)}, (_, index) => index + 1);
@@ -106,6 +138,14 @@ export function createGroupPlanner(root) {
     for (const group of groups()) {
       const assigned = players.filter(player => player.group === group);
       const card = panel('Group '+group+' · '+assigned.length+'/'+capacity(group));
+      card.dataset.group = group;
+      card.addEventListener('dragover', event => { event.preventDefault(); card.classList.add('group-plan-drop-target'); });
+      card.addEventListener('dragleave', () => card.classList.remove('group-plan-drop-target'));
+      card.addEventListener('drop', event => {
+        event.preventDefault(); card.classList.remove('group-plan-drop-target');
+        const droppedClass = event.dataTransfer.getData('text/plain');
+        if (droppedClass && assigned.length < capacity(group)) addFromRoster(droppedClass, group);
+      });
       card.append(...assigned.map(row));
       for (let slot = assigned.length; slot < capacity(group); slot++) card.append(make('div', 'Empty', 'group-plan-empty'));
       grid.append(card);
@@ -120,40 +160,14 @@ export function createGroupPlanner(root) {
     const add = panel('Add Characters');
     const classes = make('div', null, 'group-plan-classes');
     for (const name of raidClasses) {
-      const choice = button(name, () => { className = name; draw(); root.querySelector('.group-plan-name')?.focus(); });
+      const choice = button(name, () => addFromRoster(name));
+      choice.draggable = true;
+      choice.addEventListener('dragstart', event => event.dataTransfer.setData('text/plain', name));
       choice.setAttribute('aria-pressed', String(name === className));
       classes.append(choice);
     }
     add.append(classes);
-    if (players.length >= size) add.append(make('p', 'The plan is full.'));
-    else if (className) {
-      const name = make('input', null, 'group-plan-name');
-      name.placeholder = 'Character name';
-      name.setAttribute('aria-label', 'Character name');
-      name.maxLength = 61;
-      const role = make('select');
-      role.setAttribute('aria-label', 'Planned role');
-      for (const value of raidRoles) role.add(new Option(value, value));
-      const defaults = { Warrior:'Tank', Paladin:'Healer', Priest:'Healer', Rogue:'Melee DPS' };
-      role.value = defaults[className] ?? 'Ranged DPS';
-      const message = make('p');
-      message.setAttribute('role', 'status');
-      const addPlayer = () => {
-        const value = name.value.trim();
-        if (!value || players.some(player => player.name.toLowerCase() === value.toLowerCase())) {
-          message.textContent = value ? 'That character is already in the plan.' : 'Enter a character name.';
-          name.focus();
-          return;
-        }
-        players.push({ name: value, className, role: role.value, group: null });
-        draw();
-        root.querySelector('.group-plan-name')?.focus();
-      };
-      name.addEventListener('keydown', event => {
-        if (event.key === 'Enter') { event.preventDefault(); addPlayer(); }
-      });
-      add.append(name, role, button('Add '+className, addPlayer), message);
-    } else add.append(make('p', 'Select a class to add a character.'));
+    add.append(make('p', roster.length ? 'Drag a class onto a group, or click a class to choose a character.' : 'No saved characters found. Click a class to enter a name manually.'));
 
     const composition = panel('Composition');
     const counts = make('dl', null, 'group-plan-counts');
@@ -205,6 +219,7 @@ export function createGroupPlanner(root) {
       size = nextSize;
       for (const player of players) if (player.group > Math.ceil(size / 5)) player.group = null;
     },
+    setRoster(nextRoster) { roster = Array.isArray(nextRoster) ? nextRoster : []; draw(); },
     reset() {
       players = [];
       className = '';

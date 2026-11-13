@@ -24,9 +24,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
 
       - name: Install dependencies
-        run: npm install --no-package-lock
+        run: npm ci
 
       - name: Run tests
         run: npm run check
@@ -45,4 +46,4 @@ jobs:
             --header "X-Api-Key: $KOMODO_API_KEY" \
             --header "X-Api-Secret: $KOMODO_API_SECRET" \
             --header 'Content-Type: application/json' \
-            --data '{"stack":"solstice"}'
+            --data '{"stack":"solstice-guild"}'

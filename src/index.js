@@ -505,7 +505,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 </button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
-<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New raid</button></header>
+<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
 <div id="raidDashboardControls" class="raid-dashboard-controls raid-card" hidden>
 <label class="working-raid">Working Raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label>
@@ -1457,7 +1457,7 @@ function resetRoleSlots() {
   roleSlotFields[3].value = Math.ceil(dps / 2);
 }
 ${createGroupPlanner.toString()}
-const groupPlanner = createGroupPlanner(byId('raidGroupPlanner'));
+const groupPlanner = createGroupPlanner(byId('raidGroupPlanner'), savedCharacters);
 for (const field of roleSlotFields) field.addEventListener('input', groupPlanner.draw);
 const raidInstances = ${JSON.stringify(raidInstances)};
 raidForm.elements.instance.addEventListener('change',()=>{
@@ -1508,7 +1508,7 @@ function raidReset(view, id) {
   }
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
-  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New Raid', detail:'Raid details' }[view];
   byId('raidMenuLabel').textContent = byId('raidTitle').textContent;
   byId('raidMenuToggle').setAttribute('aria-label','Guild Hall menu, current view: ' + byId('raidTitle').textContent);
   byId('raidMenuToggle').setAttribute('aria-expanded','false');
@@ -1785,6 +1785,12 @@ async function openRaidView(view, id, navigate = true) {
     const { raids } = view === 'discover' ? await raidRequest('?discover=1') : await loadWorkingRaids(revision);
     if (revision !== raidRevision) return;
     if (view === 'new') {
+      try {
+        const chars = await raidRequest('characters');
+        if (revision !== raidRevision) return;
+        savedCharacters = chars.signupCharacters;
+        groupPlanner.setRoster(savedCharacters);
+      } catch (error) { raidError(error); }
       raidForm.hidden = false;
       resetRoleSlots();
       setWizardStep(0);
