@@ -1,0 +1,49 @@
+name: Deploy Solstice Guild to Komodo
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: solstice-komodo-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm run check
+
+      - name: Deploy stack through Komodo
+        env:
+          KOMODO_API_KEY: ${{ secrets.KOMODO_API_KEY }}
+          KOMODO_API_SECRET: ${{ secrets.KOMODO_API_SECRET }}
+        run: |
+          set -euo pipefail
+          test -n "$KOMODO_API_KEY"
+          test -n "$KOMODO_API_SECRET"
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --url 'https://mgmt.aleyasoftware.com/execute/DeployStack' \
+            --header "X-Api-Key: $KOMODO_API_KEY" \
+            --header "X-Api-Secret: $KOMODO_API_SECRET" \
+            --header 'Content-Type: application/json' \
+            --data '{"stack":"solstice-guild"}'
