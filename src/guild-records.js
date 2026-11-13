@@ -3,19 +3,9 @@ import { sameOriginWrite } from './auth.js';
 const reply = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
 const clean = (value, limit) => typeof value === 'string' ? value.trim().slice(0, limit) : '';
 const idPattern = /^[0-9a-f-]{36}$/;
-const iso = value => typeof value === 'string' && /^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\.\d{3}Z$/.test(value) &&
-  Number.isFinite(Date.parse(value)) && new Date(value).toISOString() === value;
-
-export async function guildRecords(request, env, url, user, admin) {
+export async function guildRecords(request, env, url, user) {
   const db = env.DB;
-  const meetings = url.pathname === '/api/meetings';
   if (request.method === 'GET') {
-    if (meetings) {
-      const { results } = await db.prepare(`SELECT * FROM guild_meetings
-        ORDER BY starts_at < ?, CASE WHEN starts_at >= ? THEN starts_at END,
-        starts_at DESC LIMIT 150`).bind(new Date().toISOString(), new Date().toISOString()).all();
-      return reply({ meetings: results.map(({ owner, ...row }) => ({ ...row, editable: admin || owner === user })) });
-    }
     const raid = url.searchParams.get('raid');
     if (raid && !idPattern.test(raid)) return reply({ error: 'Choose a raid.' }, 400);
     const [entries, history] = await Promise.all([
@@ -31,26 +21,6 @@ export async function guildRecords(request, env, url, user, admin) {
   if (!sameOriginWrite(request, url)) return reply({ error: 'Invalid origin.' }, 403);
   const input = await request.json().catch(() => null);
   if (!input || typeof input !== 'object') return reply({ error: 'Invalid form.' }, 400);
-  if (meetings) {
-    const title = clean(input.title, 120);
-    if (!title || !iso(input.start) || !iso(input.end) || input.end <= input.start) {
-      return reply({ error: 'Enter a title and an end time after the start.' }, 400);
-    }
-    const fields = [title, input.start, input.end, clean(input.location, 250), clean(input.agenda, 8000), clean(input.notes, 16000)];
-    if (input.id == null) {
-      const id = crypto.randomUUID();
-      await db.prepare(`INSERT INTO guild_meetings (id,owner,title,starts_at,ends_at,location,agenda,notes)
-        VALUES (?,?,?,?,?,?,?,?)`).bind(id,user,...fields).run();
-      return reply({ id });
-    }
-    if (!idPattern.test(input.id) || !Number.isSafeInteger(input.revision)) return reply({ error: 'Invalid meeting.' }, 400);
-    const existing = await db.prepare('SELECT owner FROM guild_meetings WHERE id = ?').bind(input.id).first();
-    if (!existing) return reply({ error: 'Meeting not found.' }, 404);
-    if (!admin && existing.owner !== user) return reply({ error: 'Only the meeting organizer can edit this meeting.' }, 403);
-    const result = await db.prepare(`UPDATE guild_meetings SET title=?,starts_at=?,ends_at=?,location=?,agenda=?,notes=?,revision=revision+1
-      WHERE id=? AND revision=?`).bind(...fields,input.id,input.revision).run();
-    return result.meta.changes ? reply({ id: input.id }) : reply({ error: 'This meeting changed. Copy any unsaved notes, then reload before editing.' }, 409);
-  }
   if (!idPattern.test(input.raid ?? '') || !idPattern.test(input.id ?? '')) return reply({ error: 'Invalid award.' }, 400);
   const raid = await db.prepare('SELECT owner FROM raids WHERE id = ?').bind(input.raid).first();
   if (!raid) return reply({ error: 'Raid not found.' }, 404);
