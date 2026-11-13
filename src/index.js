@@ -378,7 +378,15 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .readiness-invite{display:flex;width:min(100%,560px);margin:0 0 14px;gap:0}.guild-app .readiness-invite input{flex:1;min-width:0;color:var(--muted);background:var(--field);border-radius:8px 0 0 8px}.guild-app .readiness-invite button{flex:none;min-width:76px;border-inline-start:0;border-radius:0 8px 8px 0}
 .raid-shell{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:580px;background:radial-gradient(at top right,#13232a,#0b1315 55%);color:#eef6f5}.raid-sidebar{padding:18px 10px;border-right:1px solid #253336;background:#091114}.raid-sidebar button{display:block;width:100%;text-align:left;margin:5px 0;background:transparent;border-color:transparent}.raid-sidebar button[aria-current=true]{background:#163338;color:#a1f2f1}.raid-content{padding:22px clamp(12px,3vw,36px);min-width:0}.raid-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.raid-heading h2{font-size:26px}.raid-primary{display:inline-block;background:#e6f3f2;color:#102225;border:0;font-weight:750;padding:8px 12px;border-radius:5px;text-decoration:none}.raid-card,.raid-stats>div{background:#111d21;border:1px solid #2d4145;border-radius:7px;padding:14px;margin:10px 0}.raid-card h3{margin:0 0 8px}.raid-form label{margin:9px 0}.raid-form label :is(input,select,textarea){display:block;width:100%;margin-top:4px;background:#0c1518;border-color:#42575b}.raid-form textarea{min-height:70px;color:inherit;font:inherit;padding:8px}.raid-form{max-width:740px}.raid-actions,.raid-steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.raid-actions input{flex:1;min-width:120px}.raid-steps span{flex:1;border-bottom:2px solid #42575b;padding:6px}.raid-steps span[aria-current=step]{border-color:#64d7d4;color:#a1f2f1}.raid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}.raid-stats strong{display:block;color:#a1f2f1}.raid-stats>div{margin:4px 0}.raid-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #2d4145;padding:9px 0}.raid-row button{background:transparent}.raid-row small{display:block}.raid-shell p{color:#aabdbf}.raid-content #raidMessage{margin:8px 0}
 @media(max-width:680px){.raid-shell{grid-template-columns:1fr}.raid-sidebar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;border-right:0;border-bottom:1px solid #253336}.raid-sidebar button{width:auto}.raid-sidebar .eyebrow{width:100%}}
-.raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .meeting-page{width:min(100%,780px);margin:0 auto}
+.raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .meeting-page{width:100%;border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--container)}
+.meeting-board-header{padding:12px 16px;background:var(--raised);border-bottom:1px solid var(--line)}
+.meeting-board-body{display:grid;grid-template-columns:minmax(155px,220px) minmax(0,1fr);min-height:420px}
+.meeting-board-nav{padding:10px;background:var(--panel);border-inline-end:1px solid var(--line)}
+.meeting-board-document{padding:clamp(12px,3vw,26px);min-width:0}
+.guild-app .meeting-row[aria-current=true]{background:var(--raised);color:var(--accent)}
+.meeting-dates fieldset{min-width:0}
+.meeting-dates .raid-time-controls :is(input,select){width:auto;min-width:0;margin:0}
+@media(max-width:760px){.meeting-board-body{grid-template-columns:minmax(0,1fr)}.meeting-board-nav{max-height:230px;overflow:auto;border-inline-end:0;border-bottom:1px solid var(--line)}}
 .meeting-toolbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}
 .meeting-toolbar h3{margin:0}
 .meeting-list{margin-top:22px}
@@ -2058,74 +2066,79 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
   draw();
 }
 
-const raidDatePicker = byId('raidDatePicker');
-const raidHour = byId('raidHour');
-for (let hour = 1; hour <= 12; hour++) {
-  const option = new Option(hour,hour,hour === 7,hour === 7);
-  raidHour.add(option);
-}
-const raidDayLabel = new Intl.DateTimeFormat(undefined,{dateStyle:'full'});
-const raidMonthLabel = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'});
-let selectedRaidDay;
-let raidMonth;
-
-function localRaidDay(date) {
-  return new Date(date.getFullYear(),date.getMonth(),date.getDate());
-}
-
-function drawRaidCalendar() {
-  const today = localRaidDay(new Date());
-  byId('raidCalendarMonth').textContent = raidMonthLabel.format(raidMonth);
-  byId('raidPreviousMonth').disabled = raidMonth <= new Date(today.getFullYear(),today.getMonth(),1);
-  const days = byId('raidCalendarDays');
-  days.replaceChildren();
-  for (let gap = 0; gap < raidMonth.getDay(); gap++) days.append(raidElement('span'));
-  const last = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+1,0).getDate();
-  for (let day = 1; day <= last; day++) {
-    const date = new Date(raidMonth.getFullYear(),raidMonth.getMonth(),day);
-    const button = raidElement('button',day);
-    button.type = 'button';
-    button.disabled = date < today;
-    button.setAttribute('aria-label',raidDayLabel.format(date));
-    button.setAttribute('aria-pressed',String(+date === +selectedRaidDay));
-    if (+date === +today) button.setAttribute('aria-current','date');
-    button.addEventListener('click',()=>{
-      selectedRaidDay = date;
-      byId('raidSelectedDate').textContent = raidDayLabel.format(date);
-      raidDatePicker.open = false;
-      byId('raidSelectedDate').focus();
-      drawRaidCalendar();
-    });
-    days.append(button);
+function setupRaidDateTime(scope, initial, allowPast = false) {
+  const find = suffix => scope.querySelector('[id$="raid' + suffix + '"]');
+  const picker = find('DatePicker'), summary = find('SelectedDate');
+  const hour = find('Hour'), minute = find('Minute'), period = find('Period');
+  const previous = find('PreviousMonth'), next = find('NextMonth');
+  const dayLabel = new Intl.DateTimeFormat(undefined,{dateStyle:'full'});
+  const monthLabel = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'});
+  const localDay = date => new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  let selected, month;
+  for (let n = 1; n <= 12; n++) hour.add(new Option(n,n,n === 7,n === 7));
+  function select(date) {
+    selected = localDay(date);
+    summary.textContent = dayLabel.format(selected);
   }
-}
-for (const [id,offset] of [['raidPreviousMonth',-1],['raidNextMonth',1]]) {
-  byId(id).addEventListener('click',()=>{
-    raidMonth = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+offset,1);
-    drawRaidCalendar();
-    if (byId(id).disabled) byId('raidNextMonth').focus();
+  function draw() {
+    const today = localDay(new Date());
+    find('CalendarMonth').textContent = monthLabel.format(month);
+    previous.disabled = !allowPast && month <= new Date(today.getFullYear(),today.getMonth(),1);
+    const days = find('CalendarDays');
+    days.replaceChildren();
+    for (let gap = 0; gap < month.getDay(); gap++) days.append(raidElement('span'));
+    const last = new Date(month.getFullYear(),month.getMonth()+1,0).getDate();
+    for (let day = 1; day <= last; day++) {
+      const date = new Date(month.getFullYear(),month.getMonth(),day);
+      const button = raidElement('button',day);
+      button.type = 'button';
+      button.disabled = !allowPast && date < today;
+      button.setAttribute('aria-label',dayLabel.format(date));
+      button.setAttribute('aria-pressed',String(+date === +selected));
+      if (+date === +today) button.setAttribute('aria-current','date');
+      button.addEventListener('click',()=>{
+        select(date);
+        picker.open = false;
+        summary.focus();
+        draw();
+      });
+      days.append(button);
+    }
+  }
+  for (const [button,offset] of [[previous,-1],[next,1]]) button.addEventListener('click',()=>{
+    month = new Date(month.getFullYear(),month.getMonth()+offset,1);
+    draw();
+    if (button.disabled) next.focus();
   });
+  picker.addEventListener('toggle',()=>{
+    if (!picker.open) return;
+    const date = selected ?? new Date();
+    month = new Date(date.getFullYear(),date.getMonth(),1);
+    draw();
+  });
+  scope.addEventListener('reset',()=>{
+    selected = undefined;
+    summary.textContent = 'Choose a date';
+    picker.open = false;
+  });
+  if (initial) {
+    select(initial);
+    hour.value = initial.getHours()%12 || 12;
+    minute.value = String(initial.getMinutes()).padStart(2,'0');
+    period.value = initial.getHours() >= 12 ? 'PM' : 'AM';
+  }
+  return () => {
+    if (!selected || !minute.checkValidity()) return null;
+    const hours = Number(hour.value)%12 + (period.value === 'PM' ? 12 : 0);
+    const minutes = Number(minute.value);
+    const date = new Date(selected);
+    date.setHours(hours,minutes,0,0);
+    return date.getHours() === hours && date.getMinutes() === minutes ? date : null;
+  };
 }
-raidForm.addEventListener('reset',()=>{
-  selectedRaidDay = undefined;
-  byId('raidSelectedDate').textContent = 'Choose a date';
-  raidDatePicker.open = false;
-});
-raidDatePicker.addEventListener('toggle',()=>{
-  if (!raidDatePicker.open) return;
-  const date = selectedRaidDay ?? new Date();
-  raidMonth = new Date(date.getFullYear(),date.getMonth(),1);
-  drawRaidCalendar();
-});
-
-function raidStartTime() {
-  if (!selectedRaidDay || !byId('raidMinute').checkValidity()) return null;
-  const hours = Number(raidHour.value)%12 + (byId('raidPeriod').value === 'PM' ? 12 : 0);
-  const minutes = Number(byId('raidMinute').value);
-  const date = new Date(selectedRaidDay);
-  date.setHours(hours,minutes,0,0);
-  return date.getHours() === hours && date.getMinutes() === minutes ? date : null;
-}
+const raidStartTime = setupRaidDateTime(raidForm);
+const raidHour = byId('raidHour');
+const raidDatePicker = byId('raidDatePicker');
 
 function setWizardStep(step) {
   wizardStep = step;
@@ -2396,8 +2409,8 @@ byId('raidNext').addEventListener('click',()=>{
   if (wizardStep === 1) {
     const first = raidStartTime();
     if (!first || +first <= Date.now()) {
-      raidError(new Error(selectedRaidDay ? 'Choose a valid future start time.' : 'Choose a raid date.'));
-      if (!selectedRaidDay) {
+      raidError(new Error(byId('raidSelectedDate').textContent !== 'Choose a date' ? 'Choose a valid future start time.' : 'Choose a raid date.'));
+      if (byId('raidSelectedDate').textContent === 'Choose a date') {
         raidDatePicker.open = true;
         byId('raidSelectedDate').focus();
       } else raidHour.focus();

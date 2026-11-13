@@ -24,6 +24,15 @@ export async function renderMeetings(root, current) {
 
   const page = raidElement('section', null, 'meeting-page');
   root.append(page);
+  const header = raidElement('div', null, 'meeting-toolbar meeting-board-header');
+  const body = raidElement('div', null, 'meeting-board-body');
+  const sidebar = raidElement('nav', null, 'meeting-board-nav');
+  sidebar.setAttribute('aria-label', 'Meeting records');
+  const editor = raidElement('article', null, 'meeting-board-document');
+  body.append(sidebar, editor);
+  page.append(header, body);
+  let selectedMeeting;
+  let canLeave = () => true;
   const button = (name, action, style) => {
     const node = raidElement('button', name, style);
     node.type = 'button';
@@ -57,11 +66,11 @@ export async function renderMeetings(root, current) {
     return fragment;
   }
 
+  header.append(raidElement('h3', 'Meeting records'), button('+ New meeting', () => {
+    if (canLeave()) schedule();
+  }, 'raid-primary'));
   function showList() {
-    page.replaceChildren();
-    const controls = toolbar();
-    controls.append(raidElement('h3', 'Meeting records'), button('+ New meeting', () => schedule(), 'raid-primary'));
-    page.append(controls);
+    sidebar.replaceChildren();
     const now = new Date().toISOString();
     for (const [heading, upcoming] of [['Upcoming', true], ['Past meetings', false]]) {
       const rows = meetings.filter(meeting => (meeting.ends_at >= now) === upcoming)
@@ -71,11 +80,12 @@ export async function renderMeetings(root, current) {
       group.append(raidElement('h4', heading));
       if (!rows.length) group.append(raidElement('p', 'No upcoming meetings.'));
       for (const meeting of rows) {
-        const row = button('', () => open(meeting), 'meeting-row');
+        const row = button('', () => { if (selectedMeeting !== meeting.id && canLeave()) open(meeting); }, 'meeting-row');
+        row.setAttribute('aria-current', String(selectedMeeting === meeting.id));
         row.append(raidElement('strong', meeting.title), raidElement('small', raidDate(meeting.starts_at)));
         group.append(row);
       }
-      page.append(group);
+      sidebar.append(group);
     }
   }
 
@@ -84,24 +94,31 @@ export async function renderMeetings(root, current) {
     const form = raidElement('form', null, 'raid-form');
     const title = recordField(form,'title','Meeting title','text',120);
     const dates = raidElement('div', null, 'meeting-dates');
-    const start = recordField(dates,'start','Starts (local time)','datetime-local');
-    const end = recordField(dates,'end','Ends (local time)','datetime-local');
-    form.append(dates);
+    function dateTime(label, key, initial) {
+      const group = raidElement('div');
+      for (const selector of ['.raid-date-field', '.raid-time-field']) {
+        const field = document.querySelector('#raidCreate ' + selector).cloneNode(true);
+        field.querySelector('legend').textContent = label + (selector === '.raid-date-field' ? ' date' : ' time');
+        for (const node of field.querySelectorAll('[id]')) node.id = key + '-' + node.id;
+        group.append(field);
+      }
+      group.querySelector('details').open = false;
+      group.querySelector('summary').textContent = 'Choose a date';
+      group.querySelector('[id$="raidHour"]').replaceChildren();
+      group.querySelector('[id$="raidMinute"]').value = '00';
+      group.querySelector('[id$="raidPeriod"]').value = 'PM';
+      dates.append(group);
+      return setupRaidDateTime(group, initial, true);
+    }
+    const start = dateTime('Start', 'meeting-start', meeting && new Date(meeting.starts_at));
+    const end = dateTime('End', 'meeting-end', meeting && new Date(meeting.ends_at));
+    form.append(dates, raidElement('small', 'Your local time · ' + Intl.DateTimeFormat().resolvedOptions().timeZone));
     const location = recordField(form,'location','Location or voice channel','text',250);
-    title.required = start.required = end.required = true;
-    const local = date => new Date(+date - date.getTimezoneOffset() * 60000).toISOString().slice(0,16);
+    title.required = true;
     if (meeting) {
       title.value = meeting.title;
-      start.value = local(new Date(meeting.starts_at));
-      end.value = local(new Date(meeting.ends_at));
       location.value = meeting.location;
     }
-    start.addEventListener('change', () => {
-      const time = new Date(start.value);
-      if (Number.isFinite(+time) && (!end.value || new Date(end.value) <= time)) {
-        end.value = local(new Date(+time + 30 * 60000));
-      }
-    });
     const controls = toolbar();
     const submit = raidElement('button', meeting ? 'Save details' : 'Create meeting', 'raid-primary');
     controls.append(button('Cancel', () => modal.close()), submit);
@@ -114,7 +131,9 @@ export async function renderMeetings(root, current) {
       event.preventDefault();
       submit.disabled = true;
       try {
-        const starts_at = new Date(start.value).toISOString(), ends_at = new Date(end.value).toISOString();
+        const startDate = start(), endDate = end();
+        if (!startDate || !endDate || endDate <= startDate) throw new Error('Choose a start and a later end date and time.');
+        const starts_at = startDate.toISOString(), ends_at = endDate.toISOString();
         const result = await recordRequest(path, { id: meeting?.id, revision: meeting?.revision,
           title:title.value, start:starts_at, end:ends_at, location:location.value, agenda:meeting?.agenda, notes:meeting?.notes });
         if (!current()) return;
@@ -133,7 +152,9 @@ export async function renderMeetings(root, current) {
   }
 
   function open(meeting) {
-    page.replaceChildren();
+    selectedMeeting = meeting.id;
+    showList();
+    editor.replaceChildren();
     const controls = toolbar();
     const doc = raidElement('div', null, 'meeting-document');
     const status = raidElement('span');
@@ -141,13 +162,13 @@ export async function renderMeetings(root, current) {
     let dirty = false;
     let saving = false;
     const leave = () => !saving && (!dirty || confirm('Leave without saving your notes?'));
-    controls.append(button('← Meetings', () => { if (leave()) showList(); }));
+    canLeave = leave;
     const actions = toolbar();
     if (meeting.editable) actions.append(button('Edit details', () => { if (leave()) schedule(meeting); }));
     controls.append(actions);
     const title = raidElement('h3', meeting.title, 'meeting-title');
     const meta = raidElement('p', [raidDate(meeting.starts_at) + ' – ' + raidDate(meeting.ends_at), meeting.location].filter(Boolean).join(' · '));
-    page.append(controls, title, meta);
+    editor.append(title, meta, controls);
     doc.setAttribute('aria-label','Meeting document');
     if (meeting.notes.startsWith(prefix)) doc.append(documentContent(meeting.notes.slice(prefix.length)));
     else {
@@ -229,12 +250,14 @@ export async function renderMeetings(root, current) {
         finally { saving = save.disabled = false; }
       }, 'raid-primary');
       actions.append(save);
-      page.append(tools);
+      editor.append(tools);
     }
-    page.append(doc, status);
+    editor.append(doc, status);
     if (!meeting.editable) status.textContent = 'Read only';
   }
   showList();
+  if (meetings.length) open(meetings[0]);
+  else editor.append(raidElement('p', 'Create a meeting to start its notes.'));
 }
 
 export async function renderLootHistory(root, data) {
