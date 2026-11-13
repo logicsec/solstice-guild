@@ -21,6 +21,8 @@ const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
   ['/assets/mobile-tables.js', ['mobile-tables.js', 'text/javascript; charset=utf-8']],
   ['/assets/solstice-dawn.webp', ['solstice-dawn.webp', 'image/webp']],
+  ['/assets/solstice-shield.webp', ['solstice-shield.webp', 'image/webp']],
+  ['/assets/solstice-wordmark.webp', ['solstice-wordmark.webp', 'image/webp']],
   ['/assets/solstice-twilight.webp', ['solstice-twilight.webp', 'image/webp']],
   ...['barrow-deeps','hyjal-summit','onyxias-lair'].map(raid=>[
     '/assets/raid-'+raid+'.webp', ['raid-'+raid+'.webp','image/webp'],
