@@ -35,6 +35,7 @@ export function createGroupPlanner(root, initialRoster = []) {
   let className = '';
   let size = 10;
   let roster = initialRoster;
+  let selected = null;
   const make = raidElement;
   function button(label, run) {
     const node = make('button', label);
@@ -100,23 +101,65 @@ export function createGroupPlanner(root, initialRoster = []) {
     }
     draw();
   }
+  function move(player, group) {
+    if (group !== null && player.group !== group && players.filter(p => p.group === group).length >= capacity(group)) return;
+    player.group = group;
+    selected = null;
+    draw();
+  }
+  function destination(card, group) {
+    card.tabIndex = 0;
+    card.setAttribute('aria-label', group === null ? 'Move selected character to Unassigned' : 'Move selected character to Group '+group);
+    const activate = () => { if (selected) move(selected, group); };
+    card.addEventListener('click', activate);
+    card.addEventListener('keydown', event => {
+      if (event.target === card && ['Enter',' '].includes(event.key)) { event.preventDefault(); activate(); }
+    });
+    card.addEventListener('dragover', event => { event.preventDefault(); card.classList.add('group-plan-drop-target'); });
+    card.addEventListener('dragleave', () => card.classList.remove('group-plan-drop-target'));
+    card.addEventListener('drop', event => {
+      event.preventDefault(); card.classList.remove('group-plan-drop-target');
+      const name = event.dataTransfer.getData('application/x-solstice-player');
+      const player = players.find(p => p.name === name);
+      if (player) return move(player, group);
+      const droppedClass = event.dataTransfer.getData('text/plain');
+      if (raidClasses.includes(droppedClass) && (group === null || players.filter(p => p.group === group).length < capacity(group))) addFromRoster(droppedClass, group);
+    });
+  }
   function row(player) {
     const node = make('div', null, 'group-plan-player');
-    const identity = make('div');
-    identity.append(make('strong', player.name), make('small', player.className+' · '+player.role));
-    const select = make('select');
-    select.setAttribute('aria-label', 'Group for '+player.name);
-    select.add(new Option('Unassigned', ''));
-    for (const group of groups()) {
-      const option = new Option('Group '+group, group);
-      option.disabled = group !== player.group && players.filter(entry => entry.group === group).length >= capacity(group);
-      select.add(option);
-    }
-    select.value = player.group ?? '';
-    select.addEventListener('change', () => { player.group = Number(select.value) || null; draw(); });
-    const remove = button('×', () => { players = players.filter(entry => entry !== player); draw(); });
+    const saved = roster.find(entry => entry.name.toLowerCase() === player.name.toLowerCase());
+    const identity = button('', event => {
+      event.stopPropagation();
+      const focusIndex = [...root.querySelectorAll('.group-plan-identity')].indexOf(identity);
+      selected = selected === player ? null : player;
+      draw();
+      root.querySelectorAll('.group-plan-identity')[focusIndex]?.focus();
+    });
+    identity.className = 'group-plan-identity';
+    identity.setAttribute('aria-pressed', String(selected === player));
+    identity.setAttribute('aria-label', 'Select '+player.name+' to move to another group');
+    if (saved?.level) identity.append(make('span', String(saved.level), 'group-plan-level'));
+    const icons = characterIcons(player.className, saved?.spec);
+    const watermark = icons.children[1]?.cloneNode();
+    const info = make('span', null, 'group-plan-name');
+    info.append(make('strong', player.name), make('small', player.role));
+    identity.append(icons, info);
+    if (watermark) { watermark.className = 'group-plan-watermark'; watermark.alt = ''; identity.append(watermark); }
+    const remove = button('×', event => {
+      event.stopPropagation(); players = players.filter(entry => entry !== player);
+      if (selected === player) selected = null;
+      draw();
+    });
+    remove.className = 'group-plan-remove';
     remove.setAttribute('aria-label', 'Remove '+player.name);
-    node.append(identity, select, remove);
+    node.draggable = true;
+    node.addEventListener('dragstart', event => {
+      event.dataTransfer.setData('application/x-solstice-player', player.name);
+      event.dataTransfer.effectAllowed = 'move';
+    });
+    node.classList.toggle('is-selected', selected === player);
+    node.append(identity, remove);
     return node;
   }
   function draw() {
@@ -125,7 +168,7 @@ export function createGroupPlanner(root, initialRoster = []) {
     title.append(make('h3', 'Group Planner'), make('p', 'Forever · '+size+' players'));
     const optimizeButton = button('Auto-Optimize', optimize);
     const clear = button('Clear All', () => {
-      if (window.confirm('Clear all planned characters?')) { players = []; draw(); }
+      if (window.confirm('Clear all planned characters?')) { players = []; selected = null; draw(); }
     });
     optimizeButton.disabled = clear.disabled = !players.length;
     heading.append(title, optimizeButton, clear);
@@ -139,13 +182,7 @@ export function createGroupPlanner(root, initialRoster = []) {
       const assigned = players.filter(player => player.group === group);
       const card = panel('Group '+group+' · '+assigned.length+'/'+capacity(group));
       card.dataset.group = group;
-      card.addEventListener('dragover', event => { event.preventDefault(); card.classList.add('group-plan-drop-target'); });
-      card.addEventListener('dragleave', () => card.classList.remove('group-plan-drop-target'));
-      card.addEventListener('drop', event => {
-        event.preventDefault(); card.classList.remove('group-plan-drop-target');
-        const droppedClass = event.dataTransfer.getData('text/plain');
-        if (droppedClass && assigned.length < capacity(group)) addFromRoster(droppedClass, group);
-      });
+      destination(card, group);
       card.append(...assigned.map(row));
       for (let slot = assigned.length; slot < capacity(group); slot++) card.append(make('div', 'Empty', 'group-plan-empty'));
       grid.append(card);
@@ -154,6 +191,7 @@ export function createGroupPlanner(root, initialRoster = []) {
 
     const pending = players.filter(player => player.group === null);
     const unassigned = panel('Unassigned ('+pending.length+')');
+    destination(unassigned, null);
     if (pending.length) unassigned.append(...pending.map(row));
     else unassigned.append(make('p', players.length ? 'All planned characters have a group.' : 'Add characters to start planning.'));
 
@@ -210,7 +248,9 @@ export function createGroupPlanner(root, initialRoster = []) {
     board.append(raidGroups,unassigned,issues,analysis);
     sidebar.append(add,composition);
     main.append(board,sidebar);
-    root.replaceChildren(heading,main);
+    const hint = make('p', selected ? 'Select a destination group for '+selected.name+'. Tap the character again to cancel.' : 'Drag characters between groups, or tap a character then its destination.', 'group-plan-move-hint');
+    hint.setAttribute('role', 'status');
+    root.replaceChildren(heading,hint,main);
   }
   return {
     draw,
@@ -222,6 +262,7 @@ export function createGroupPlanner(root, initialRoster = []) {
     setRoster(nextRoster) { roster = Array.isArray(nextRoster) ? nextRoster : []; draw(); },
     reset() {
       players = [];
+      selected = null;
       className = '';
       size = 10;
     },

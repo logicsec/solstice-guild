@@ -11,17 +11,17 @@ const categoryLabel = category => category.replace(/\b[a-z]/gi, initial => initi
 const categoryLink = category => '/?category=' + encodeURIComponent(category) + '#chronicle';
 const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'America/New_York' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
-const solsticeShieldUrl = '/assets/solstice-shield.webp';
+const solsticeShieldUrl = '/assets/solstice-shield.svg';
 export const solsticeMark = '<img class="solstice-shield" src="' + solsticeShieldUrl + '" alt="" width="192" height="244">';
-export const solsticeFavicon = '<link rel="icon" type="image/webp" href="' + solsticeShieldUrl + '">';
-export const solsticeLockup = '<img class="solstice-wordmark-image" src="/assets/solstice-wordmark.webp" alt="Solstice Alliance Guild" width="1000" height="212">';
+export const solsticeFavicon = '<link rel="icon" type="image/svg+xml" href="' + solsticeShieldUrl + '">';
+export const solsticeLockup = '<img class="solstice-wordmark-image" src="/assets/solstice-wordmark.svg" alt="Solstice Alliance Guild" width="1000" height="212">';
 
 export function canEditArticles(env, session) {
   return Boolean(session && (env.CMS_ADMIN_DISCORD_IDS ?? '').split(',').map(id => id.trim()).includes(session.discord_id));
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=laurel-brand"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=laurel-svg-roster"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
