@@ -539,7 +539,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
     <select id="raidPeriod" aria-label="AM or PM"><option>AM</option><option selected>PM</option></select>
   </div></fieldset>
   <input type="hidden" name="startsAt">
-</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div><section id="raidGroupPlanner" class="group-plan" aria-label="Group Planner"></section></div>
+</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label class="raid-check"><input name="repeatWeekly" type="checkbox"> Repeat weekly</label><label id="raidWeeksField" hidden>Number of weekly occurrences<input name="weeks" type="number" min="2" max="12" value="2"></label><div id="raidRoleSlots" class="raid-stats"></div><section id="raidGroupPlanner" class="group-plan" aria-label="Group Planner"></section></div>
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
@@ -1458,6 +1458,10 @@ function resetRoleSlots() {
 }
 ${createGroupPlanner.toString()}
 const groupPlanner = createGroupPlanner(byId('raidGroupPlanner'), savedCharacters);
+raidForm.elements.repeatWeekly.addEventListener('change', () => {
+  byId('raidWeeksField').hidden = !raidForm.elements.repeatWeekly.checked;
+  raidForm.elements.weeks.required = raidForm.elements.repeatWeekly.checked;
+});
 for (const field of roleSlotFields) field.addEventListener('input', groupPlanner.draw);
 const raidInstances = ${JSON.stringify(raidInstances)};
 raidForm.elements.instance.addEventListener('change',()=>{
@@ -2111,6 +2115,9 @@ for (const [id,offset] of [['raidPreviousMonth',-1],['raidNextMonth',1]]) {
 }
 raidForm.addEventListener('reset',()=>{
   groupPlanner.reset();
+  raidForm.elements.repeatWeekly.checked = false;
+  byId('raidWeeksField').hidden = true;
+  raidForm.elements.weeks.required = false;
   selectedRaidDay = undefined;
   byId('raidSelectedDate').textContent = 'Choose a date';
   raidDatePicker.open = false;
@@ -2435,6 +2442,7 @@ raidForm.addEventListener('submit', async event => {
     return;
   }
   data.startsAt = first.toISOString();
+  data.weeks = data.repeatWeekly === 'on' ? Number(data.weeks) : 1;
   data.dates = Array.from({length:Number(data.weeks)}, (_, index) => {
     const date = new Date(first);
     date.setDate(date.getDate() + index * 7);
