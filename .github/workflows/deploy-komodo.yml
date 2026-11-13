@@ -45,4 +45,4 @@ jobs:
             --header "X-Api-Key: $KOMODO_API_KEY" \
             --header "X-Api-Secret: $KOMODO_API_SECRET" \
             --header 'Content-Type: application/json' \
-            --data '{"stack":"solstice-guild"}'
+            --data '{"stack":"solstice"}'
