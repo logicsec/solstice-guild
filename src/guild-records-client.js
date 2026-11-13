@@ -21,87 +21,220 @@ export async function renderMeetings(root, current) {
   const path = '/api/meetings';
   const { meetings } = await recordRequest(path);
   if (!current()) return;
-  const card = raidElement('section', null, 'raid-card');
-  const editor = raidElement('section', null, 'raid-card');
-  const list = raidElement('div');
-  const add = raidElement('button', 'Schedule meeting', 'raid-primary');
-  add.type = 'button';
-  add.addEventListener('click', () => edit());
-  card.append(add, raidElement('p', 'Meetings, agendas, and notes are visible to signed-in guild members.'), list);
-  editor.hidden = true;
-  root.append(card, editor);
-  function draw(rows) {
-    list.replaceChildren();
-    if (!rows.length) list.append(raidElement('p', 'No meetings scheduled.'));
-    for (const meeting of rows) {
-      const details = raidElement('details', null, 'raid-card');
-      details.append(raidElement('summary', meeting.title + ' · ' + raidDate(meeting.starts_at)),
-        raidElement('p', raidDate(meeting.starts_at) + ' to ' + raidDate(meeting.ends_at)));
-      if (meeting.location) details.append(raidElement('p', meeting.location, 'record-copy'));
-      for (const [label, value] of [['Agenda', meeting.agenda], ['Meeting notes', meeting.notes]]) {
-        details.append(raidElement('h4', label), raidElement('p', value || 'None added.', 'record-copy'));
+
+  const page = raidElement('section', null, 'meeting-page');
+  root.append(page);
+  const button = (name, action, style) => {
+    const node = raidElement('button', name, style);
+    node.type = 'button';
+    node.addEventListener('click', action);
+    return node;
+  };
+  const toolbar = () => raidElement('div', null, 'meeting-toolbar');
+  const prefix = 'meeting-document-v1\n';
+
+  // Rebuild allowed blocks and text only. Stored markup never enters the live DOM directly.
+  function documentContent(value) {
+    const fragment = document.createDocumentFragment();
+    const allowed = new Set(['P','DIV','H2','H3','H4','UL','OL','LI','BR','B','STRONG','I','EM','BLOCKQUOTE']);
+    const source = document.createElement('template');
+    source.innerHTML = value;
+    function append(parent, nodes) {
+      for (const node of nodes) {
+        if (node.nodeType === Node.TEXT_NODE) parent.append(document.createTextNode(node.textContent));
+        else if (allowed.has(node.nodeName)) {
+          const child = document.createElement(node.localName);
+          if (node.getAttribute('data-task') === 'true' && node.nodeName === 'LI') {
+            child.dataset.task = 'true';
+            child.dataset.done = String(node.getAttribute('data-done') === 'true');
+          }
+          append(child, node.childNodes);
+          parent.append(child);
+        } else if (node.nodeName === 'SPAN' || node.nodeName === 'A') append(parent, node.childNodes);
       }
-      if (meeting.editable) {
-        const button = raidElement('button', 'Edit meeting or notes');
-        button.type = 'button';
-        button.addEventListener('click', () => edit(meeting));
-        details.append(button);
+    }
+    append(fragment, source.content.childNodes);
+    return fragment;
+  }
+
+  function showList() {
+    page.replaceChildren();
+    const controls = toolbar();
+    controls.append(raidElement('h3', 'Meeting records'), button('+ New meeting', () => schedule(), 'raid-primary'));
+    page.append(controls);
+    const now = new Date().toISOString();
+    for (const [heading, upcoming] of [['Upcoming', true], ['Past meetings', false]]) {
+      const rows = meetings.filter(meeting => (meeting.ends_at >= now) === upcoming)
+        .sort((a,b) => upcoming ? a.starts_at.localeCompare(b.starts_at) : b.starts_at.localeCompare(a.starts_at));
+      if (!rows.length && !upcoming) continue;
+      const group = raidElement('section', null, 'meeting-list');
+      group.append(raidElement('h4', heading));
+      if (!rows.length) group.append(raidElement('p', 'No upcoming meetings.'));
+      for (const meeting of rows) {
+        const row = button('', () => open(meeting), 'meeting-row');
+        row.append(raidElement('strong', meeting.title), raidElement('small', raidDate(meeting.starts_at)));
+        group.append(row);
       }
-      list.append(details);
+      page.append(group);
     }
   }
-  function edit(meeting) {
-    const localTime = value => {
-      const date = new Date(value);
-      return new Date(+date - date.getTimezoneOffset() * 60000).toISOString().slice(0,16);
-    };
+
+  function schedule(meeting) {
+    const modal = raidElement('dialog', null, 'meeting-dialog');
     const form = raidElement('form', null, 'raid-form');
-    const title = recordField(form,'title','Title','text',120);
-    const start = recordField(form,'start','Start (your local time)','datetime-local');
-    const end = recordField(form,'end','End (your local time)','datetime-local');
+    const title = recordField(form,'title','Meeting title','text',120);
+    const dates = raidElement('div', null, 'meeting-dates');
+    const start = recordField(dates,'start','Starts (local time)','datetime-local');
+    const end = recordField(dates,'end','Ends (local time)','datetime-local');
+    form.append(dates);
     const location = recordField(form,'location','Location or voice channel','text',250);
-    const agenda = recordField(form,'agenda','Agenda','textarea',8000);
-    const notes = recordField(form,'notes','Meeting notes','textarea',16000);
     title.required = start.required = end.required = true;
+    const local = date => new Date(+date - date.getTimezoneOffset() * 60000).toISOString().slice(0,16);
     if (meeting) {
-      title.value = meeting.title; start.value = localTime(meeting.starts_at); end.value = localTime(meeting.ends_at);
-      location.value = meeting.location; agenda.value = meeting.agenda; notes.value = meeting.notes;
+      title.value = meeting.title;
+      start.value = local(new Date(meeting.starts_at));
+      end.value = local(new Date(meeting.ends_at));
+      location.value = meeting.location;
     }
-    const save = raidElement('button','Save meeting','raid-primary');
-    const cancel = raidElement('button','Cancel');
-    cancel.type = 'button';
+    start.addEventListener('change', () => {
+      const time = new Date(start.value);
+      if (Number.isFinite(+time) && (!end.value || new Date(end.value) <= time)) {
+        end.value = local(new Date(+time + 30 * 60000));
+      }
+    });
+    const controls = toolbar();
+    const submit = raidElement('button', meeting ? 'Save details' : 'Create meeting', 'raid-primary');
+    controls.append(button('Cancel', () => modal.close()), submit);
     const status = raidElement('p');
-    status.setAttribute('role','status');
-    cancel.addEventListener('click', () => { editor.hidden = true; add.focus(); });
-    form.append(save, cancel, status);
-    editor.replaceChildren(raidElement('h3', meeting ? 'Edit meeting' : 'Schedule meeting'), form);
-    editor.hidden = false;
-    title.focus();
+    status.setAttribute('role', 'status');
+    form.append(controls, status);
+    modal.append(raidElement('h3', meeting ? 'Edit meeting details' : 'New meeting'), form);
+    modal.addEventListener('close', () => modal.remove(), { once:true });
     form.addEventListener('submit', async event => {
       event.preventDefault();
-      save.disabled = true;
+      submit.disabled = true;
       try {
-        const startDate = new Date(start.value), endDate = new Date(end.value);
-        if (!(endDate > startDate)) throw new Error('The end time must be after the start.');
-        const result = await recordRequest(path, { id: meeting?.id, revision: meeting?.revision, title: title.value,
-          start: startDate.toISOString(), end: endDate.toISOString(), location: location.value, agenda: agenda.value, notes: notes.value });
+        const starts_at = new Date(start.value).toISOString(), ends_at = new Date(end.value).toISOString();
+        const result = await recordRequest(path, { id: meeting?.id, revision: meeting?.revision,
+          title:title.value, start:starts_at, end:ends_at, location:location.value, agenda:meeting?.agenda, notes:meeting?.notes });
         if (!current()) return;
-        const saved = { id: result.id, title: title.value.trim(), starts_at: startDate.toISOString(), ends_at: endDate.toISOString(),
-          location: location.value.trim(), agenda: agenda.value.trim(), notes: notes.value.trim(), editable: true, revision: (meeting?.revision ?? 0) + 1 };
-        const now = new Date().toISOString();
-        const rows = [...meetings.filter(row => row.id !== saved.id), saved].sort((a,b) => {
-          const pastA = a.starts_at < now, pastB = b.starts_at < now;
-          return Number(pastA) - Number(pastB) || (pastA ? b.starts_at.localeCompare(a.starts_at) : a.starts_at.localeCompare(b.starts_at));
-        });
-        meetings.splice(0,meetings.length,...rows);
-        draw(meetings);
-        editor.hidden = true;
-        add.focus();
+        const saved = { ...meeting, id:result.id, title:title.value.trim(), starts_at, ends_at, location:location.value.trim(),
+          agenda:meeting?.agenda ?? '', notes:meeting?.notes ?? '', revision:(meeting?.revision ?? 0)+1, editable:true };
+        const index = meetings.findIndex(row => row.id === saved.id);
+        if (index < 0) meetings.push(saved);
+        else meetings[index] = saved;
+        modal.close();
+        open(saved);
       } catch (error) { status.textContent = error.message; }
-      finally { save.disabled = false; }
+      finally { submit.disabled = false; }
     });
+    page.append(modal);
+    modal.showModal();
   }
-  draw(meetings);
+
+  function open(meeting) {
+    page.replaceChildren();
+    const controls = toolbar();
+    const doc = raidElement('div', null, 'meeting-document');
+    const status = raidElement('span');
+    status.setAttribute('role','status');
+    let dirty = false;
+    let saving = false;
+    const leave = () => !saving && (!dirty || confirm('Leave without saving your notes?'));
+    controls.append(button('← Meetings', () => { if (leave()) showList(); }));
+    const actions = toolbar();
+    if (meeting.editable) actions.append(button('Edit details', () => { if (leave()) schedule(meeting); }));
+    controls.append(actions);
+    const title = raidElement('h3', meeting.title, 'meeting-title');
+    const meta = raidElement('p', [raidDate(meeting.starts_at) + ' – ' + raidDate(meeting.ends_at), meeting.location].filter(Boolean).join(' · '));
+    page.append(controls, title, meta);
+    doc.setAttribute('aria-label','Meeting document');
+    if (meeting.notes.startsWith(prefix)) doc.append(documentContent(meeting.notes.slice(prefix.length)));
+    else {
+      for (const [heading, value] of [['Agenda',meeting.agenda],['Notes',meeting.notes],['Decisions',''],['Action items','']]) {
+        doc.append(raidElement('h4', heading));
+        const block = raidElement('p', value);
+        if (!value) block.append(document.createElement('br'));
+        doc.append(block);
+      }
+    }
+    if (meeting.editable) {
+      doc.contentEditable = 'true';
+      doc.setAttribute('role','textbox');
+      doc.setAttribute('aria-multiline','true');
+      const tools = toolbar();
+      tools.classList.add('meeting-format');
+      function changed() { dirty = true; status.textContent = 'Unsaved changes'; }
+      let range;
+      doc.addEventListener('blur', () => {
+        const selection = getSelection();
+        if (selection.rangeCount && doc.contains(selection.getRangeAt(0).commonAncestorContainer)) range = selection.getRangeAt(0).cloneRange();
+      });
+      const command = (name, type, value) => {
+        const control = button(name, () => {
+          doc.focus();
+          if (range && doc.contains(range.commonAncestorContainer)) {
+            const selection = getSelection();
+            selection.removeAllRanges(); selection.addRange(range);
+          }
+          document.execCommand(type, false, value);
+          range = undefined;
+          changed();
+        });
+        tools.append(control);
+      };
+      command('Heading', 'formatBlock', 'h4');
+      command('Text', 'formatBlock', 'p');
+      command('Bold', 'bold');
+      command('Bullets', 'insertUnorderedList');
+      command('Checklist', 'insertHTML', '<ul><li data-task="true" data-done="false">Task</li></ul><p><br></p>');
+      doc.addEventListener('input', changed);
+      doc.addEventListener('drop', event => event.preventDefault());
+      doc.addEventListener('paste', event => {
+        event.preventDefault();
+        document.execCommand('insertText', false, event.clipboardData.getData('text/plain'));
+      });
+      doc.addEventListener('keydown', event => {
+        if (event.key !== 'Enter' || !event.altKey) return;
+        const anchor = getSelection().anchorNode;
+        const task = (anchor?.parentElement)?.closest('li[data-task]');
+        if (!task || !doc.contains(task)) return;
+        event.preventDefault();
+        task.dataset.done = String(task.dataset.done !== 'true');
+        changed();
+      });
+      doc.addEventListener('click', event => {
+        const task = event.target.closest('li[data-task]');
+        if (task && event.clientX - task.getBoundingClientRect().left < 26) {
+          task.dataset.done = String(task.dataset.done !== 'true');
+          changed();
+        }
+      });
+      const save = button('Save notes', async () => {
+        saving = save.disabled = true;
+        status.textContent = 'Saving…';
+        const raw = doc.innerHTML;
+        const safe = document.createElement('div');
+        safe.append(documentContent(raw));
+        const notes = prefix + safe.innerHTML;
+        try {
+          if (notes.length > 16000) throw new Error('This document exceeds the 16,000-character storage limit.');
+          await recordRequest(path, { id:meeting.id, revision:meeting.revision, title:meeting.title, start:meeting.starts_at,
+            end:meeting.ends_at, location:meeting.location, agenda:meeting.agenda, notes });
+          meeting.notes = notes;
+          meeting.revision++;
+          dirty = doc.innerHTML !== raw;
+          status.textContent = dirty ? 'Unsaved changes' : 'Saved';
+        } catch (error) { status.textContent = error.message; }
+        finally { saving = save.disabled = false; }
+      }, 'raid-primary');
+      actions.append(save);
+      page.append(tools);
+    }
+    page.append(doc, status);
+    if (!meeting.editable) status.textContent = 'Read only';
+  }
+  showList();
 }
 
 export async function renderLootHistory(root, data) {
