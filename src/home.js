@@ -11,7 +11,7 @@ const categoryLabel = category => category.replace(/\b[a-z]/gi, initial => initi
 const categoryLink = category => '/?category=' + encodeURIComponent(category) + '#chronicle';
 const dateLabel = date => new Intl.DateTimeFormat('en-US', { dateStyle: 'long', timeZone: 'America/New_York' }).format(new Date(date));
 const loginLink = next => '/auth/discord?next=' + encodeURIComponent(next);
-export const solsticeMark = '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70"><path d="M30 3C23 9 13 12 5 12c-1 23 3 38 25 54 22-16 26-31 25-54-8 0-18-3-25-9Z" fill="#0c1b31" stroke="#d4a85d" stroke-width="3.5"/><g fill="#edbb65"><path d="m30 13 3 19h-6Zm-14 8 10 13-5 3Zm28 0-5 16-5-3ZM8 30l13 8-2 4Zm44 0-11 12-2-4Z"/><path d="M20 44a10 10 0 0 1 20 0Zm-7 4c10-5 24-5 34 0l-2 3c-11-4-19-4-30 0Z"/></g></svg>';
+export const solsticeMark = '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70"><path d="M30 3C23 9 13 12 5 12c-1 23 3 38 25 54 22-16 26-31 25-54-8 0-18-3-25-9Z" fill="#171717" stroke="#6f6047" stroke-width="2.5"/><g fill="none" stroke="#82765e" stroke-width="2" stroke-linecap="round"><path d="M16 48C9 42 9 31 14 23c3-5 7-8 12-10M44 48c7-6 7-17 2-25-3-5-7-8-12-10M16 48c4 4 9 6 14 6s10-2 14-6"/></g><g fill="#9a8a6b"><path d="m14 25 7 2-6 4Zm-2 8 7 1-6 4Zm2 8 7-1-5 5Zm5 7 6-3-3 6Zm15-33-7 2 6 4Zm2 8-7 1 6 4Zm-2 8-7-1 5 5Zm-5 7-6-3 3 6Z"/></g><path d="M23 53c3 3 5 4 7 4s4-1 7-4" fill="none" stroke="#82765e" stroke-width="2" stroke-linecap="round"/></svg>';
 const faviconSvg = solsticeMark.replace(
   '<svg class="solstice-shield" aria-hidden="true" viewBox="0 0 60 70">',
   '<svg xmlns="http://www.w3.org/2000/svg" viewBox="-5 0 70 70">',
