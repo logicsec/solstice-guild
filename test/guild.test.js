@@ -121,7 +121,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(flips.complete,true);
   assert.equal(flips.checked,2);
   assert.deepEqual(flips.flips,[{id:117,name:'Tough Jerky',min:80,vendor:100,profit:20}]);
-  const created = await post('/api/raids', { instance: 'barrow-deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true });
+  const raidDraft = { instance: 'barrow-deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true };
+  const groupPlan = [{ name: 'Planned Mage', className: 'Mage', role: 'Ranged DPS', group: 2 }];
+  assert.equal((await post('/api/raids', { ...raidDraft, groupPlan: [{ ...groupPlan[0], group: 3 }] })).status, 400);
+  const created = await post('/api/raids', { ...raidDraft, groupPlan });
   assert.equal(created.status, 201);
   const { id } = await created.json();
   discordId = '31';
@@ -138,6 +141,9 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const ownCharacters = await (await send('/api/raid-characters',options)).json();
   assert.deepEqual(ownCharacters.signupCharacters,[]);
   const raid = '/api/raids/' + id;
+  const plannedRaid = await (await send(raid, options)).json();
+  assert.deepEqual(plannedRaid.event.settings.groupPlan, groupPlan);
+  assert.deepEqual(plannedRaid.roster, []);
   const publicPath = '/raid/' + id;
   assert.equal((await signIn(publicPath)).headers.get('location'),publicPath);
   for (const path of [publicPath,'/?tool=raid&raid='+id]) {

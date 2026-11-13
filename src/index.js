@@ -1,3 +1,4 @@
+import { createGroupPlanner, normalizeGroupPlan } from './raid-planner.js';
 import { guildRecords } from './guild-records.js';
 import { recordRequest, recordField, renderLootHistory } from './guild-records-client.js';
 import { weeklyGoldReport } from './weekly-gold.js';
@@ -133,7 +134,10 @@ async function raidApi(request, env, url, user) {
     }
     const reserve = clean(input.softReserve, 400);
     if (reserve && !/^https:\/\/[^\s]+$/i.test(reserve)) return reply({ error: 'Use an HTTPS soft-reserve link.' }, 400);
+    const groupPlan = normalizeGroupPlan(input.groupPlan ?? [], size, raidClasses, raidRoles);
+    if (!groupPlan) return reply({ error: 'Check the planned characters and group sizes.' }, 400);
     const settings = JSON.stringify({
+      groupPlan,
       roles: input.slots ? roles : null, review: input.review === true, waitlist: input.waitlist === true,
       requirements: clean(input.requirements, 500), softReserve: reserve,
     });
@@ -393,7 +397,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=account-menu-2"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=raid-planner-1"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -535,7 +539,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
     <select id="raidPeriod" aria-label="AM or PM"><option>AM</option><option selected>PM</option></select>
   </div></fieldset>
   <input type="hidden" name="startsAt">
-</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div></div>
+</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label>Weekly occurrences<input name="weeks" type="number" min="1" max="12" value="1" required></label><div id="raidRoleSlots" class="raid-stats"></div><section id="raidGroupPlanner" class="group-plan" aria-label="Group Planner"></section></div>
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
@@ -1452,10 +1456,14 @@ function resetRoleSlots() {
   roleSlotFields[2].value = Math.floor(dps / 2);
   roleSlotFields[3].value = Math.ceil(dps / 2);
 }
+${createGroupPlanner.toString()}
+const groupPlanner = createGroupPlanner(byId('raidGroupPlanner'));
+for (const field of roleSlotFields) field.addEventListener('input', groupPlanner.draw);
 const raidInstances = ${JSON.stringify(raidInstances)};
 raidForm.elements.instance.addEventListener('change',()=>{
   const size = raidInstances[raidForm.elements.instance.value]?.size ?? 10;
   raidForm.elements.size.value = size;
+  groupPlanner.resize(size);
   byId('raidSizeLabel').textContent = 'Raid size · '+size+' players';
   resetRoleSlots();
 });
@@ -1971,6 +1979,22 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
   list.append(filters,rows);
   columns.append(list,detail);
   root.append(note,columns);
+  const plan = event.settings?.groupPlan;
+  if (plan?.length) {
+    const planned = raidElement('details', null, 'raid-card group-plan-saved');
+    planned.append(raidElement('summary', 'Planned groups · '+plan.length+' characters'));
+    const grid = raidElement('div', null, 'group-plan-grid');
+    for (const group of [...Array.from({length: Math.ceil(event.size / 5)}, (_, index) => index + 1), null]) {
+      const players = plan.filter(player => player.group === group);
+      const panel = raidElement('section', null, 'group-plan-panel');
+      panel.append(raidElement('h4', group === null ? 'Unassigned' : 'Group '+group));
+      for (const player of players) panel.append(raidElement('p', player.name+' · '+player.className+' · '+player.role));
+      if (!players.length) panel.append(raidElement('p', 'Empty'));
+      grid.append(panel);
+    }
+    planned.append(grid);
+    root.prepend(planned);
+  }
   let selected;
   function inspect(player) {
     detail.replaceChildren(raidElement('p','Character inspector','eyebrow'));
@@ -2080,6 +2104,7 @@ for (const [id,offset] of [['raidPreviousMonth',-1],['raidNextMonth',1]]) {
   });
 }
 raidForm.addEventListener('reset',()=>{
+  groupPlanner.reset();
   selectedRaidDay = undefined;
   byId('raidSelectedDate').textContent = 'Choose a date';
   raidDatePicker.open = false;
@@ -2107,9 +2132,12 @@ function setWizardStep(step) {
   byId('raidNext').hidden = step === 2;
   byId('raidSubmit').hidden = step !== 2;
   byId('raidTimezone').textContent = 'Your local time · '+Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (step === 1) groupPlanner.draw();
   if (step === 2) {
     const data = new FormData(raidForm);
     byId('raidReview').replaceChildren(raidElement('h3',raidInstances[data.get('instance')]?.name),raidElement('p',raidDate(data.get('startsAt'))+' · '+data.get('size')+' players'),raidElement('p',data.get('notes')));
+    const plan = groupPlanner.players();
+    if (plan.length) byId('raidReview').append(raidElement('p', plan.length+' planned characters · '+plan.filter(player => player.group === null).length+' unassigned'));
   }
 }
 const readinessChecks = ${JSON.stringify(readinessChecks)};
@@ -2367,6 +2395,10 @@ byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('n
 byId('raidNext').addEventListener('click',()=>{
   for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] :is(input,select)')) if (!field.reportValidity()) return;
   if (wizardStep === 1) {
+    if (groupPlanner.players().length > Number(raidForm.elements.size.value)) {
+      raidError(new Error('Remove extra planned characters to fit the selected raid size.'));
+      return;
+    }
     const first = raidStartTime();
     if (!first || +first <= Date.now()) {
       raidError(new Error(selectedRaidDay ? 'Choose a valid future start time.' : 'Choose a raid date.'));
@@ -2403,6 +2435,7 @@ raidForm.addEventListener('submit', async event => {
     return date.toISOString();
   });
   data.slots = Object.fromEntries(raidRoles.map((role,index) => [role,Number(roleSlotFields[index].value)]));
+  data.groupPlan = groupPlanner.players();
   for (const flag of ['review','waitlist']) data[flag] = data[flag] === 'on';
   const button = byId('raidSubmit');
   button.disabled = true;

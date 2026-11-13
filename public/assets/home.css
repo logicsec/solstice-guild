@@ -1051,3 +1051,35 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .site-header .site-menu-toggle + nav a:is(:hover, :focus-visible) { background: var(--hover); }
   .guild-home .home-banner-content { padding-top: clamp(32px, 8vw, 60px); }
 }
+
+#raidCreate { width: 100%; max-width: none; }
+.group-plan { margin-top: 22px; border-top: 1px solid var(--line); padding-top: 16px; }
+.group-plan-heading { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+.group-plan-heading > div { flex: 1 0 180px; }
+.group-plan-heading h3, .group-plan-heading p { margin: 0; }
+.group-plan-layout { display: grid; grid-template-columns: minmax(0, 3fr) minmax(220px, 1fr); gap: 12px; align-items: start; }
+.group-plan-stack, .group-plan-panel { display: grid; gap: 8px; min-width: 0; align-content: start; }
+.group-plan-panel { border: 1px solid var(--line); border-radius: 8px; padding: 12px; background: var(--field); }
+.group-plan-panel :is(h4,p,dl) { margin: 0; overflow-wrap: anywhere; }
+.group-plan-panel p, .group-plan-panel small { color: var(--muted); }
+.group-plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr)); gap: 8px; }
+.group-plan-empty { border: 1px dashed var(--line); border-radius: 5px; text-align: center; color: var(--muted); padding: 8px; }
+.group-plan-player { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 4px; border-bottom: 1px solid var(--line); padding-bottom: 5px; }
+.group-plan-player > div { grid-column: 1 / -1; overflow-wrap: anywhere; }
+.group-plan-player small { display: block; }
+.group-plan-player select { min-width: 0; }
+.group-plan-classes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+.raid-shell .group-plan-classes button { padding-inline: 3px; font-size: .8rem; }
+.group-plan-classes button[aria-pressed="true"] { outline: 1px solid currentColor; }
+.group-plan-counts { display: grid; grid-template-columns: 1fr auto; gap: 6px; }
+.group-plan-counts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.group-plan-panel .group-plan-warning { border-left: 2px solid #c87962; padding: 5px 8px; background: #c879621a; }
+.group-plan-analysis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); gap: 8px; }
+.group-plan-panel details { border-bottom: 1px solid var(--line); padding: 5px 0; }
+.group-plan-buff { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; }
+.group-plan-buff img { width: 22px; height: 22px; border-radius: 4px; }
+.group-plan-saved > .group-plan-grid { margin-top: 12px; }
+@media (max-width: 920px) {
+  .group-plan-layout { grid-template-columns: minmax(0, 1fr); }
+  .group-plan-layout > :last-child { grid-row: 1; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); }
+}
