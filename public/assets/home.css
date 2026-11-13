@@ -1079,11 +1079,15 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .group-plan-buff { display: grid; grid-template-columns: 22px 1fr auto; gap: 6px; align-items: center; }
 .group-plan-buff img { width: 22px; height: 22px; border-radius: 4px; }
 .group-plan-saved > .group-plan-grid { margin-top: 12px; }
-.group-plan-dialog { width: min(420px, calc(100vw - 32px)); border: 1px solid var(--line); border-radius: 12px; padding: 20px; background: var(--field); color: var(--text); }
-.group-plan-dialog::backdrop { background: rgb(0 0 0 / 60%); }
-.group-plan-dialog > * { display: block; width: 100%; margin: 0 0 10px; }
-.group-plan-dialog h3 { margin-bottom: 16px; }
-.group-plan-dialog button { width: auto; margin-right: 8px; }
+.group-plan-dialog { width: min(620px, calc(100vw - 32px)); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; border: 1px solid #a8784f; border-radius: 18px; padding: 28px; background: linear-gradient(145deg, #222629, #171a1c); color: var(--text); box-shadow: 0 24px 70px rgb(0 0 0 / 45%); }
+.group-plan-dialog::backdrop { background: rgb(3 6 7 / 78%); backdrop-filter: blur(3px); }
+.group-plan-dialog h3 { grid-column: 1 / -1; margin: 0 0 8px; font-size: 1.45rem; }
+.group-plan-dialog > :is(select,input) { display: block; width: 100%; margin: 0; }
+.group-plan-dialog > :is(select,input):focus { border-color: #c38a59; box-shadow: 0 0 0 3px rgb(195 138 89 / 20%); }
+.group-plan-dialog button { width: auto; margin: 4px 8px 0 0; }
+.group-plan-dialog button:first-of-type { background: #c38a59; color: #17191a; border-color: #c38a59; }
+.group-plan-dialog p { color: var(--muted); margin: 8px 0 0; }
+@media (max-width: 560px) { .group-plan-dialog { grid-template-columns: 1fr; } .group-plan-dialog h3 { margin-bottom: 4px; } }
 .group-plan-drop-target { border-color: var(--accent) !important; background: rgb(200 137 98 / 12%) !important; }
 @media (max-width: 920px) {
   .group-plan-layout { grid-template-columns: minmax(0, 1fr); }
