@@ -1108,3 +1108,17 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .group-plan-move-hint { color:var(--muted); font-size:13px; margin:0 0 12px; }
 .group-plan-grid .group-plan-empty { min-height:68px; display:grid; place-items:center; }
 .group-plan-player button:focus-visible { outline:2px solid var(--accent); outline-offset:-3px; }
+
+.guild-app .guild-character-row.guild-character-profession {
+  grid-template-columns: minmax(65px, max-content) auto minmax(0, 1fr) auto;
+}
+.guild-character-profession .guild-character-level {
+  font-size: clamp(12px, 2vw, 16px);
+  white-space: nowrap;
+}
+.guild-app .guild-character-row.has-profession-progress {
+  background: linear-gradient(to right, #d4a85d32 var(--profession-progress), transparent var(--profession-progress)), var(--field);
+}
+.guild-app .guild-character-row.has-profession-progress:hover {
+  background-color: var(--hover);
+}

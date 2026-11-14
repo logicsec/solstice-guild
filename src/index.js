@@ -397,7 +397,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=laurel-svg-roster"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=profession-progress"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1579,15 +1579,19 @@ function renderGuildRoster(list, characters) {
   activeFilter.append(filterName,clear);
   list.append(activeFilter,filters,rows);
   let professionSlugs = null;
+  let professionRanks = new Map();
+  let professionName = '';
   const draw = () => {
     const query = search.value.trim().toLowerCase();
     rows.replaceChildren();
     const ordered = [...characters].sort((a,b)=>{
       const nameOrder = a.name.localeCompare(b.name);
-      if (sort.value === 'name' || (a.level == null && b.level == null)) return nameOrder;
-      if (a.level == null) return 1;
-      if (b.level == null) return -1;
-      return (sort.value === 'level-asc' ? a.level-b.level : b.level-a.level) || nameOrder;
+      const aLevel = professionSlugs ? professionRanks.get(a.armorySlug)?.skill : a.level;
+      const bLevel = professionSlugs ? professionRanks.get(b.armorySlug)?.skill : b.level;
+      if (sort.value === 'name' || (aLevel == null && bLevel == null)) return nameOrder;
+      if (aLevel == null) return 1;
+      if (bLevel == null) return -1;
+      return (sort.value === 'level-asc' ? aLevel-bLevel : bLevel-aLevel) || nameOrder;
     });
     for (const character of ordered) {
       if (professionSlugs && !professionSlugs.has(character.armorySlug)) continue;
@@ -1597,9 +1601,24 @@ function renderGuildRoster(list, characters) {
       row.type = 'button';
       row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+
         (character.level == null ? '' : ', level '+character.level));
-      const level = raidElement('span',String(character.level ?? '—'),'guild-character-level');
-      level.title = character.level == null ? 'Level unavailable' : 'Level '+character.level;
-      if (character.level == null) level.classList.add('is-unknown');
+      const rank = professionRanks.get(character.armorySlug);
+      const skill = rank?.skill;
+      const cap = rank?.maxSkill;
+      const hasCap = skill != null && cap > 0;
+      const value = professionSlugs ? skill : character.level;
+      const label = professionSlugs ? professionName+' skill' : 'Level';
+      const display = hasCap ? skill+' / '+cap : String(value ?? '—');
+      const level = raidElement('span',display,'guild-character-level');
+      level.title = value == null ? label+' unavailable' : label+' '+display;
+      if (value == null) level.classList.add('is-unknown');
+      if (professionSlugs) {
+        row.classList.add('guild-character-profession');
+        row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+', '+level.title);
+        if (hasCap) {
+          row.classList.add('has-profession-progress');
+          row.style.setProperty('--profession-progress',Math.max(0,Math.min(100,skill / cap * 100))+'%');
+        }
+      }
       const info = raidElement('span',null,'guild-character-name');
       info.append(raidElement('strong',character.name),raidElement('small',character.role));
       const arrow = raidElement('span','›','guild-character-arrow');
@@ -1623,6 +1642,10 @@ function renderGuildRoster(list, characters) {
   sort.addEventListener('change',draw);
   function filterByProfession(profession) {
     professionSlugs = profession ? new Set(profession[1]) : null;
+    professionRanks = new Map(profession?.[2] ?? []);
+    professionName = profession?.[0] ?? '';
+    sort.options[0].text = profession ? 'Skill: Highest First' : 'Level: Highest First';
+    sort.options[1].text = profession ? 'Skill: Lowest First' : 'Level: Lowest First';
     activeFilter.hidden = !profession;
     if (profession) {
       search.value = '';
@@ -1731,7 +1754,7 @@ async function openRaidView(view, id, navigate = true) {
         const section = raidElement('section',null,'guild-profession-group');
         section.append(raidElement('h4',label));
         const rows = raidElement('div',null,'guild-dashboard-rows');
-        for (const [name,count,kind,slugs] of data.professions) {
+        for (const [name,count,kind,slugs,ranks] of data.professions) {
           if (kind !== category) continue;
           const button = raidElement('button',null,'guild-dashboard-entry guild-profession-tile guild-profession-link');
           button.type = 'button';
@@ -1741,7 +1764,7 @@ async function openRaidView(view, id, navigate = true) {
           icon.setAttribute('aria-hidden','true');
           button.append(icon,raidElement('strong',name),raidElement('span',String(count)+' ›','guild-dashboard-count'));
           button.addEventListener('click',()=>{
-            selectedProfession = [name,slugs];
+            selectedProfession = [name,slugs,ranks];
             filterRoster?.(selectedProfession);
             jumpToRoster();
           });

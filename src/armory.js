@@ -95,16 +95,20 @@ export async function guildProfessionSummary(env, slugs) {
     for (const [index,profile] of profiles.entries()) {
       if (!profile) continue;
       reviewed++;
-      for (const {name,category} of profile) {
-        if (!coverage.has(name)) coverage.set(name,{category:null,slugs:new Set()});
+      for (const profession of profile) {
+        const {name,category} = profession;
+        if (!coverage.has(name)) coverage.set(name,{category:null,characters:new Map()});
         const entry = coverage.get(name);
         entry.category ??= category;
-        entry.slugs.add(batch[index]);
+        const rank = profession.skill != null ? profession : profession.tiers
+          .filter(tier => tier.skill != null)
+          .sort((a,b) => (b.maxSkill ?? 0) - (a.maxSkill ?? 0) || b.skill - a.skill)[0];
+        entry.characters.set(batch[index], {skill:rank?.skill ?? null, maxSkill:rank?.maxSkill ?? null});
       }
     }
   }
-  const professions = [...coverage].map(([name,entry])=>[name,entry.slugs.size,
-    entry.category ?? (['cooking','fishing','first aid'].includes(name.toLowerCase()) ? 'secondary' : 'primary'),[...entry.slugs]])
+  const professions = [...coverage].map(([name,entry])=>[name,entry.characters.size,
+    entry.category ?? (['cooking','fishing','first aid'].includes(name.toLowerCase()) ? 'secondary' : 'primary'),[...entry.characters.keys()], [...entry.characters]])
     .sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
   return { reviewed, professions };
 }

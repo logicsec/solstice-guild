@@ -54,7 +54,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
           spell_tooltip:{description:'Wand damage increased.'}}]},
       ]}]});
       if (suffix === 'statistics') return Response.json({intellect:{effective:42},health:900});
-      if (suffix === 'professions') return Response.json({primaries:[{profession:{name:'Alchemy'},skill_points:100}]});
+      if (suffix === 'professions') return Response.json({primaries:[{profession:{name:'Alchemy'},skill_points:100,max_skill_points:150}]});
       if (suffix === 'character-media') return Response.json({assets:[{key:'main-raw',value:'https://render.worldofwarcraft.com/us/test.png'}]});
       return Response.json({name:'Astra',surname:'Mortis',character_class:{name:'Mage'},level:60,guild:{name:'Solstice'}});
     }
@@ -196,7 +196,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send('/api/raid-characters?dashboard=1')).status,401);
   const overview = await (await send('/api/raid-characters?dashboard=1',options)).json();
   assert.deepEqual(overview,{total:2,linked:1,classes:[['Mage',1],['Priest',1]],
-    roles:[['Healer',1],['Ranged DPS',1]],reviewed:1,professions:[['Alchemy',1,'primary',['astra-mortis']]]});
+    roles:[['Healer',1],['Ranged DPS',1]],reviewed:1,professions:[['Alchemy',1,'primary',['astra-mortis'],[['astra-mortis',{skill:100,maxSkill:150}]]]]});
   const linked = await (await send('/api/armory',{headers:{Cookie:member}})).json();
   assert.equal(linked.characters[0].spec,'Frost');
   assert.equal(linked.characters[0].role,'Ranged DPS');
