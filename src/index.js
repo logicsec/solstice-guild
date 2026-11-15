@@ -58,7 +58,7 @@ const readinessChecks = [['access','Raid access'],['gear','Gear'],['enchants','E
 const readinessValues = ['Unreviewed', 'Ready', 'Blocked', 'Not applicable'];
 const raidStatuses = ['Going', 'Tentative', 'Bench', 'Declined'];
 
-async function raidApi(request, env, url, user) {
+async function raidApi(request, env, url, { discord_id: user, display_name: displayName }) {
   const db = env.DB;
   const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
   if (!user) return reply({ error: 'Sign in to use Raid Planner.' }, 401);
@@ -152,9 +152,9 @@ async function raidApi(request, env, url, user) {
       return reply({ error: 'Invalid repeat schedule.' }, 400);
     }
     const ids = dates.map(() => crypto.randomUUID());
-    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings, instance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings, instance, creator_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
       .bind(ids[index], user, title, new Date(value).toISOString(), size, notes,
-        JSON.stringify(inlineSchedule ? {...settings, endsAt: inlineSchedule[index].endsAt} : settings), input.instance));
+        JSON.stringify(inlineSchedule ? {...settings, endsAt: inlineSchedule[index].endsAt} : settings), input.instance, displayName));
     if (statements.length === 1) await statements[0].run();
     else await db.batch(statements);
     return reply({ id: ids[0], count: ids.length }, 201);
@@ -404,7 +404,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=shared-schedule-picker"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=event-creators"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -2667,11 +2667,11 @@ export default {
     }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name, username:session.username ?? null, discordProfile:session.profile ? JSON.parse(session.profile) : null }, { headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/api/guild-events') {
-      try { return await guildEventsApi(request, env, url, session.discord_id); }
+      try { return await guildEventsApi(request, env, url, session); }
       catch { return Response.json({ error: 'Event storage is unavailable.' }, { status: 503 }); }
     }
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
-      try { return await raidApi(request, env, url, session.discord_id); }
+      try { return await raidApi(request, env, url, session); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }
     }
     if (pathname === '/') return new Response(page, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'private, no-store', 'Referrer-Policy': 'same-origin' } });

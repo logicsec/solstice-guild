@@ -236,7 +236,8 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         const name = make('div');
         const type = make('small',event.type);
         type.style.color = eventTypes[event.type];
-        name.append(make('strong',event.title),type);
+        name.append(make('strong',event.title),type,
+          make('small','Created by '+(event.created_by || 'Unknown'),'guild-event-creator'));
         if (event.description) name.append(make('p',event.description,'guild-event-description'));
         const count = make('small',event.signups ? event.signups+' signed up' : 'Nobody yet','guild-event-count');
         const action = event.type === 'Raid'
@@ -258,7 +259,34 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         const row = make('article',undefined,'guild-event-row');
         row.style.setProperty('--event-color',eventTypes[event.type]);
         row.append(time,name,count);
-        if (action) row.append(action);
+        const actions = make('div',undefined,'guild-event-actions');
+        if (action) actions.append(action);
+        if (event.organizer) {
+          const remove = button('Delete event',async () => {
+            if (!window.confirm('Delete “'+event.title+'” and its sign-ups for this occurrence?')) return;
+            remove.disabled = true;
+            if (action) action.disabled = true;
+            status.textContent = '';
+            try {
+              await request('',{action:'delete',id:event.id});
+              agendaEvents = agendaEvents.filter(item => item.id !== event.id);
+              monthEvents = monthEvents.filter(item => item.id !== event.id);
+              drawAgenda();
+              drawCalendar();
+              heading.focus();
+              await load(true);
+              if (!status.textContent) status.textContent = 'Event deleted.';
+            } catch (error) {
+              status.textContent = error.message;
+            } finally {
+              remove.disabled = false;
+              if (action) action.disabled = false;
+            }
+          },'Delete '+event.title);
+          remove.className = 'raid-control-danger';
+          actions.append(remove);
+        }
+        if (actions.childNodes.length) row.append(actions);
         section.append(row);
       }
       rows.append(section);

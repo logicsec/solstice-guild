@@ -7,6 +7,7 @@ import { schedulePrep } from '../src/prep.js';
 
 test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', async t => {
   const db = new DatabaseSync(':memory:');
+  db.exec('PRAGMA foreign_keys = ON');
   for (const file of fs.readdirSync(new URL('../migrations/', import.meta.url)).sort()) {
     db.exec(fs.readFileSync(new URL('../migrations/' + file, import.meta.url), 'utf8'));
   }
@@ -141,8 +142,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   });
   const listEvents = async session => (await (await send(eventsPath+'?'+window,session)).json()).events;
   assert.equal((await send(eventsPath+'?'+window)).status,401);
+  db.prepare('UPDATE raids SET creator_name = NULL WHERE id = ?').run(id);
   const existingRaid = (await listEvents(memberOptions)).find(event => event.id === id);
   assert.equal(existingRaid.type,'Raid');
+  assert.equal(existingRaid.created_by,'Raider');
   assert.equal(existingRaid.ends_at,null);
   const endsAt = new Date(Date.parse(raidDraft.startsAt)+3600000).toISOString();
   const inlineRaid = await post('/api/raids', {...raidDraft,fromEvents:true,title:'Guild raid night',endsAt});
@@ -166,6 +169,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.equal((await post(eventsPath,{type,title:type,startsAt:dungeon.startsAt})).status,201);
   }
   const savedDungeons = (await listEvents(memberOptions)).filter(event => event.type === 'Dungeon');
+  assert.ok(savedDungeons.every(event => event.created_by === 'Raider'));
   assert.deepEqual(savedDungeons.map(event => event.starts_at).sort(),[dungeon.startsAt,nextWeek]);
   assert.equal(savedDungeons.find(event => event.id === dungeonId).description,dungeon.description);
   const signup = joined => post(eventsPath,{action:'signup',id:dungeonId,joined},member);
@@ -173,6 +177,15 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.deepEqual(await (await signup(joined)).json(),{signups:Number(joined),joined});
   }
   assert.equal((await listEvents(memberOptions)).find(event => event.id === dungeonId).signups,0);
+  assert.equal((await listEvents(memberOptions)).find(event => event.id === dungeonId).organizer,0);
+  assert.equal((await listEvents(options)).find(event => event.id === dungeonId).organizer,1);
+  assert.equal((await post(eventsPath,{action:'delete',id:dungeonId},member)).status,404);
+  assert.equal((await signup(true)).status,200);
+  assert.equal((await post(eventsPath,{action:'delete',id:dungeonId})).status,200);
+  assert.equal(db.prepare('SELECT COUNT(*) AS count FROM guild_event_signups WHERE event_id = ?').get(dungeonId).count,0);
+  assert.ok(!(await listEvents(options)).some(event => event.id === dungeonId));
+  assert.ok((await listEvents(options)).some(event => event.type === 'Dungeon' && event.starts_at === nextWeek));
+
   assert.equal((await post('/api/raids/'+inlineId,{action:'state',state:'Cancelled'})).status,200);
   assert.equal((await send('/api/raid-characters?guild=1')).status,401);
   assert.equal((await post('/api/raid-characters',{name:'Guild Tester',className:'Priest',spec:'Holy',role:'Healer'},member)).status,200);

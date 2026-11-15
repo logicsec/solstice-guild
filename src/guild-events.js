@@ -25,7 +25,7 @@ export function eventSchedule(input) {
   }));
 }
 
-export async function guildEventsApi(request, env, url, user) {
+export async function guildEventsApi(request, env, url, { discord_id: user, display_name: displayName }) {
   const db = env.DB;
   const reply = (body, status = 200) => Response.json(body, { status, headers: { 'Cache-Control': 'no-store' } });
   if (!db) return reply({ error: 'Event storage is unavailable.' }, 503);
@@ -37,15 +37,18 @@ export async function guildEventsApi(request, env, url, user) {
     }
     const start = new Date(from).toISOString();
     const end = new Date(to).toISOString();
+    const creator = `COALESCE(event.creator_name, (
+      SELECT display_name FROM discord_sessions WHERE discord_id = event.owner ORDER BY expires_at DESC LIMIT 1
+    )) AS created_by`;
     const raids = db.prepare(`SELECT id, title, starts_at, state, notes AS description,
-      json_extract(settings, '$.endsAt') AS ends_at, 'Raid' AS type,
-      (SELECT COUNT(*) FROM raid_signups WHERE raid_id = raids.id AND status = 'Going') AS signups
-      FROM raids WHERE starts_at >= ? AND starts_at < ? AND state <> 'Cancelled'
-      AND (state = 'Open' OR owner = ? OR EXISTS (SELECT 1 FROM raid_signups WHERE raid_id = raids.id AND member = ?))`).bind(start,end,user,user);
-    const events = db.prepare(`SELECT id, title, type, starts_at, ends_at, description,
-      (SELECT COUNT(*) FROM guild_event_signups WHERE event_id = guild_events.id) AS signups,
-      EXISTS (SELECT 1 FROM guild_event_signups WHERE event_id = guild_events.id AND member = ?) AS joined
-      FROM guild_events WHERE starts_at >= ? AND starts_at < ?`).bind(user,start,end);
+      json_extract(settings, '$.endsAt') AS ends_at, 'Raid' AS type, ${creator},
+      (SELECT COUNT(*) FROM raid_signups WHERE raid_id = event.id AND status = 'Going') AS signups
+      FROM raids AS event WHERE starts_at >= ? AND starts_at < ? AND state <> 'Cancelled'
+      AND (state = 'Open' OR owner = ? OR EXISTS (SELECT 1 FROM raid_signups WHERE raid_id = event.id AND member = ?))`).bind(start,end,user,user);
+    const events = db.prepare(`SELECT id, title, type, starts_at, ends_at, description, ${creator}, (event.owner = ?) AS organizer,
+      (SELECT COUNT(*) FROM guild_event_signups WHERE event_id = event.id) AS signups,
+      EXISTS (SELECT 1 FROM guild_event_signups WHERE event_id = event.id AND member = ?) AS joined
+      FROM guild_events AS event WHERE starts_at >= ? AND starts_at < ?`).bind(user,user,start,end);
     const results = await Promise.all([raids.all(), events.all()]);
     return reply({ events: results.flatMap(result => result.results) });
   }
@@ -55,6 +58,15 @@ export async function guildEventsApi(request, env, url, user) {
   }
   const input = await request.json().catch(() => null);
   if (!input || typeof input !== 'object') return reply({ error: 'Invalid event form.' }, 400);
+
+  if (input.action === 'delete') {
+    if (typeof input.id !== 'string' || !/^[0-9a-f-]{36}$/.test(input.id)) {
+      return reply({ error: 'Invalid event.' }, 400);
+    }
+    const result = await db.prepare('DELETE FROM guild_events WHERE id = ? AND owner = ?').bind(input.id,user).run();
+    if (!result.meta.changes) return reply({ error: 'Event not found or you are not its creator.' }, 404);
+    return reply({ ok: true });
+  }
 
   if (input.action === 'signup') {
     if (typeof input.id !== 'string' || !/^[0-9a-f-]{36}$/.test(input.id) || typeof input.joined !== 'boolean') {
@@ -80,8 +92,8 @@ export async function guildEventsApi(request, env, url, user) {
   }
   const ids = schedule.map(() => crypto.randomUUID());
   const statements = schedule.map(({startsAt, endsAt}, index) =>
-    db.prepare('INSERT INTO guild_events (id, owner, title, type, starts_at, ends_at, description) VALUES (?, ?, ?, ?, ?, ?, ?)')
-      .bind(ids[index],user,title,input.type,startsAt,endsAt,description));
+    db.prepare('INSERT INTO guild_events (id, owner, title, type, starts_at, ends_at, description, creator_name) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(ids[index],user,title,input.type,startsAt,endsAt,description,displayName));
   await db.batch(statements);
   return reply({ id: ids[0], count: ids.length }, 201);
 }

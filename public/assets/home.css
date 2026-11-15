@@ -1396,6 +1396,8 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-events-legend > span,
 .guild-event-type-choices label > span { display: inline-flex; align-items: center; gap: 7px; }
 .guild-events-legend .guild-event-dot { width: 8px; height: 8px; }
+.guild-event-actions { display: grid; justify-items: end; gap: 6px; }
+.guild-app .guild-event-actions .raid-control-danger { min-height: 36px; padding: 6px 12px; font-size: 12px; }
 .guild-events-day { margin-top: 16px; }
 .guild-events-day h4 {
   display: flex;
@@ -1426,8 +1428,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-event-row strong { display: block; overflow-wrap: anywhere; font-size: 16px; }
 .guild-event-row small { color: var(--muted); }
 .guild-event-row strong + small { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
+.guild-event-creator { display: block; margin-top: 3px; overflow-wrap: anywhere; }
 .guild-event-description { margin-block: 3px 0; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.guild-app .guild-events-agenda button {
+.guild-app .guild-events-agenda button:not(.raid-control-danger) {
   min-height: 36px;
   padding: 6px 12px;
   border: 1px solid var(--line);
@@ -1436,7 +1439,7 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   font-size: 12px;
   font-weight: 400;
 }
-.guild-app :is(.guild-events-agenda,.guild-events-calendar .raid-calendar-month) button:hover { background: var(--hover); border-color: var(--accent); }
+.guild-app :is(.guild-events-agenda,.guild-events-calendar .raid-calendar-month) button:not(.raid-control-danger):hover { background: var(--hover); border-color: var(--accent); }
 .guild-events-plan { display: grid; gap: 16px; padding: 20px; }
 .guild-events-plan :is(label,legend,summary) { color: var(--muted); font-size: 12px; }
 .guild-events-plan :is(label,fieldset)[hidden] { display: none; }
@@ -1490,5 +1493,5 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 @media (max-width: 500px) {
   .guild-event-row { grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; padding-inline: 12px; }
   .guild-event-row .guild-event-count { grid-row: 2; grid-column: 2; }
-  .guild-event-row button { grid-row: 1 / span 2; grid-column: 3; }
+  .guild-event-row .guild-event-actions { grid-row: 1 / span 2; grid-column: 3; }
 }
