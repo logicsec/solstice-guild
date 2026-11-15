@@ -187,6 +187,25 @@ async function loadCharacter(env, slug) {
   };
 }
 
+async function characterJourney(db, character) {
+  const day = new Date().toISOString().slice(0,10);
+  const snapshot = {
+    level: character.level,
+    gear: character.gear?.map(({id,slotType,name,quality}) => ({id,slotType,name,quality})) ?? null,
+    professions: character.professions?.map(({name,skill,tiers}) => ({
+      name, skill: skill ?? (Math.max(0,...tiers.map(tier => tier.skill ?? 0)) || null),
+    })) ?? null,
+  };
+  await db.prepare(`INSERT INTO character_journey (slug,day,snapshot)
+    SELECT slug,?,? FROM armory_links WHERE slug = ?
+    ON CONFLICT(slug,day) DO UPDATE SET snapshot = excluded.snapshot
+    WHERE snapshot <> excluded.snapshot`).bind(day,JSON.stringify(snapshot),character.slug).run();
+  const {results} = await db.prepare(
+    'SELECT day,snapshot FROM character_journey WHERE slug = ? ORDER BY day DESC LIMIT 90'
+  ).bind(character.slug).all();
+  return results.reverse().map(row => ({day:row.day,...JSON.parse(row.snapshot)}));
+}
+
 export async function armoryApi(request, env, url, member) {
   const reply = (data, status = 200) => Response.json(data, { status, headers: { 'Cache-Control': 'no-store' } });
   const db = env.DB;
@@ -198,6 +217,9 @@ export async function armoryApi(request, env, url, member) {
       const slug = profileSlug(query);
       if (!slug) return reply({ error: 'Enter your character’s first and last name.' }, 400);
       const character = await loadCharacter(env, slug);
+      if (character) {
+        character.journey = await characterJourney(db,character).catch(() => null);
+      }
       return character ? reply({ character }) : reply({ error: 'Character not found. Check the full name and make sure the level 10+ character has logged out of WoW.' }, 404);
     }
     const result = await db.prepare('SELECT slug, name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(member).all();

@@ -397,7 +397,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=profession-progress"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=character-journey-events"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -503,7 +503,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-</button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Calendar</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+</button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -1505,6 +1505,7 @@ function raidError(error) {
 }
 function raidReset(view, id) {
   raidView = view;
+  byId('raidTitle').closest('.raid-heading').classList.toggle('guild-events-hero',view === 'calendar');
   activeRaid = id || null;
   const dashboard = workspaceViews.includes(view);
   for (const node of document.querySelectorAll('[data-raid-view]')) {
@@ -1512,7 +1513,7 @@ function raidReset(view, id) {
   }
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
-  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Raid calendar', discover:'Find a raid', manage:'Manage raids', new:'New Raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Events', discover:'Find a raid', manage:'Manage raids', new:'New Raid', detail:'Raid details' }[view];
   byId('raidMenuLabel').textContent = byId('raidTitle').textContent;
   byId('raidMenuToggle').setAttribute('aria-label','Guild Hall menu, current view: ' + byId('raidTitle').textContent);
   byId('raidMenuToggle').setAttribute('aria-expanded','false');
@@ -1823,14 +1824,17 @@ async function openRaidView(view, id, navigate = true) {
       setWizardStep(0);
       return;
     }
+    if (view === 'calendar') {
+      renderGuildEvents(byId('raidList'),raids);
+      return;
+    }
     const visible = view === 'manage' ? raids.filter(raid => raid.organizer) :
-      view === 'calendar' ? [...raids].sort((a,b) => a.starts_at.localeCompare(b.starts_at)) :
       view === 'signups' ? raids.filter(raid => raid.organizer || raid.joined) : raids;
     const upcoming = visible.filter(raid => +new Date(raid.starts_at) >= Date.now());
     const summary = raidElement('div', null, 'raid-stats');
     raidStats(summary, [['Upcoming raids',upcoming.length],['Your organized raids',visible.filter(raid => raid.organizer).length],['Total events',visible.length]]);
     const list = raidElement('div', null, 'raid-card');
-    list.append(raidElement('h3', view === 'manage' ? 'Raids you organize' : view === 'discover' ? 'Open Guild Raids' : view === 'calendar' ? 'Scheduled events' : 'Your raid activity'));
+    list.append(raidElement('h3', view === 'manage' ? 'Raids you organize' : view === 'discover' ? 'Open Guild Raids' : 'Your raid activity'));
     if (!visible.length) list.append(raidElement('p', view === 'discover' ? 'No upcoming raids are open for sign-ups.' : 'No raids yet. Create one or open a guild invite link.'));
     for (const raid of visible) {
       const row = raidElement('div', null, 'raid-row');
@@ -1846,6 +1850,110 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
+function renderGuildEvents(root, raids) {
+  const now = new Date();
+  let month = new Date(now.getFullYear(),now.getMonth(),1);
+  let selected = null;
+  const groups = new Map();
+  for (const raid of raids.filter(raid => raid.state !== 'Cancelled').sort((a,b) => a.starts_at.localeCompare(b.starts_at))) {
+    const key = +localRaidDay(new Date(raid.starts_at));
+    if (!groups.has(key)) groups.set(key,[]);
+    groups.get(key).push(raid);
+  }
+  const layout = raidElement('div',null,'guild-events-layout');
+  const agenda = raidElement('section',null,'guild-events-agenda');
+  const agendaHeading = raidElement('h3','Coming Up');
+  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  agenda.append(agendaHeading,raidElement('p','Times in '+zone,'guild-events-zone'));
+  const rows = raidElement('div');
+  agenda.append(rows);
+  const side = raidElement('aside',null,'guild-events-sidebar');
+  const calendar = raidElement('section',null,'raid-calendar guild-events-calendar');
+  calendar.setAttribute('aria-label','Events calendar');
+  const nav = raidElement('div',null,'raid-calendar-month');
+  const makeButton = (text,label,action) => {
+    const button = raidElement('button',text);
+    button.type = 'button';
+    button.setAttribute('aria-label',label);
+    button.addEventListener('click',action);
+    return button;
+  };
+  const monthTitle = raidElement('strong');
+  monthTitle.setAttribute('aria-live','polite');
+  function shift(offset) {
+    month = new Date(month.getFullYear(),month.getMonth()+offset,1);
+    drawCalendar();
+  }
+  nav.append(makeButton('‹','Previous month',()=>shift(-1)),monthTitle,makeButton('›','Next month',()=>shift(1)));
+  const weekdays = raidElement('div',null,'raid-calendar-week');
+  weekdays.setAttribute('aria-hidden','true');
+  for (const day of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']) weekdays.append(raidElement('span',day));
+  const days = raidElement('div',null,'raid-calendar-days');
+  calendar.append(nav,weekdays,days,raidElement('p','● Raid','guild-events-legend'));
+  const plan = raidElement('section',null,'raid-card guild-events-plan');
+  plan.append(raidElement('h3','Plan an Event'),raidElement('p','Pick a raid, set a time, and open it for sign-ups.'),
+    makeButton('Schedule a Raid','Schedule a raid',()=>byId('newRaid').click()));
+  side.append(calendar,plan);
+  layout.append(agenda,side);
+  root.append(layout);
+  const clear = makeButton('Show Upcoming','Clear selected day',()=>{
+    selected = null;
+    drawAgenda();
+    drawCalendar();
+  });
+
+  function drawAgenda() {
+    agendaHeading.textContent = selected == null ? 'Coming Up' : raidDayLabel.format(new Date(selected));
+    rows.replaceChildren();
+    if (selected != null) rows.append(clear);
+    let count = 0;
+    for (const [day,events] of groups) {
+      if (selected != null && day !== selected) continue;
+      const items = selected == null ? events.filter(raid => Date.parse(raid.starts_at) >= +now) : events;
+      if (!items.length) continue;
+      const section = raidElement('section',null,'guild-events-day');
+      if (selected == null) section.append(raidElement('h4',raidDayLabel.format(new Date(day))));
+      for (const raid of items) {
+        const date = new Date(raid.starts_at);
+        const time = raidElement('time',new Intl.DateTimeFormat(undefined,{timeStyle:'short'}).format(date));
+        time.dateTime = raid.starts_at;
+        const title = raidElement('div');
+        title.append(raidElement('strong',raid.title),raidElement('small','Raid · '+raid.size+' players · '+raid.state));
+        const row = raidElement('div',null,'guild-event-row');
+        row.append(time,title,makeButton('View Raid','View '+raid.title,()=>openRaidView('detail',raid.id)));
+        section.append(row);
+        count++;
+      }
+      rows.append(section);
+    }
+    if (!count) rows.append(raidElement('p',selected == null ? 'No upcoming raids.' : 'No raids scheduled for this date.'));
+  }
+
+  function drawCalendar() {
+    monthTitle.textContent = raidMonthLabel.format(month);
+    days.replaceChildren();
+    const first = new Date(month.getFullYear(),month.getMonth(),1-month.getDay());
+    for (let index = 0; index < 42; index++) {
+      const date = new Date(first.getFullYear(),first.getMonth(),first.getDate()+index);
+      const count = groups.get(+date)?.length ?? 0;
+      const day = makeButton(String(date.getDate()),raidDayLabel.format(date)+', '+count+(count === 1 ? ' raid' : ' raids'),()=>{
+        selected = +date;
+        month = new Date(date.getFullYear(),date.getMonth(),1);
+        drawAgenda();
+        drawCalendar();
+        days.querySelector('[aria-pressed=true]')?.focus();
+      });
+      day.classList.toggle('outside-month',date.getMonth() !== month.getMonth());
+      day.classList.toggle('has-events',count > 0);
+      day.setAttribute('aria-pressed',String(+date === selected));
+      if (+date === +localRaidDay(now)) day.setAttribute('aria-current','date');
+      days.append(day);
+    }
+  }
+  drawAgenda();
+  drawCalendar();
+}
+
 const workspaceViews = ['readiness','roster','tonight','loot','logs'];
 const workingRaid = byId('workingRaid');
 const workingRaidKey = 'solstice.workingRaid';

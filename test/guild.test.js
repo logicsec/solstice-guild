@@ -190,6 +190,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);
+  for (let visit = 0; visit < 2; visit++) {
+    const {character} = await (await send('/api/armory?name=Astra+Mortis',options)).json();
+    assert.equal(character.journey.length,1);
+    assert.equal(character.journey[0].level,60);
+    assert.equal(character.journey[0].gear[0].slotType,'MAIN_HAND');
+    assert.deepEqual(character.journey[0].professions,[{name:'Alchemy',skill:100}]);
+  }
   const linkedDirectory = await (await send('/api/raid-characters?guild=1',options)).json();
   assert.ok(linkedDirectory.characters.some(character=>character.name === 'Astra Mortis' && character.armorySlug === 'astra-mortis' && character.level === 60));
   assert.ok(linkedDirectory.characters.every(character=>!Object.hasOwn(character,'member')));

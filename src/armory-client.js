@@ -131,7 +131,19 @@ export function renderArmoryProfile(character) {
       }
     }
     for (const item of equipped.values()) appendSlot(right,item.slot,item);
-    sheet.append(left,right);
+    const showcase = raidElement('div',null,'character-showcase');
+    showcase.hidden = true;
+    if (character.render) {
+      const model = raidElement('img');
+      model.alt = character.name+' Armory render';
+      model.addEventListener('load',()=>{
+        showcase.hidden = false;
+        sheet.classList.add('has-character-render');
+      },{once:true});
+      model.src = character.render;
+      showcase.append(model);
+    }
+    sheet.append(left,showcase,right);
     layout.append(sheet);
   } else layout.append(raidElement('p','No equipment data available.','raid-card'));
   const attributes = raidElement('aside',null,'character-attributes');
@@ -144,8 +156,89 @@ export function renderArmoryProfile(character) {
     for (const [label,value] of values) list.append(raidElement('dt',label),raidElement('dd',new Intl.NumberFormat().format(value)));
   }
   if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.','character-stat-card'));
-  layout.append(attributes);
-  root.append(layout);
+  const history = character.journey ?? [];
+  const overview = raidElement('section',null,'profile-overview');
+  const facts = raidElement('div',null,'raid-stats');
+  const milestones = [
+    ...[10,20,30,40,50,60].map(level => ['Level '+level,'Reach character level '+level, character.level >= level || history.some(day => day.level >= level)]),
+    ...[['UNCOMMON','Uncommon'],['RARE','Rare'],['EPIC','Epic']].map(([quality,label]) => [
+      label+' Equipment','Equip an item of '+label.toLowerCase()+' quality or higher.',
+      [...(character.gear ?? []),...history.flatMap(day => day.gear ?? [])].some(item =>
+        ['UNCOMMON','RARE','EPIC','LEGENDARY'].indexOf(item.quality) >= ['UNCOMMON','RARE','EPIC'].indexOf(quality)),
+    ]),
+  ];
+  raidStats(facts,[
+    ['Achievements',milestones.filter(([, ,earned]) => earned).length+' / '+milestones.length],
+    ['Item Level',character.itemLevel ?? 'Unavailable'],
+    ['Equipped Items',character.gear?.length ?? 'Unavailable'],
+  ]);
+  overview.append(facts,attributes);
+
+  const progress = raidElement('div',null,'profile-progress');
+  const journey = raidElement('section',null,'profile-section');
+  journey.append(raidElement('h3','The Journey'));
+  const levels = history.filter(day => Number.isFinite(day.level));
+  if (levels.length > 1) {
+    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+    const line = document.createElementNS(svg.namespaceURI,'polyline');
+    const low = Math.min(...levels.map(day => day.level));
+    const high = Math.max(...levels.map(day => day.level));
+    const start = Date.parse(levels[0].day);
+    const span = Date.parse(levels.at(-1).day) - start;
+    line.setAttribute('points',levels.map(day =>
+      (3 + 294 * (Date.parse(day.day) - start) / span)+','+
+      (53 - 47 * (day.level-low) / Math.max(1,high-low))).join(' '));
+    svg.setAttribute('viewBox','0 0 300 60');
+    svg.setAttribute('role','img');
+    svg.setAttribute('aria-label','Recorded level over time, from '+levels[0].level+' to '+levels.at(-1).level);
+    svg.append(line);
+    journey.append(raidElement('p','Level Over Time','eyebrow'),svg);
+  }
+  const timeline = raidElement('ol',null,'profile-timeline');
+  const changes = [];
+  let lastGear = null;
+  const lastSkills = new Map();
+  for (const [index,day] of history.entries()) {
+    const previous = history[index-1];
+    if (!previous) changes.push([day.day,'First recorded profile'+(day.level == null ? '' : ' · Level '+day.level)]);
+    else if (day.level != null && previous.level != null && day.level > previous.level) changes.push([day.day,'Reached level '+day.level]);
+    if (day.gear) {
+      if (lastGear) for (const item of day.gear) {
+        if (item.slotType && !lastGear.some(old => old.slotType === item.slotType && old.id === item.id && old.name === item.name)) {
+          changes.push([day.day,'Equipped '+item.name]);
+        }
+      }
+      lastGear = day.gear;
+    }
+    for (const profession of day.professions ?? []) {
+      if (profession.skill == null) continue;
+      const previousSkill = lastSkills.get(profession.name);
+      if (previousSkill != null && profession.skill > previousSkill) changes.push([day.day,profession.name+' reached '+profession.skill]);
+      lastSkills.set(profession.name,profession.skill);
+    }
+  }
+  for (const [day,description] of changes.reverse().slice(0,40)) {
+    const entry = raidElement('li');
+    const date = raidElement('time',new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeZone:'UTC'}).format(new Date(day)));
+    date.dateTime = day;
+    entry.append(raidElement('strong',description),date);
+    timeline.append(entry);
+  }
+  if (changes.length) journey.append(timeline,raidElement('small','Dates reflect Armory observations.'));
+  else journey.append(raidElement('p',history.length ? 'No changes recorded yet.' : 'Journey history is available for linked characters.'));
+
+  const achievements = raidElement('section',null,'profile-section');
+  achievements.append(raidElement('h3','Achievements'));
+  const badges = raidElement('ul',null,'profile-achievements');
+  for (const [title,description,earned] of milestones) {
+    const badge = raidElement('li',null,earned ? 'is-earned' : '');
+    badge.append(raidElement('strong',title),raidElement('small',description),raidElement('span',earned ? 'Earned' : 'Not recorded'));
+    badges.append(badge);
+  }
+  achievements.append(badges);
+  progress.append(journey,achievements);
+  layout.prepend(overview);
+  root.append(layout,progress);
   const professions = raidElement('div',null,'character-profession-sections');
   const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
   for (const entry of character.professions ?? []) {
@@ -409,6 +502,8 @@ export function openCharacterSheet(player, event, organizer) {
       image.addEventListener('load',()=>portrait.replaceChildren(image),{once:true});
       image.src = character.portrait;
     }
+    const meta = identity.querySelector('.inspector-meta');
+    meta.textContent = [character.race,character.className || player.class_name,player.spec,player.role].filter(Boolean).join(' · ');
     if (character.guild) identity.append(raidElement('p','<'+character.guild+'>','character-banner-guild'));
     if (character.level != null) {
       level.textContent = 'Level '+character.level;
@@ -453,7 +548,12 @@ export async function renderArmory(root) {
         } catch (error) { raidError(error); }
         finally { unlink.disabled = false; }
       });
-      row.append(title,unlink); content.append(row);
+      const actions = raidElement('div',null,'profile-link-actions');
+      const view = raidElement('button','View Character');
+      view.type = 'button';
+      view.addEventListener('click',()=>openCharacterSheet({...entry,character:entry.name,armorySlug:entry.slug}));
+      actions.append(view,unlink);
+      row.append(title,actions); content.append(row);
     }
     if (!configured) { content.append(raidElement('p','Armory lookup requires Blizzard API credentials from your guild administrator.')); return; }
     const form = raidElement('form',null,'raid-form armory-search');
