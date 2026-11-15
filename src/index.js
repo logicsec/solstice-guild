@@ -1,3 +1,4 @@
+import { createSchedulePicker } from './schedule-picker.js';
 import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
 import { renderGuildEvents } from './guild-events-client.js';
 import { createGroupPlanner, normalizeGroupPlan } from './raid-planner.js';
@@ -403,7 +404,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=guild-hall-events"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=shared-schedule-picker"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -530,22 +531,8 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <form id="raidCreate" class="raid-card raid-form" hidden>
 <div class="raid-steps"><span>1 · Raid details</span><span>2 · Schedule &amp; roster</span><span>3 · Review</span></div>
 <div data-step="0"><label>Raid<select name="instance" required><option value="">Choose a raid</option>${Object.entries(raidInstances).map(([key,raid])=>`<option value="${key}">${raid.name} · ${raid.size} players</option>`).join('')}</select></label><label>Notes<textarea name="notes" maxlength="1000" placeholder="Loot rules, voice chat, and what to bring"></textarea></label></div>
-<div data-step="1" hidden><div class="raid-schedule">
-  <fieldset class="raid-date-field"><legend>Start date</legend>
-    <details id="raidDatePicker"><summary id="raidSelectedDate">Choose a date</summary>
-      <div class="raid-calendar">
-        <div class="raid-calendar-month"><button type="button" id="raidPreviousMonth" aria-label="Previous month">‹</button><strong id="raidCalendarMonth" aria-live="polite"></strong><button type="button" id="raidNextMonth" aria-label="Next month">›</button></div>
-        <div class="raid-calendar-week" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-        <div id="raidCalendarDays" class="raid-calendar-days"></div>
-      </div>
-    </details>
-  </fieldset>
-  <fieldset class="raid-time-field"><legend>Start time</legend><div class="raid-time-controls">
-    <select id="raidHour" aria-label="Hour"></select><span aria-hidden="true">:</span><input id="raidMinute" aria-label="Minute" type="number" min="0" max="59" value="00" required>
-    <select id="raidPeriod" aria-label="AM or PM"><option>AM</option><option selected>PM</option></select>
-  </div></fieldset>
-  <input type="hidden" name="startsAt">
-</div><small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label class="raid-check"><input name="repeatWeekly" type="checkbox"> Repeat weekly</label><label id="raidWeeksField" hidden>Number of weekly occurrences<input name="weeks" type="number" min="2" max="12" value="2"></label><div id="raidRoleSlots" class="raid-stats"></div><section id="raidGroupPlanner" class="group-plan" aria-label="Group Planner"></section></div>
+<div data-step="1" hidden><div id="raidSchedulePicker"></div><input type="hidden" name="startsAt">
+<small id="raidTimezone"></small><p id="raidSizeLabel"></p><input type="hidden" name="size" value="10"><label class="raid-check"><input name="repeatWeekly" type="checkbox"> Repeat weekly</label><label id="raidWeeksField" hidden>Number of weekly occurrences<input name="weeks" type="number" min="2" max="12" value="2"></label><div id="raidRoleSlots" class="raid-stats"></div><section id="raidGroupPlanner" class="group-plan" aria-label="Group Planner"></section></div>
 <div data-step="2" hidden><div id="raidReview"></div>
 <label class="raid-check"><input name="review" type="checkbox"> Organizer approval required</label>
 <label class="raid-check"><input name="waitlist" type="checkbox"> Waitlist when a role or roster is full</label>
@@ -1869,6 +1856,7 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
+${createSchedulePicker.toString()}
 ${renderGuildEvents.toString()}
 
 const workspaceViews = ['readiness','roster','tonight','loot','logs'];
@@ -2113,78 +2101,15 @@ function renderRosterWorkspace(root,{event,organizer,roster}) {
   draw();
 }
 
-const raidDatePicker = byId('raidDatePicker');
-const raidHour = byId('raidHour');
-for (let hour = 1; hour <= 12; hour++) {
-  const option = new Option(hour,hour,hour === 7,hour === 7);
-  raidHour.add(option);
-}
-const raidDayLabel = new Intl.DateTimeFormat(undefined,{dateStyle:'full'});
-const raidMonthLabel = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric'});
-let selectedRaidDay;
-let raidMonth;
-
-function localRaidDay(date) {
-  return new Date(date.getFullYear(),date.getMonth(),date.getDate());
-}
-
-function drawRaidCalendar() {
-  const today = localRaidDay(new Date());
-  byId('raidCalendarMonth').textContent = raidMonthLabel.format(raidMonth);
-  byId('raidPreviousMonth').disabled = raidMonth <= new Date(today.getFullYear(),today.getMonth(),1);
-  const days = byId('raidCalendarDays');
-  days.replaceChildren();
-  for (let gap = 0; gap < raidMonth.getDay(); gap++) days.append(raidElement('span'));
-  const last = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+1,0).getDate();
-  for (let day = 1; day <= last; day++) {
-    const date = new Date(raidMonth.getFullYear(),raidMonth.getMonth(),day);
-    const button = raidElement('button',day);
-    button.type = 'button';
-    button.disabled = date < today;
-    button.setAttribute('aria-label',raidDayLabel.format(date));
-    button.setAttribute('aria-pressed',String(+date === +selectedRaidDay));
-    if (+date === +today) button.setAttribute('aria-current','date');
-    button.addEventListener('click',()=>{
-      selectedRaidDay = date;
-      byId('raidSelectedDate').textContent = raidDayLabel.format(date);
-      raidDatePicker.open = false;
-      byId('raidSelectedDate').focus();
-      drawRaidCalendar();
-    });
-    days.append(button);
-  }
-}
-for (const [id,offset] of [['raidPreviousMonth',-1],['raidNextMonth',1]]) {
-  byId(id).addEventListener('click',()=>{
-    raidMonth = new Date(raidMonth.getFullYear(),raidMonth.getMonth()+offset,1);
-    drawRaidCalendar();
-    if (byId(id).disabled) byId('raidNextMonth').focus();
-  });
-}
+const raidSchedule = createSchedulePicker({label:'Start'});
+byId('raidSchedulePicker').append(raidSchedule.element);
 raidForm.addEventListener('reset',()=>{
   groupPlanner.reset();
   raidForm.elements.repeatWeekly.checked = false;
   byId('raidWeeksField').hidden = true;
   raidForm.elements.weeks.required = false;
-  selectedRaidDay = undefined;
-  byId('raidSelectedDate').textContent = 'Choose a date';
-  raidDatePicker.open = false;
+  raidSchedule.reset();
 });
-raidDatePicker.addEventListener('toggle',()=>{
-  if (!raidDatePicker.open) return;
-  const date = selectedRaidDay ?? new Date();
-  raidMonth = new Date(date.getFullYear(),date.getMonth(),1);
-  drawRaidCalendar();
-});
-
-function raidStartTime() {
-  if (!selectedRaidDay || !byId('raidMinute').checkValidity()) return null;
-  const hours = Number(raidHour.value)%12 + (byId('raidPeriod').value === 'PM' ? 12 : 0);
-  const minutes = Number(byId('raidMinute').value);
-  const date = new Date(selectedRaidDay);
-  date.setHours(hours,minutes,0,0);
-  return date.getHours() === hours && date.getMinutes() === minutes ? date : null;
-}
 
 function setWizardStep(step) {
   wizardStep = step;
@@ -2463,13 +2388,10 @@ byId('raidNext').addEventListener('click',()=>{
       raidError(new Error('Remove extra planned characters to fit the selected raid size.'));
       return;
     }
-    const first = raidStartTime();
+    const first = raidSchedule.value();
     if (!first || +first <= Date.now()) {
-      raidError(new Error(selectedRaidDay ? 'Choose a valid future start time.' : 'Choose a raid date.'));
-      if (!selectedRaidDay) {
-        raidDatePicker.open = true;
-        byId('raidSelectedDate').focus();
-      } else raidHour.focus();
+      raidError(new Error(raidSchedule.hasDate() ? 'Choose a valid future start time.' : 'Choose a raid date.'));
+      raidSchedule.focus();
       return;
     }
     raidForm.elements.startsAt.value = first.toISOString();
@@ -2486,7 +2408,7 @@ raidForm.addEventListener('submit', async event => {
   event.preventDefault();
   if (wizardStep !== 2) return;
   const data = Object.fromEntries(new FormData(raidForm));
-  const first = raidStartTime();
+  const first = raidSchedule.value();
   if (!first || +first <= Date.now()) {
     setWizardStep(1);
     raidError(new Error('Choose a valid future start time.'));

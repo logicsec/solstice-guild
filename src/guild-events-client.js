@@ -1,3 +1,5 @@
+import { createSchedulePicker } from './schedule-picker.js';
+
 export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid }) {
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
@@ -112,9 +114,8 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
     title.required = !isRaid;
     title.placeholder = isRaid ? 'Defaults to the raid name' : 'Deadmines run';
   }
-  const start = make('input');
-  start.type = 'datetime-local';
-  start.required = true;
+  const start = createSchedulePicker({label:'Start'});
+  const localTime = make('p','Your local time · '+zone,'guild-events-zone');
   const repeat = make('select');
   repeat.append(new Option('Does not repeat','1'),new Option('Weekly','weekly'));
   const weeks = make('input');
@@ -130,16 +131,15 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   }
   repeat.addEventListener('change',updateRepeat);
   const details = make('details');
-  const end = make('input');
-  end.type = 'datetime-local';
+  const end = createSchedulePicker({label:'End',optional:true});
   const description = make('textarea');
   description.maxLength = 1000;
   description.rows = 3;
-  details.append(make('summary','End time and description'),field('Ends (your local time)',end),field('Description',description));
+  details.append(make('summary','End time and description'),end.element,field('Description',description));
   const submit = make('button','Create Event','raid-primary');
   const formStatus = make('p',undefined,'guild-events-status');
   formStatus.setAttribute('role','status');
-  form.append(field('Title',title),types,raidField,field('Starts (your local time, '+zone+')',start),
+  form.append(field('Title',title),types,raidField,start.element,localTime,
     field('Repeat',repeat),weeksField,details,submit,formStatus);
   updateRepeat();
   side.append(calendar,form);
@@ -153,11 +153,17 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
       title.focus();
       return;
     }
-    const first = new Date(start.value);
-    const last = end.value ? new Date(end.value) : null;
-    if (!(+first > Date.now()) || (last && !(+last > +first))) {
-      formStatus.textContent = last && !(+last > +first) ? 'End time must be after the start.' : 'Choose a future start time.';
-      (last && !(+last > +first) ? end : start).focus();
+    const first = start.value();
+    const last = end.value();
+    if (!first || +first <= Date.now()) {
+      formStatus.textContent = start.hasDate() ? 'Choose a valid future start time.' : 'Choose a start date.';
+      start.focus();
+      return;
+    }
+    if (end.hasDate() && (!last || +last <= +first)) {
+      formStatus.textContent = last ? 'End time must be after the start.' : 'Choose a valid end time.';
+      details.open = true;
+      end.focus();
       return;
     }
     const type = form.elements.eventType.value;
@@ -174,6 +180,8 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         ? await createRaid({...input, instance:raid.value, size:raidInstances[raid.value].size, notes:input.description, fromEvents:true})
         : await request('',input);
       form.reset();
+      start.reset();
+      end.reset();
       updateType();
       updateRepeat();
       details.open = false;
