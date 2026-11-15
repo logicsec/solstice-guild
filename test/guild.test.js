@@ -134,6 +134,46 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     const {raids} = await (await send(path,memberOptions)).json();
     assert.ok(raids.some(raid=>raid.id === id && !raid.organizer));
   }
+  const eventsPath = '/api/guild-events';
+  const window = new URLSearchParams({
+    from: new Date(Date.now()-86400000).toISOString(),
+    to: new Date(Date.now()+10*86400000).toISOString(),
+  });
+  const listEvents = async session => (await (await send(eventsPath+'?'+window,session)).json()).events;
+  assert.equal((await send(eventsPath+'?'+window)).status,401);
+  const existingRaid = (await listEvents(memberOptions)).find(event => event.id === id);
+  assert.equal(existingRaid.type,'Raid');
+  assert.equal(existingRaid.ends_at,null);
+  const endsAt = new Date(Date.parse(raidDraft.startsAt)+3600000).toISOString();
+  const inlineRaid = await post('/api/raids', {...raidDraft,fromEvents:true,title:'Guild raid night',endsAt});
+  assert.equal(inlineRaid.status,201);
+  const inlineId = (await inlineRaid.json()).id;
+  const eventsRaid = (await listEvents(memberOptions)).find(event => event.id === inlineId);
+  assert.equal(eventsRaid.title,'Guild raid night');
+  assert.equal(eventsRaid.ends_at,endsAt);
+  assert.equal((await post('/api/raids',{...raidDraft,fromEvents:true,endsAt:raidDraft.startsAt})).status,400);
+
+  const nextWeek = new Date(Date.parse(raidDraft.startsAt)+7*86400000).toISOString();
+  const dungeon = {type:'Dungeon',title:'Deadmines run',description:'Meet at the entrance',startsAt:raidDraft.startsAt,
+    endsAt,dates:[raidDraft.startsAt,nextWeek]};
+  assert.equal((await post(eventsPath,{...dungeon,type:'Unknown'})).status,400);
+  assert.equal((await post(eventsPath,{...dungeon,dates:[dungeon.startsAt,endsAt]})).status,400);
+  const createdDungeon = await post(eventsPath,dungeon);
+  assert.equal(createdDungeon.status,201);
+  const {id:dungeonId,count} = await createdDungeon.json();
+  assert.equal(count,2);
+  for (const type of ['Leveling','Other']) {
+    assert.equal((await post(eventsPath,{type,title:type,startsAt:dungeon.startsAt})).status,201);
+  }
+  const savedDungeons = (await listEvents(memberOptions)).filter(event => event.type === 'Dungeon');
+  assert.deepEqual(savedDungeons.map(event => event.starts_at).sort(),[dungeon.startsAt,nextWeek]);
+  assert.equal(savedDungeons.find(event => event.id === dungeonId).description,dungeon.description);
+  const signup = joined => post(eventsPath,{action:'signup',id:dungeonId,joined},member);
+  for (const joined of [true,true,false]) {
+    assert.deepEqual(await (await signup(joined)).json(),{signups:Number(joined),joined});
+  }
+  assert.equal((await listEvents(memberOptions)).find(event => event.id === dungeonId).signups,0);
+  assert.equal((await post('/api/raids/'+inlineId,{action:'state',state:'Cancelled'})).status,200);
   assert.equal((await send('/api/raid-characters?guild=1')).status,401);
   assert.equal((await post('/api/raid-characters',{name:'Guild Tester',className:'Priest',spec:'Holy',role:'Healer'},member)).status,200);
   const directory = await (await send('/api/raid-characters?guild=1',options)).json();
@@ -187,6 +227,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.deepEqual(armory.character.attributes[0],['Primary stats',[['Intellect',42]]]);
   assert.equal(armory.character.professions[0].name,'Alchemy');
   assert.match(armory.character.render,/^https:\/\/render\./);
+  assert.equal(armory.character.renderStyle,'main-raw');
   const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);

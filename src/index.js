@@ -1,3 +1,5 @@
+import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
+import { renderGuildEvents } from './guild-events-client.js';
 import { createGroupPlanner, normalizeGroupPlan } from './raid-planner.js';
 import { guildRecords } from './guild-records.js';
 import { recordRequest, recordField, renderLootHistory } from './guild-records-client.js';
@@ -120,13 +122,15 @@ async function raidApi(request, env, url, user) {
       return reply({ raids: result.results });
     }
     const instance = raidInstance(input.instance);
-    const title = instance?.name;
+    const inlineSchedule = input.fromEvents === true ? eventSchedule(input) : undefined;
+    const title = (inlineSchedule && clean(input.title, 80)) || instance?.name;
     const notes = clean(input.notes, 1000);
     const size = Number(input.size);
     const starts = new Date(input.startsAt);
     if (!instance || size !== instance.size || !Number.isFinite(+starts) || +starts <= Date.now()) {
       return reply({ error: 'Choose a raid and a future start time.' }, 400);
     }
+    if (inlineSchedule === null) return reply({ error: 'Check the event end time and repeat schedule.' }, 400);
     const roles = Object.fromEntries(raidRoles.map(role => [role, Number(input.slots?.[role] ?? 0)]));
     const slotValues = Object.values(roles);
     if (slotValues.some(value => !Number.isInteger(value) || value < 0) || (input.slots && slotValues.reduce((sum, value) => sum + value, 0) !== size)) {
@@ -136,18 +140,20 @@ async function raidApi(request, env, url, user) {
     if (reserve && !/^https:\/\/[^\s]+$/i.test(reserve)) return reply({ error: 'Use an HTTPS soft-reserve link.' }, 400);
     const groupPlan = normalizeGroupPlan(input.groupPlan ?? [], size, raidClasses, raidRoles);
     if (!groupPlan) return reply({ error: 'Check the planned characters and group sizes.' }, 400);
-    const settings = JSON.stringify({
+    const settings = {
       groupPlan,
       roles: input.slots ? roles : null, review: input.review === true, waitlist: input.waitlist === true,
       requirements: clean(input.requirements, 500), softReserve: reserve,
-    });
+    };
     const dates = input.dates ?? [input.startsAt];
     if (!Array.isArray(dates) || !dates.length || dates.length > 12 || dates[0] !== input.startsAt ||
       dates.some((value, index) => !Number.isFinite(+new Date(value)) || (index && +new Date(value) - +new Date(dates[index-1]) < 6 * 86400000))) {
       return reply({ error: 'Invalid repeat schedule.' }, 400);
     }
     const ids = dates.map(() => crypto.randomUUID());
-    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings, instance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').bind(ids[index], user, title, new Date(value).toISOString(), size, notes, settings,input.instance));
+    const statements = dates.map((value, index) => db.prepare('INSERT INTO raids (id, owner, title, starts_at, size, notes, settings, instance) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .bind(ids[index], user, title, new Date(value).toISOString(), size, notes,
+        JSON.stringify(inlineSchedule ? {...settings, endsAt: inlineSchedule[index].endsAt} : settings), input.instance));
     if (statements.length === 1) await statements[0].run();
     else await db.batch(statements);
     return reply({ id: ids[0], count: ids.length }, 201);
@@ -397,7 +403,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=character-journey-events"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=events-character-profile"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -505,7 +511,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 </button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="guildChat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h16v12H9l-5 4z M8 8h8 M8 12h5"/></svg>Guild Chat</button><button data-raid-view="craftingDirectory"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v14H3z M8 6V3h8v3 M3 11h18 M10 10v3h4v-3"/></svg>Crafting Directory</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
 <div class="raid-content">
-<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
+<header class="raid-heading"><div><button type="button" id="guildEventsBack" hidden>← Guild Hall</button><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
 <div id="raidDashboardControls" class="raid-dashboard-controls raid-card" hidden>
 <label class="working-raid">Working Raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label>
@@ -813,6 +819,7 @@ byId('dealSort').addEventListener('change', () => {
 });
 
 function setView(view) {
+  if (view !== 'raid') document.body.classList.remove('guild-events-view');
   byId('marketFooter').hidden = view === 'raid';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
@@ -1505,7 +1512,12 @@ function raidError(error) {
 }
 function raidReset(view, id) {
   raidView = view;
-  byId('raidTitle').closest('.raid-heading').classList.toggle('guild-events-hero',view === 'calendar');
+  const eventsView = view === 'calendar';
+  document.body.classList.toggle('guild-events-view',eventsView);
+  byId('raidTitle').closest('.raid-heading').classList.toggle('guild-events-hero',eventsView);
+  byId('guildEventsBack').hidden = !eventsView;
+  byId('raidSubtitle').hidden = eventsView;
+  byId('newRaid').textContent = eventsView ? '+ New Event' : '+ New Raid';
   activeRaid = id || null;
   const dashboard = workspaceViews.includes(view);
   for (const node of document.querySelectorAll('[data-raid-view]')) {
@@ -1810,6 +1822,15 @@ async function openRaidView(view, id, navigate = true) {
       if (!characters.length) byId('raidList').append(raidElement('p', 'Save your first character to reuse it on sign-ups.'));
       return;
     }
+    if (view === 'calendar') {
+      renderGuildEvents(byId('raidList'),{
+        eventTypes: ${JSON.stringify(eventTypes)}, raidInstances,
+        request: (path,data) => guildRequest('/api/guild-events'+path,data),
+        createRaid: data => raidRequest('',data),
+        openRaid: id => openRaidView('detail',id),
+      });
+      return;
+    }
     const { raids } = view === 'discover' ? await raidRequest('?discover=1') : await loadWorkingRaids(revision);
     if (revision !== raidRevision) return;
     if (view === 'new') {
@@ -1822,10 +1843,6 @@ async function openRaidView(view, id, navigate = true) {
       raidForm.hidden = false;
       resetRoleSlots();
       setWizardStep(0);
-      return;
-    }
-    if (view === 'calendar') {
-      renderGuildEvents(byId('raidList'),raids);
       return;
     }
     const visible = view === 'manage' ? raids.filter(raid => raid.organizer) :
@@ -1850,109 +1867,7 @@ async function openRaidView(view, id, navigate = true) {
     if (revision === raidRevision) raidError(error);
   }
 }
-function renderGuildEvents(root, raids) {
-  const now = new Date();
-  let month = new Date(now.getFullYear(),now.getMonth(),1);
-  let selected = null;
-  const groups = new Map();
-  for (const raid of raids.filter(raid => raid.state !== 'Cancelled').sort((a,b) => a.starts_at.localeCompare(b.starts_at))) {
-    const key = +localRaidDay(new Date(raid.starts_at));
-    if (!groups.has(key)) groups.set(key,[]);
-    groups.get(key).push(raid);
-  }
-  const layout = raidElement('div',null,'guild-events-layout');
-  const agenda = raidElement('section',null,'guild-events-agenda');
-  const agendaHeading = raidElement('h3','Coming Up');
-  const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  agenda.append(agendaHeading,raidElement('p','Times in '+zone,'guild-events-zone'));
-  const rows = raidElement('div');
-  agenda.append(rows);
-  const side = raidElement('aside',null,'guild-events-sidebar');
-  const calendar = raidElement('section',null,'raid-calendar guild-events-calendar');
-  calendar.setAttribute('aria-label','Events calendar');
-  const nav = raidElement('div',null,'raid-calendar-month');
-  const makeButton = (text,label,action) => {
-    const button = raidElement('button',text);
-    button.type = 'button';
-    button.setAttribute('aria-label',label);
-    button.addEventListener('click',action);
-    return button;
-  };
-  const monthTitle = raidElement('strong');
-  monthTitle.setAttribute('aria-live','polite');
-  function shift(offset) {
-    month = new Date(month.getFullYear(),month.getMonth()+offset,1);
-    drawCalendar();
-  }
-  nav.append(makeButton('‹','Previous month',()=>shift(-1)),monthTitle,makeButton('›','Next month',()=>shift(1)));
-  const weekdays = raidElement('div',null,'raid-calendar-week');
-  weekdays.setAttribute('aria-hidden','true');
-  for (const day of ['Sun','Mon','Tue','Wed','Thu','Fri','Sat']) weekdays.append(raidElement('span',day));
-  const days = raidElement('div',null,'raid-calendar-days');
-  calendar.append(nav,weekdays,days,raidElement('p','● Raid','guild-events-legend'));
-  const plan = raidElement('section',null,'raid-card guild-events-plan');
-  plan.append(raidElement('h3','Plan an Event'),raidElement('p','Pick a raid, set a time, and open it for sign-ups.'),
-    makeButton('Schedule a Raid','Schedule a raid',()=>byId('newRaid').click()));
-  side.append(calendar,plan);
-  layout.append(agenda,side);
-  root.append(layout);
-  const clear = makeButton('Show Upcoming','Clear selected day',()=>{
-    selected = null;
-    drawAgenda();
-    drawCalendar();
-  });
-
-  function drawAgenda() {
-    agendaHeading.textContent = selected == null ? 'Coming Up' : raidDayLabel.format(new Date(selected));
-    rows.replaceChildren();
-    if (selected != null) rows.append(clear);
-    let count = 0;
-    for (const [day,events] of groups) {
-      if (selected != null && day !== selected) continue;
-      const items = selected == null ? events.filter(raid => Date.parse(raid.starts_at) >= +now) : events;
-      if (!items.length) continue;
-      const section = raidElement('section',null,'guild-events-day');
-      if (selected == null) section.append(raidElement('h4',raidDayLabel.format(new Date(day))));
-      for (const raid of items) {
-        const date = new Date(raid.starts_at);
-        const time = raidElement('time',new Intl.DateTimeFormat(undefined,{timeStyle:'short'}).format(date));
-        time.dateTime = raid.starts_at;
-        const title = raidElement('div');
-        title.append(raidElement('strong',raid.title),raidElement('small','Raid · '+raid.size+' players · '+raid.state));
-        const row = raidElement('div',null,'guild-event-row');
-        row.append(time,title,makeButton('View Raid','View '+raid.title,()=>openRaidView('detail',raid.id)));
-        section.append(row);
-        count++;
-      }
-      rows.append(section);
-    }
-    if (!count) rows.append(raidElement('p',selected == null ? 'No upcoming raids.' : 'No raids scheduled for this date.'));
-  }
-
-  function drawCalendar() {
-    monthTitle.textContent = raidMonthLabel.format(month);
-    days.replaceChildren();
-    const first = new Date(month.getFullYear(),month.getMonth(),1-month.getDay());
-    for (let index = 0; index < 42; index++) {
-      const date = new Date(first.getFullYear(),first.getMonth(),first.getDate()+index);
-      const count = groups.get(+date)?.length ?? 0;
-      const day = makeButton(String(date.getDate()),raidDayLabel.format(date)+', '+count+(count === 1 ? ' raid' : ' raids'),()=>{
-        selected = +date;
-        month = new Date(date.getFullYear(),date.getMonth(),1);
-        drawAgenda();
-        drawCalendar();
-        days.querySelector('[aria-pressed=true]')?.focus();
-      });
-      day.classList.toggle('outside-month',date.getMonth() !== month.getMonth());
-      day.classList.toggle('has-events',count > 0);
-      day.setAttribute('aria-pressed',String(+date === selected));
-      if (+date === +localRaidDay(now)) day.setAttribute('aria-current','date');
-      days.append(day);
-    }
-  }
-  drawAgenda();
-  drawCalendar();
-}
+${renderGuildEvents.toString()}
 
 const workspaceViews = ['readiness','roster','tonight','loot','logs'];
 const workingRaid = byId('workingRaid');
@@ -2535,7 +2450,17 @@ for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventL
   if (raidMenuToggle.getClientRects().length) byId('raidTitle').focus();
 });
 for (const node of document.querySelectorAll('[data-raid-tab]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidTab));
-byId('newRaid').addEventListener('click',()=>{ raidForm.reset(); openRaidView('new'); });
+byId('guildEventsBack').addEventListener('click',()=>openRaidView('guildDashboard'));
+byId('newRaid').addEventListener('click',()=>{
+  if (raidView === 'calendar') {
+    const form = byId('planGuildEvent');
+    form?.scrollIntoView({block:'nearest'});
+    form?.querySelector('input')?.focus({preventScroll:true});
+    return;
+  }
+  raidForm.reset();
+  openRaidView('new');
+});
 byId('raidNext').addEventListener('click',()=>{
   for (const field of raidForm.querySelectorAll('[data-step="'+wizardStep+'"] :is(input,select)')) if (!field.reportValidity()) return;
   if (wizardStep === 1) {
@@ -2824,6 +2749,10 @@ export default {
       return renewSession(request,env);
     }
     if (pathname === '/api/session') return Response.json({ displayName: session.display_name, username:session.username ?? null, discordProfile:session.profile ? JSON.parse(session.profile) : null }, { headers: { 'Cache-Control': 'no-store' } });
+    if (pathname === '/api/guild-events') {
+      try { return await guildEventsApi(request, env, url, session.discord_id); }
+      catch { return Response.json({ error: 'Event storage is unavailable.' }, { status: 503 }); }
+    }
     if (pathname === '/api/raid-characters' || /^\/api\/raids(?:\/[^/]+)?$/.test(pathname)) {
       try { return await raidApi(request, env, url, session.discord_id); }
       catch { return Response.json({ error: 'Raid storage is unavailable.' }, { status: 503 }); }

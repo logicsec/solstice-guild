@@ -67,22 +67,25 @@ export function characterIcons(className,spec) {
 }
 
 export function renderArmoryProfile(character) {
-  const root = raidElement('div',null,'armory-profile');
   const gear = character.gear ?? [];
-  const layout = raidElement('div',null,'character-review-layout');
   const sheet = raidElement('div',null,'character-sheet');
   const left = raidElement('div',null,'character-gear');
   const right = raidElement('div',null,'character-gear character-gear-right');
+  const weapons = raidElement('div',null,'character-gear character-weapons');
+  const weaponSlots = [['MAIN_HAND','Main Hand'],['OFF_HAND','Off Hand'],['RANGED','Ranged']];
+  let tooltipCount = 0;
   const leftSlots = [['HEAD','Head'],['NECK','Neck'],['SHOULDER','Shoulder'],['BACK','Back'],['CHEST','Chest'],
-    ['TABARD','Tabard'],['SHIRT','Shirt'],['WRIST','Wrist'],['MAIN_HAND','Main Hand']];
+    ['TABARD','Tabard'],['SHIRT','Shirt'],['WRIST','Wrist']];
   const rightSlots = [['HANDS','Hands'],['WAIST','Waist'],['LEGS','Legs'],['FEET','Feet'],['FINGER_1','First Ring'],
-    ['FINGER_2','Second Ring'],['TRINKET_1','First Trinket'],['TRINKET_2','Second Trinket'],['OFF_HAND','Off Hand'],['RANGED','Ranged']];
+    ['FINGER_2','Second Ring'],['TRINKET_1','First Trinket'],['TRINKET_2','Second Trinket']];
   const slotKey = item => item.slotType || item.slot.toUpperCase().replace(/\s+/g,'_');
   const equipped = new Map(gear.map(item=>[slotKey(item),item]));
   function appendSlot(column, slot, item) {
     if (!item) {
       const empty = raidElement('div',null,'character-slot-empty');
-      empty.append(raidElement('span',null,'character-slot-icon'),raidElement('span','No '+slot));
+      const tile = raidElement('span',slot,'character-slot-icon');
+      empty.setAttribute('aria-label','Empty '+slot+' slot');
+      empty.append(tile,raidElement('span','No '+slot));
       column.append(empty);
       return;
     }
@@ -106,11 +109,12 @@ export function renderArmoryProfile(character) {
     if (item.enchants.length) copy.append(raidElement('small',item.enchants.join(' · '),'character-slot-enchant'));
     button.append(tile,copy);
     setItemIcon(tile, item.id);
+    if (item.level != null) button.append(raidElement('small',item.level,'character-item-level'));
     const level = item.level != null ? 'Item Level '+item.level : '';
     const enchants = item.enchants.map(enchant=>/^enchanted:/i.test(enchant) ? enchant : 'Enchanted: '+enchant);
     const lines = [level,item.slot,...item.details,...enchants,...(item.effects ?? [])].filter(Boolean);
     const tooltip = raidElement('div',null,'character-item-tooltip');
-    tooltip.id = 'character-item-'+(left.children.length+right.children.length);
+    tooltip.id = 'character-item-'+tooltipCount++;
     tooltip.setAttribute('popover','manual');
     tooltip.setAttribute('role','tooltip');
     const name = raidElement('strong',item.name);
@@ -124,7 +128,7 @@ export function renderArmoryProfile(character) {
     column.append(row);
   }
   if (character.gear) {
-    for (const [slots,column] of [[leftSlots,left],[rightSlots,right]]) {
+    for (const [slots,column] of [[leftSlots,left],[rightSlots,right],[weaponSlots,weapons]]) {
       for (const [key,label] of slots) {
         appendSlot(column,label,equipped.get(key));
         equipped.delete(key);
@@ -136,6 +140,7 @@ export function renderArmoryProfile(character) {
     if (character.render) {
       const model = raidElement('img');
       model.alt = character.name+' Armory render';
+      if (character.renderStyle === 'main-raw') model.className = 'character-model-raw';
       model.addEventListener('load',()=>{
         showcase.hidden = false;
         sheet.classList.add('has-character-render');
@@ -143,9 +148,8 @@ export function renderArmoryProfile(character) {
       model.src = character.render;
       showcase.append(model);
     }
-    sheet.append(left,showcase,right);
-    layout.append(sheet);
-  } else layout.append(raidElement('p','No equipment data available.','raid-card'));
+    sheet.append(left,showcase,right,weapons);
+  } else sheet.append(raidElement('p','No equipment data available.'));
   const attributes = raidElement('aside',null,'character-attributes');
   attributes.setAttribute('aria-label','Character Stats');
   for (const [group,values] of character.attributes ?? []) {
@@ -172,7 +176,7 @@ export function renderArmoryProfile(character) {
     ['Item Level',character.itemLevel ?? 'Unavailable'],
     ['Equipped Items',character.gear?.length ?? 'Unavailable'],
   ]);
-  overview.append(facts,attributes);
+  overview.append(facts);
 
   const progress = raidElement('div',null,'profile-progress');
   const journey = raidElement('section',null,'profile-section');
@@ -191,10 +195,12 @@ export function renderArmoryProfile(character) {
     svg.setAttribute('viewBox','0 0 300 60');
     svg.setAttribute('role','img');
     svg.setAttribute('aria-label','Recorded level over time, from '+levels[0].level+' to '+levels.at(-1).level);
+    svg.setAttribute('preserveAspectRatio','none');
     svg.append(line);
-    journey.append(raidElement('p','Level Over Time','eyebrow'),svg);
+    const chart = raidElement('div',null,'profile-level-history');
+    chart.append(raidElement('p','Level Over Time','eyebrow'),svg);
+    overview.append(chart);
   }
-  const timeline = raidElement('ol',null,'profile-timeline');
   const changes = [];
   let lastGear = null;
   const lastSkills = new Map();
@@ -217,28 +223,42 @@ export function renderArmoryProfile(character) {
       lastSkills.set(profession.name,profession.skill);
     }
   }
+  const timelineMonth = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric',timeZone:'UTC'});
+  const timelineDay = new Intl.DateTimeFormat(undefined,{day:'numeric',month:'long',timeZone:'UTC'});
+  let monthKey, timeline;
   for (const [day,description] of changes.reverse().slice(0,40)) {
+    if (monthKey !== day.slice(0,7)) {
+      monthKey = day.slice(0,7);
+      timeline = raidElement('ol',null,'profile-timeline');
+      journey.append(raidElement('h4',timelineMonth.format(new Date(day))),timeline);
+    }
     const entry = raidElement('li');
-    const date = raidElement('time',new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeZone:'UTC'}).format(new Date(day)));
+    const date = raidElement('time',timelineDay.format(new Date(day)));
     date.dateTime = day;
     entry.append(raidElement('strong',description),date);
     timeline.append(entry);
   }
-  if (changes.length) journey.append(timeline,raidElement('small','Dates reflect Armory observations.'));
-  else journey.append(raidElement('p',history.length ? 'No changes recorded yet.' : 'Journey history is available for linked characters.'));
+  if (!changes.length) journey.append(raidElement('p','No journey history recorded yet.'));
 
   const achievements = raidElement('section',null,'profile-section');
   achievements.append(raidElement('h3','Achievements'));
   const badges = raidElement('ul',null,'profile-achievements');
   for (const [title,description,earned] of milestones) {
     const badge = raidElement('li',null,earned ? 'is-earned' : '');
-    badge.append(raidElement('strong',title),raidElement('small',description),raidElement('span',earned ? 'Earned' : 'Not recorded'));
+    const icon = raidElement('span',title.startsWith('Level ') ? '⚑' : '◇','profile-achievement-icon');
+    icon.setAttribute('aria-hidden','true');
+    const copy = raidElement('div');
+    copy.append(raidElement('strong',title),raidElement('small',description),raidElement('small',earned ? 'Earned' : 'Not recorded','profile-achievement-state'));
+    badge.append(icon,copy);
     badges.append(badge);
   }
   achievements.append(badges);
   progress.append(journey,achievements);
-  layout.prepend(overview);
-  root.append(layout,progress);
+  if (character.attributes?.length) {
+    const stats = raidElement('details',null,'profile-attribute-details');
+    stats.append(raidElement('summary','Character Stats'),attributes);
+    overview.append(stats);
+  }
   const professions = raidElement('div',null,'character-profession-sections');
   const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
   for (const entry of character.professions ?? []) {
@@ -275,8 +295,7 @@ export function renderArmoryProfile(character) {
       professions.append(section);
     }
   }
-  root.append(raidElement('small','Source: Blizzard Armory'));
-  return { gearPanel:root, professions };
+  return { overview, equipment:sheet, progress, professions };
 }
 
 export function renderCharacterTalents(character) {
@@ -407,20 +426,30 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.setAttribute('aria-labelledby',title.id);
   const heading = raidElement('div',null,'character-inspector-title');
   const identity = raidElement('div');
-  identity.append(raidElement('p','Character Profile','eyebrow'),title,raidElement('p',[player.class_name,player.spec,player.role].filter(Boolean).join(' · '),'inspector-meta'));
-  const portrait = characterIcons(player.class_name,player.spec);
-  portrait.classList.add('character-banner-portrait');
-  heading.append(portrait,identity);
+  identity.append(title,raidElement('p',[player.spec,player.class_name,player.role].filter(Boolean).join(' · '),'inspector-meta'));
   const close = raidElement('button','×','character-banner-close');
   close.type = 'button';
   close.setAttribute('aria-label','Close character sheet');
   close.addEventListener('click',()=>dialog.close());
-  const level = raidElement('span',player.level == null ? '' : 'Level '+player.level,'character-banner-level');
-  level.hidden = player.level == null;
-  const header = raidElement('header',null,'workspace-drawer-heading character-banner');
-  header.append(heading,level,close);
+  const level = raidElement('span',undefined,'character-banner-level');
+  function setLevel(value) {
+    level.textContent = value == null ? '' : String(value);
+    level.hidden = value == null;
+    if (value != null) level.setAttribute('aria-label','Level '+value);
+  }
+  setLevel(player.level);
+  heading.append(level,identity);
+  const header = raidElement('header',null,'character-profile-hero');
+  const inner = raidElement('div',null,'character-profile-grid');
+  const info = raidElement('div',null,'character-profile-info');
+  const overview = raidElement('div');
+  overview.append(raidElement('p','Loading character sheet…'));
+  const equipment = raidElement('div');
+  equipment.hidden = true;
+  info.append(heading,overview);
+  inner.append(info,equipment);
+  header.append(inner,close);
   const content = raidElement('div');
-  content.append(raidElement('p','Loading character sheet…'));
   const review = event ? raidElement('div',null,'character-raid-review') : null;
   const evidence = event ? raidElement('section',null,'raid-card raid-review-evidence') : null;
   if (event) {
@@ -457,6 +486,8 @@ export function openCharacterSheet(player, event, organizer) {
   });
   function selectPanel(selected) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
+    overview.hidden = selected !== content;
+    equipment.hidden = selected !== content || !equipment.hasChildNodes();
     for (const {button,panel} of panels) {
       button.setAttribute('aria-pressed',String(panel === selected));
       panel.hidden = panel !== selected;
@@ -467,7 +498,10 @@ export function openCharacterSheet(player, event, organizer) {
   if (player.armorySlug) {
     dialog.append(tabs,...panels.map(({panel})=>panel));
     selectPanel(content);
-  } else dialog.append(review ?? raidElement('p','This character was added manually and has no linked Armory profile.','raid-card'));
+  } else {
+    overview.replaceChildren();
+    dialog.append(review ?? raidElement('p','This character was added manually and has no linked Armory profile.','raid-card'));
+  }
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
@@ -492,23 +526,18 @@ export function openCharacterSheet(player, event, organizer) {
   if (!player.armorySlug) return;
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
     if (!dialog.open) return;
-    const { gearPanel, professions:skills } = renderArmoryProfile(character);
-    content.replaceChildren(gearPanel);
-    professions.replaceChildren(skills);
+    const profile = renderArmoryProfile(character);
+    overview.replaceChildren(profile.overview);
+    equipment.replaceChildren(profile.equipment);
+    equipment.hidden = content.hidden;
+    content.replaceChildren(profile.progress);
+    professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
-    if (character.portrait) {
-      const image = raidElement('img');
-      image.alt = '';
-      image.addEventListener('load',()=>portrait.replaceChildren(image),{once:true});
-      image.src = character.portrait;
-    }
     const meta = identity.querySelector('.inspector-meta');
-    meta.textContent = [character.race,character.className || player.class_name,player.spec,player.role].filter(Boolean).join(' · ');
-    if (character.guild) identity.append(raidElement('p','<'+character.guild+'>','character-banner-guild'));
-    if (character.level != null) {
-      level.textContent = 'Level '+character.level;
-      level.hidden = false;
-    }
+    meta.textContent = [player.spec,[character.race,character.className || player.class_name].filter(Boolean).join(' '),
+      character.guild && '<'+character.guild+'>'].filter(Boolean).join(' · ');
+    if (character.ruleset) identity.append(raidElement('p',character.ruleset,'character-profile-realm'));
+    if (character.level != null) setLevel(character.level);
     if (!evidence) return;
     const gear = character.gear;
     const stats = raidElement('div',null,'raid-stats');
@@ -520,7 +549,7 @@ export function openCharacterSheet(player, event, organizer) {
     evidence.replaceChildren(raidElement('h3','Armory Evidence'),stats,
       raidElement('p','These figures come from Blizzard. Organizers set readiness for the selected raid.'));
   }).catch(error=>{
-    content.replaceChildren(raidElement('p',error.message));
+    overview.replaceChildren(raidElement('p',error.message));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
     talents.replaceChildren(raidElement('p','Talents are unavailable.'));
     evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));

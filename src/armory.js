@@ -152,6 +152,7 @@ async function loadCharacter(env, slug) {
   const renders = Array.isArray(media?.assets) ? media.assets : [];
   const mediaUrl = keys => keys.map(key=>renders.find(asset=>asset.key === key)?.value).find(value=>
     typeof value === 'string' && /^https:\/\/render(?:-[a-z]+)?\.worldofwarcraft\.com\//i.test(value));
+  const rawRender = mediaUrl(['main-raw']);
   const gear = Array.isArray(equipment?.equipped_items) ? equipment.equipped_items.map(item=>({
     id: Number.isSafeInteger(item.item?.id) ? item.item.id : null,
     slotType: item.slot?.type ?? '',
@@ -183,7 +184,8 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
-    professions, gear, attributes, talents:parseTalents(specializations), portrait: mediaUrl(['avatar','inset']) ?? null, render: mediaUrl(['main-raw','main','inset']) ?? null,
+    professions, gear, attributes, talents:parseTalents(specializations), portrait: mediaUrl(['avatar','inset']) ?? null,
+    render: rawRender ?? mediaUrl(['main']) ?? null, renderStyle: rawRender ? 'main-raw' : null,
   };
 }
 
