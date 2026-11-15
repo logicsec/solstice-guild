@@ -17,12 +17,13 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const dayAt = date => new Date(date.getFullYear(),date.getMonth(),date.getDate());
   const addDays = (date, offset) => new Date(date.getFullYear(),date.getMonth(),date.getDate()+offset);
   const monthAt = (date, offset = 0) => new Date(date.getFullYear(),date.getMonth()+offset,1);
-  const today = dayAt(new Date());
+  let today = dayAt(new Date());
   let month = monthAt(today);
   let selected = null;
   let agendaEvents = [];
   let monthEvents = [];
   let loading = true;
+  let agendaLoaded = false;
   let revision = 0;
   const zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
   const dayLabel = new Intl.DateTimeFormat(undefined,{weekday:'long',day:'numeric',month:'long'});
@@ -186,7 +187,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
       updateRepeat();
       details.open = false;
       month = monthAt(first);
-      selected = +dayAt(first);
+      selected = first >= addDays(dayAt(new Date()),91) ? +dayAt(first) : null;
       formStatus.textContent = result.count === 1 ? 'Event created.' : result.count+' events created.';
       await load(true);
     } catch (error) {
@@ -224,7 +225,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
     rows.replaceChildren();
     if (selected !== null) rows.append(clear);
     if (loading) return;
-    const events = selected === null ? agendaEvents.filter(event => Date.parse(event.starts_at) >= Date.now())
+    const events = selected === null ? agendaEvents.filter(event => Date.parse(event.starts_at) >= +today)
       : monthEvents.filter(event => +dayAt(new Date(event.starts_at)) === selected);
     for (const [day, items] of groupsFor(events)) {
       const section = make('section',undefined,'guild-events-day');
@@ -323,28 +324,30 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
 
   async function load(refreshAgenda) {
     const current = ++revision;
+    today = dayAt(new Date());
+    if (refreshAgenda) agendaLoaded = false;
     const fetchRange = async (from, to) => {
       const query = new URLSearchParams({from:from.toISOString(),to:to.toISOString()});
       return (await request('?'+query)).events;
     };
     const first = firstVisibleDay();
     const endOfCalendar = addDays(first,42);
-    const needsAgenda = refreshAgenda || loading;
-    monthEvents = [];
     drawCalendar();
     status.textContent = 'Loading events…';
-    try {
-      const [nextMonth,nextAgenda] = await Promise.all([
-        fetchRange(first,endOfCalendar),
-        needsAgenda ? fetchRange(today,addDays(today,91)) : agendaEvents,
-      ]);
-      if (current !== revision) return;
-      monthEvents = nextMonth;
-      agendaEvents = nextAgenda;
-      status.textContent = '';
-    } catch (error) {
-      if (current !== revision) return;
-      status.textContent = error.message;
+    const [nextMonth,nextAgenda] = await Promise.allSettled([
+      fetchRange(first,endOfCalendar),
+      agendaLoaded ? agendaEvents : fetchRange(today,addDays(today,91)),
+    ]);
+    if (current !== revision) return;
+    if (nextMonth.status === 'fulfilled') monthEvents = nextMonth.value;
+    if (nextAgenda.status === 'fulfilled') {
+      agendaEvents = nextAgenda.value;
+      agendaLoaded = true;
+    }
+    const failure = [nextMonth,nextAgenda].find(result => result.status === 'rejected');
+    status.textContent = '';
+    if (failure) {
+      status.append(failure.reason.message+' ',button('Retry',()=>load(true)));
     }
     loading = false;
     drawCalendar();

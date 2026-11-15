@@ -813,6 +813,14 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-dashboard-hero .raid-primary { margin-top: 12px; }
 .guild-dashboard-crest { align-self: start; width: clamp(36px,5vw,64px); }
 .guild-dashboard-crest .solstice-shield { display: block; width: 100%; height: auto; }
+.guild-calendar-banner-controls { display: grid; justify-items: center; align-self: start; gap: 8px; }
+.guild-app .guild-calendar-banner-controls .raid-primary {
+  min-height: 32px;
+  margin: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 .guild-dashboard-totals { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(130px,100%),1fr)); gap: 8px; margin: 0; padding-top: 14px; border-top: 1px solid var(--line); }
 .guild-dashboard-totals > div { padding: 8px 12px; border-radius: 8px; background: #111315b8; }
 .guild-dashboard-totals dt { color: var(--muted); font-size: 12px; }
@@ -1396,8 +1404,8 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-events-legend > span,
 .guild-event-type-choices label > span { display: inline-flex; align-items: center; gap: 7px; }
 .guild-events-legend .guild-event-dot { width: 8px; height: 8px; }
-.guild-event-actions { display: grid; justify-items: end; gap: 6px; }
-.guild-app .guild-event-actions .raid-control-danger { min-height: 36px; padding: 6px 12px; font-size: 12px; }
+.guild-events-agenda { container-type: inline-size; }
+.guild-event-actions { display: flex; justify-content: flex-end; gap: 6px; }
 .guild-events-day { margin-top: 16px; }
 .guild-events-day h4 {
   display: flex;
@@ -1430,14 +1438,20 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-event-row strong + small { font-size: 11px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; }
 .guild-event-creator { display: block; margin-top: 3px; overflow-wrap: anywhere; }
 .guild-event-description { margin-block: 3px 0; font-size: 12px; white-space: pre-wrap; overflow-wrap: anywhere; }
-.guild-app .guild-events-agenda button:not(.raid-control-danger) {
-  min-height: 36px;
-  padding: 6px 12px;
+.guild-app .guild-event-actions button,
+.guild-app .guild-events-agenda > .guild-events-status button {
+  box-sizing: border-box;
+  min-height: 32px;
+  padding: 4px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.guild-event-actions button { width: 84px; }
+.guild-app .guild-events-agenda > .guild-events-status button { padding-inline: 8px; }
+.guild-app .guild-event-actions button:not(.raid-control-danger) {
   border: 1px solid var(--line);
   background: var(--container);
   color: var(--ink);
-  font-size: 12px;
-  font-weight: 400;
 }
 .guild-app :is(.guild-events-agenda,.guild-events-calendar .raid-calendar-month) button:not(.raid-control-danger):hover { background: var(--hover); border-color: var(--accent); }
 .guild-events-plan { display: grid; gap: 16px; padding: 20px; }
@@ -1490,8 +1504,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .guild-events-layout { grid-template-columns: minmax(0,1fr); margin-top: 12px; }
   .guild-events-sidebar { grid-template-columns: repeat(auto-fit,minmax(min(280px,100%),1fr)); align-items: start; }
 }
-@media (max-width: 500px) {
+@container (max-width: 410px) {
   .guild-event-row { grid-template-columns: auto minmax(0,1fr) auto; gap: 8px; padding-inline: 12px; }
-  .guild-event-row .guild-event-count { grid-row: 2; grid-column: 2; }
-  .guild-event-row .guild-event-actions { grid-row: 1 / span 2; grid-column: 3; }
+  .guild-event-row > div:not(.guild-event-actions) { grid-column: 2 / -1; }
+  .guild-event-count { grid-row: 2; grid-column: 1 / 3; }
+  .guild-event-actions { grid-row: 2; grid-column: 3; }
 }
