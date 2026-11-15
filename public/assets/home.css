@@ -343,6 +343,13 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .raid-sidebar button[aria-current=true] { background: var(--hover); color: var(--accent); border-color: var(--deep-accent); box-shadow: inset 3px 0 var(--accent); }
 .raid-content { padding: clamp(18px,3vw,42px); }
 .guild-app .raid-heading h2 { font: 720 clamp(27px,3vw,36px)/1.1 var(--site-font); letter-spacing: -.035em; margin-bottom: 7px; }
+.guild-app .raid-heading .guild-new-event {
+  min-height: 32px;
+  margin-inline-start: auto;
+  padding: 4px 10px;
+  font-size: 12px;
+  white-space: nowrap;
+}
 .guild-app .raid-shell p { color: var(--muted); }
 .guild-app .raid-shell .eyebrow { color: var(--accent); }
 .guild-app :is(.raid-card,.raid-stats>div,.board,.recipe-card) { border-radius: 13px; }
@@ -813,14 +820,6 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-dashboard-hero .raid-primary { margin-top: 12px; }
 .guild-dashboard-crest { align-self: start; width: clamp(36px,5vw,64px); }
 .guild-dashboard-crest .solstice-shield { display: block; width: 100%; height: auto; }
-.guild-calendar-banner-controls { display: grid; justify-items: center; align-self: start; gap: 8px; }
-.guild-app .guild-calendar-banner-controls .raid-primary {
-  min-height: 32px;
-  margin: 0;
-  padding: 4px 10px;
-  font-size: 12px;
-  white-space: nowrap;
-}
 .guild-dashboard-totals { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(130px,100%),1fr)); gap: 8px; margin: 0; padding-top: 14px; border-top: 1px solid var(--line); }
 .guild-dashboard-totals > div { padding: 8px 12px; border-radius: 8px; background: #111315b8; }
 .guild-dashboard-totals dt { color: var(--muted); font-size: 12px; }

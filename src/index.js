@@ -404,7 +404,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=event-buttons"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=event-header"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1518,7 +1518,10 @@ function raidReset(view, id) {
   byId('raidMessage').textContent = '';
   byId('raidSignIn').hidden = true;
   const guildView = ['guildDashboard','guildChat','craftingDirectory'].includes(view);
-  byId('newRaid').hidden = view === 'new' || view === 'calendar' || guildView;
+  const createButton = byId('newRaid');
+  createButton.hidden = view === 'new' || guildView;
+  createButton.textContent = view === 'calendar' ? '+ New Event' : '+ New Raid';
+  createButton.classList.toggle('guild-new-event',view === 'calendar');
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
   characterForm.hidden = true;
@@ -1533,23 +1536,19 @@ function raidStats(target, values) {
     target.append(box);
   }
 }
-function guildOverviewBanner(title, description, actionLabel, onAction, { stats = [], actionAboveCrest = false } = {}) {
+function guildOverviewBanner(title, description, actionLabel, onAction, { stats = [] } = {}) {
   const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
   const intro = raidElement('div');
   intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2',title),
     raidElement('p',description));
   const crest = raidElement('div',null,'guild-dashboard-crest');
   crest.innerHTML = ${JSON.stringify(solsticeMark)};
-  const action = raidElement('button',actionLabel,'raid-primary');
-  action.addEventListener('click',onAction);
-  if (actionAboveCrest) {
-    const controls = raidElement('div',null,'guild-calendar-banner-controls');
-    controls.append(action,crest);
-    hero.append(intro,controls);
-  } else {
+  if (onAction) {
+    const action = raidElement('button',actionLabel,'raid-primary');
+    action.addEventListener('click',onAction);
     intro.append(action);
-    hero.append(intro,crest);
   }
+  hero.append(intro,crest);
   const totals = raidElement('dl',null,'guild-dashboard-totals');
   for (const [label,value] of stats) {
     const item = raidElement('div');
@@ -1818,12 +1817,7 @@ async function openRaidView(view, id, navigate = true) {
         createRaid: data => raidRequest('',data),
         openRaid: id => openRaidView('detail',id),
       });
-      const banner = guildOverviewBanner('Guild Calendar','Schedule raids, dungeon runs, and other guild events.','+ New Event',()=>{
-        const form = byId('planGuildEvent');
-        form.scrollIntoView({block:'nearest'});
-        form.querySelector('input').focus({preventScroll:true});
-      },{actionAboveCrest:true});
-      list.prepend(banner);
+      list.prepend(guildOverviewBanner('Guild Calendar','Schedule raids, dungeon runs, and other guild events.'));
       return;
     }
     const { raids } = view === 'discover' ? await raidRequest('?discover=1') : await loadWorkingRaids(revision);
@@ -2384,6 +2378,12 @@ for (const node of document.querySelectorAll('[data-raid-view]')) node.addEventL
 });
 for (const node of document.querySelectorAll('[data-raid-tab]')) node.addEventListener('click',()=>openRaidView(node.dataset.raidTab));
 byId('newRaid').addEventListener('click',()=>{
+  if (raidView === 'calendar') {
+    const form = byId('planGuildEvent');
+    form.scrollIntoView({block:'nearest'});
+    form.querySelector('input').focus({preventScroll:true});
+    return;
+  }
   raidForm.reset();
   openRaidView('new');
 });
