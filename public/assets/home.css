@@ -362,9 +362,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .profession-grid svg { background: var(--container); color: var(--accent); border-color: var(--line); }
 .guild-app footer { background: var(--container); }
 .armory-inspector { margin-top: 12px; }
-.armory-profile { margin: 12px 0; }
-.armory-profile img { display: block; width: 100%; max-height: 300px; object-fit: contain; background: var(--container); border-radius: 10px; }
-.armory-profile details, .prep-activity { padding: 10px 0; border-top: 1px solid var(--line); }
+.prep-activity { padding: 10px 0; border-top: 1px solid var(--line); }
 .armory-item { display: grid; gap: 2px; padding: 8px; }
 .armory-item [data-quality="RARE"] { color: #80b8ff; }
 .armory-item [data-quality="EPIC"] { color: #d8a6ff; }
@@ -710,9 +708,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-app .character-slot-button, .character-slot-empty { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 52px; padding: 5px 8px; text-align: start; border: 1px solid var(--line); border-radius: 8px; background: var(--container); }
 .character-slot-empty { color: var(--muted); font-size: 12px; }
 .character-gear-right :is(.character-slot-button,.character-slot-empty) { flex-direction: row-reverse; text-align: end; }
-.character-slot-icon { display: grid; place-items: center; flex: 0 0 36px; height: 36px; border: 1px solid var(--gear-quality,var(--line)); border-radius: 7px; text-align: center; }
+.character-slot-icon { position: relative; display: grid; place-items: center; flex: 0 0 36px; height: 36px; overflow: hidden; border: 1px solid var(--gear-quality,var(--line)); border-radius: 7px; text-align: center; }
 .character-slot-empty .character-slot-icon { background: var(--field); }
-.armory-profile .character-slot-icon img { width: 100%; height: 100%; object-fit: cover; border-radius: 6px; }
+.character-slot-icon > img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: cover; }
 .character-slot-caption { font-size: 8px; line-height: 1.1; overflow-wrap: anywhere; color: var(--muted); }
 .character-slot-copy { min-width: 0; overflow-wrap: anywhere; line-height: 1.25; }
 .character-slot-copy :is(strong,small) { display: block; }
@@ -1233,7 +1231,7 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   background: radial-gradient(ellipse at 48% 30%,#756e65,#30271c 80%);
 }
 .character-showcase[hidden] { display: none; }
-.armory-profile .character-showcase img {
+.character-showcase > img {
   position: absolute;
   inset: 0;
   display: block;
