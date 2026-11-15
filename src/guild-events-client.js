@@ -34,7 +34,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   };
 
   const layout = make('div',undefined,'guild-events-layout');
-  const agenda = make('section',undefined,'guild-events-agenda');
+  const agenda = make('section',undefined,'raid-card guild-events-agenda');
   const agendaHead = make('header',undefined,'guild-events-agenda-head');
   const heading = make('h3','Coming Up');
   agendaHead.append(heading,make('p','Times in '+zone,'guild-events-zone'));
@@ -44,7 +44,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   agenda.append(agendaHead,status,rows);
 
   const side = make('aside',undefined,'guild-events-sidebar');
-  const calendar = make('section',undefined,'guild-events-frame guild-events-calendar');
+  const calendar = make('section',undefined,'raid-card guild-events-calendar');
   calendar.setAttribute('aria-label','Events calendar');
   const nav = make('div',undefined,'raid-calendar-month');
   const monthTitle = make('strong');
@@ -71,7 +71,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   }
   calendar.append(nav,weekdays,days,legend);
 
-  const form = make('form',undefined,'guild-events-frame guild-events-plan');
+  const form = make('form',undefined,'raid-card guild-events-plan');
   form.id = 'planGuildEvent';
   form.append(make('h3','Plan an Event'));
   function field(caption, control) {
@@ -247,7 +247,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
                 action.disabled = false;
               }
             }) : null;
-        const row = make('article',undefined,'guild-events-frame guild-event-row');
+        const row = make('article',undefined,'guild-event-row');
         row.style.setProperty('--event-color',eventTypes[event.type]);
         row.append(time,name,count);
         if (action) row.append(action);
