@@ -310,7 +310,7 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app > main { max-width: none; border: 0; background: var(--night); }
 .guild-topbar { position: relative; display: flex; align-items: center; background: var(--container); border-bottom: 1px solid var(--line); }
 .guild-app .masthead, .guild-app .guild-nav { background: transparent; border: 0; }
-.guild-app .masthead { flex: 0 0 var(--guild-rail-width); padding: 9px 18px; }
+.guild-app .masthead { flex: 0 0 248px; padding: 12px 24px; }
 .guild-app .guild-nav { flex: 1; min-width: 0; padding: 10px clamp(12px,3vw,36px); }
 .guild-nav-items { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .guild-app .guild-nav-items :is(a,button) { display: inline-flex; align-items: center; min-height: 38px; padding: 7px 11px; border: 1px solid transparent; border-radius: 8px; color: var(--ink); font: inherit; font-weight: 600; white-space: nowrap; }
@@ -319,11 +319,11 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app :is(button,input,select,textarea) { border-radius: 8px; }
 .guild-app button:hover { border-color: var(--accent); }
 .guild-app :is(input:not([type=checkbox]),select,textarea,.filters summary) { background: var(--field); }
-.guild-app .raid-shell { grid-template-columns: var(--guild-rail-width) minmax(0,1fr); min-height: calc(100dvh - 62px); }
+.guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,var(--container),transparent 55%),var(--night); }
 .guild-app .raid-actions { align-items: center; }
 .guild-app :where(.raid-shell) :is(button, a.raid-primary) {
-  min-height: 36px;
-  padding: 7px 11px;
+  min-height: 64px;
+  padding: 8px 12px;
   line-height: 1.35;
 }
 .guild-app :where(.raid-shell) button {
@@ -333,23 +333,16 @@ body:has(> .guild-home) { background: var(--surface); }
 }
 .guild-app :where(.raid-shell) button:where(:hover:not(:disabled)) { background: var(--hover); }
 .guild-app :where(.raid-shell) a.raid-primary { display: inline-flex; align-items: center; }
-.guild-app .raid-sidebar { display: flex; flex-direction: column; gap: 24px; padding: 18px 12px 14px; }
+.guild-app .raid-sidebar { padding: 24px 16px; background: var(--container); }
 .raid-sidebar nav { display: block; padding: 0; background: transparent; border: 0; }
-.raid-nav-group + .raid-nav-group { margin-top: 16px; }
+.raid-nav-group + .raid-nav-group { margin-top: 24px; }
 .raid-nav-group .eyebrow { padding: 0 12px 5px; color: var(--muted); letter-spacing: .1em; }
-.guild-app .raid-sidebar button { background: transparent; color: var(--muted); display: flex; align-items: center; gap: 9px; border: 1px solid transparent; font-size: 13px; font-weight: 550; margin: 2px 0; padding: 6px 10px; }
+.guild-app .raid-sidebar button { background: transparent; display: flex; align-items: center; gap: 11px; border: 1px solid transparent; font-size: 14px; font-weight: 550; margin: 4px 0; padding: 10px 12px; }
 .raid-sidebar svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.65; stroke-linecap: round; stroke-linejoin: round; flex: none; }
 .guild-app .raid-sidebar button:hover { background: var(--hover); }
-.guild-app .raid-sidebar button[aria-current=true] {
-  background: color-mix(in srgb, var(--accent) 13%, var(--container));
-  color: var(--accent);
-  border-color: transparent;
-  box-shadow: inset 2px 0 var(--accent);
-}
-.raid-sidebar-realm { margin-top: auto; padding: 12px 10px 0; border-top: 1px solid var(--line); }
-.raid-sidebar-realm small { display: block; color: var(--muted); }
+.guild-app .raid-sidebar button[aria-current=true] { background: var(--hover); color: var(--accent); border-color: var(--deep-accent); box-shadow: inset 3px 0 var(--accent); }
 .raid-content { padding: clamp(18px,3vw,42px); }
-.guild-app .raid-heading h1 { font: 650 clamp(24px,2.5vw,32px)/1.15 var(--site-font); letter-spacing: -.025em; margin-bottom: 5px; }
+.guild-app .raid-heading h2 { font: 720 clamp(27px,3vw,36px)/1.1 var(--site-font); letter-spacing: -.035em; margin-bottom: 7px; }
 .guild-app .raid-heading .guild-new-event {
   min-height: 32px;
   margin-inline-start: auto;
@@ -532,37 +525,17 @@ body:has(> .guild-home) { background: var(--surface); }
   --glass-panel: color-mix(in srgb, var(--container) 82%, transparent);
   --glass-nav: color-mix(in srgb, var(--container) 62%, transparent);
 }
-.guild-app {
-  --guild-rail-width: 216px;
-  --surface: #1e1e19;
-  --container: #272720;
-  --field: #191a15;
-  --hover: #343229;
-  --ink: #f0eadb;
-  --muted: #b9b2a3;
-  --line: #403d32;
-  --accent: #ecaa70;
-  --deep-accent: #806047;
-  --copper: #df9d65;
-  --glass-panel: var(--container);
-  --glass-nav: var(--container);
-  color: var(--ink);
-}
-.guild-app > main { background: var(--surface); }
-.guild-app .raid-sidebar {
-  background: radial-gradient(ellipse at left top, color-mix(in srgb, var(--accent) 10%, transparent), transparent 46%), var(--container);
+.guild-app > main {
+  background: radial-gradient(ellipse at 84% 0%, var(--hover), transparent 58%), var(--surface);
 }
 .guild-app :is(.raid-primary,.search-button) {
-  background: var(--accent);
+  background: color-mix(in srgb, var(--copper) 66%, var(--gold));
   border-color: transparent;
   color: var(--field);
-  border-radius: 7px;
 }
 .guild-app :is(.raid-primary,.search-button):hover {
-  background: color-mix(in srgb, var(--accent) 81%, var(--ink));
+  background: color-mix(in srgb, var(--gold) 75%, var(--ink));
 }
-.guild-app :is(.board,.raid-card,.raid-stats > div,.recipe-card) { border-radius: 8px; }
-.guild-app .market-scroll th, .guild-app tbody tr:nth-child(even) { background: transparent; }
 .guild-app .armory-confirm {
   background: #1c1f22;
   border-color: var(--line);
@@ -811,11 +784,12 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .raid-banner[data-raid-instance="onyxias-lair"] { --raid-art: url('/assets/raid-onyxias-lair.webp'); }
 .guild-app .workspace-goal.raid-banner {
   position: relative;
-  border-color: var(--line);
-  border-radius: 8px;
-  background: linear-gradient(90deg, var(--container), color-mix(in srgb, var(--container) 88%, transparent)),
-    var(--raid-art, url('/assets/solstice-twilight.webp')) center 42% / cover no-repeat;
+  border-color: color-mix(in srgb, var(--accent) 74%, var(--line));
+  border-radius: 16px;
+  background: radial-gradient(ellipse at 50% 114%, #d28d4040, transparent 55%),
+    linear-gradient(90deg, #16181bf5, #16181bd9), var(--raid-art, url('/assets/solstice-twilight.webp')) center 42% / cover no-repeat;
 }
+.workspace-goal.raid-banner::after { content: ''; position: absolute; inset: auto 18% -1px; height: 1px; background: linear-gradient(90deg, transparent, #e7b47e, transparent); pointer-events: none; }
 .workspace-goal .workspace-goal-status h3 { font-size: clamp(17px, 2vw, 24px); line-height: 1.25; }
 .workspace-goal .character-banner-facts { gap: 10px 22px; }
 .workspace-goal .character-banner-facts > div { flex-wrap: wrap; }
@@ -831,53 +805,38 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .public-raider-guild { color: var(--accent); font-size: 13px; overflow-wrap: anywhere; }
 .public-raider-group { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; color: var(--muted); font-size: 12px; }
 
-.guild-character-list { display: grid; }
-.guild-app .guild-character-row { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: 44px auto minmax(0,1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 7px 12px 7px 8px; text-align: start; background: transparent; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; }
-.guild-app .guild-character-row:hover { background-color: var(--hover); }
-.guild-character-level { display: grid; place-items: center; min-height: 36px; color: var(--accent); font-size: 19px; font-weight: 750; font-variant-numeric: tabular-nums; }
-.guild-character-level.is-unknown { color: var(--muted); }
+.guild-character-list { display: grid; gap: 7px; }
+.guild-app .guild-character-row { position: relative; isolation: isolate; overflow: hidden; display: grid; grid-template-columns: 44px auto minmax(0,1fr) auto; align-items: center; gap: 10px; width: 100%; padding: 7px 12px 7px 8px; text-align: start; background: linear-gradient(100deg, transparent 45%, #d4a85d12), var(--field); border: 1px solid var(--line); border-radius: 9px; }
+.guild-app .guild-character-row:hover { background-color: var(--hover); border-color: var(--accent); }
+.guild-character-level { display: grid; place-items: center; min-height: 36px; color: #d4a85d; text-shadow: 0 0 10px #e3ac5c99; font-size: 19px; font-weight: 750; font-variant-numeric: tabular-nums; }
+.guild-character-level.is-unknown { color: var(--muted); text-shadow: none; }
 .guild-character-name { min-width: 0; overflow-wrap: anywhere; }
 .guild-character-name :is(strong,small) { display: block; }
 .guild-character-arrow { color: var(--accent); font-size: 20px; }
 .guild-character-watermark { position: absolute; z-index: -1; inset-inline-end: 28px; top: 50%; width: 76px; height: 76px; transform: translateY(-50%); object-fit: cover; opacity: .13; mask-image: radial-gradient(ellipse, #000 20%, transparent 71%); pointer-events: none; }
 
-.guild-dashboard-overview { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding-block: 12px; border-bottom: 1px solid var(--line); }
-.guild-dashboard-totals { flex: 1 1 440px; display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); margin: 0; }
-.guild-dashboard-totals > div { min-width: 0; padding: 3px 16px; border-inline-start: 1px solid var(--line); }
-.guild-dashboard-totals > div:first-child { padding-inline-start: 0; border: 0; }
-.guild-dashboard-totals dt { color: var(--muted); font-size: 12px; overflow-wrap: anywhere; }
-.guild-dashboard-totals dd { margin: 2px 0 0; color: var(--ink); font-size: 23px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.guild-dashboard-hero { gap: 16px; padding: clamp(18px,3vw,34px); background: radial-gradient(ellipse at 75% 125%, #d28d4038, transparent 55%), linear-gradient(90deg,#16181bfa,#16181b90), url('/assets/solstice-twilight.webp') center 38% / cover; }
+.guild-dashboard-hero h2 { margin: 5px 0; font-size: clamp(26px,3.4vw,42px); line-height: 1.12; }
+.guild-dashboard-hero .raid-primary { margin-top: 12px; }
+.guild-dashboard-crest { align-self: start; width: clamp(36px,5vw,64px); }
+.guild-dashboard-crest .solstice-shield { display: block; width: 100%; height: auto; }
+.guild-dashboard-totals { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fit,minmax(min(130px,100%),1fr)); gap: 8px; margin: 0; padding-top: 14px; border-top: 1px solid var(--line); }
+.guild-dashboard-totals > div { padding: 8px 12px; border-radius: 8px; background: #111315b8; }
+.guild-dashboard-totals dt { color: var(--muted); font-size: 12px; }
+.guild-dashboard-totals dd { margin: 0; color: var(--gold); font-size: 24px; font-weight: 750; text-shadow: 0 0 12px color-mix(in srgb, var(--accent) 25%, transparent); }
 .guild-dashboard-tiles { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 12px; margin-top: 14px; }
 .guild-dashboard-tile[data-kind="profession"] { grid-column: 1 / -1; }
-.guild-dashboard-rows { display: grid; margin-top: 9px; }
-.guild-profession-group .guild-dashboard-rows { grid-template-columns: repeat(auto-fit,minmax(min(190px,100%),1fr)); gap: 6px; }
-.guild-dashboard-entry { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--line); }
-.guild-app .guild-dashboard-entry.guild-profession-tile { background: var(--field); }
-.guild-app .guild-dashboard-entry.guild-profession-tile:hover { background: var(--hover); }
+.guild-dashboard-rows { display: grid; gap: 6px; margin-top: 9px; }
+.guild-profession-group .guild-dashboard-rows { grid-template-columns: repeat(auto-fit,minmax(min(190px,100%),1fr)); }
+.guild-dashboard-entry { display: grid; grid-template-columns: 26px minmax(0,1fr) auto; align-items: center; gap: 8px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 7px; background: linear-gradient(100deg, transparent 45%, color-mix(in srgb, var(--accent) 6%, transparent)), var(--field); }
 .guild-dashboard-entry .profession-progress-icon { width: 24px; height: 24px; }
 .guild-dashboard-role-icon { text-align: center; color: var(--accent); }
 
 .raid-dashboard-controls { display: grid; gap: 12px; margin-bottom: 14px; }
 .raid-dashboard-controls .working-raid { width: min(100%, 550px); max-width: none; margin: 0; padding: 0; }
-.raid-dashboard-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 0; background: transparent; border-bottom: 1px solid var(--line); }
-.guild-app .raid-dashboard-tabs button {
-  min-height: 36px;
-  padding: 6px 12px;
-  color: var(--muted);
-  background: transparent;
-  border: 0;
-  border-bottom: 2px solid transparent;
-  border-radius: 0;
-}
-.guild-app .raid-dashboard-tabs button[aria-current="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-.guild-app .raid-dashboard-controls { padding: 0; background: transparent; border: 0; }
-.guild-app .workspace-metrics > div { background: transparent; border: 0; border-inline-start: 1px solid var(--line); border-radius: 0; }
-.guild-app .workspace-metrics > div:first-child { border: 0; }
-.guild-app .workspace-metrics strong { color: var(--ink); }
-.workspace-metrics progress { display: block; width: 100%; height: 6px; margin-top: 8px; border: 0; border-radius: 999px; appearance: none; background: var(--line); color: var(--accent); }
-.workspace-metrics progress::-webkit-progress-bar { background: var(--line); border-radius: inherit; }
-.workspace-metrics progress::-webkit-progress-value { background: var(--accent); border-radius: inherit; }
-.workspace-metrics progress::-moz-progress-bar { background: var(--accent); border-radius: inherit; }
+.raid-dashboard-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; background: transparent; border: 0; }
+.guild-app .raid-dashboard-tabs button { padding: 6px 12px; min-height: 34px; }
+.guild-app .raid-dashboard-tabs button[aria-current="true"] { color: var(--accent); background: var(--hover); border-color: var(--accent); }
 
 .guild-dashboard-entry strong { min-width: 0; overflow-wrap: anywhere; color: var(--class-color,var(--ink)); font-size: 13px; }
 .guild-dashboard-count { min-width: 27px; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--container); color: var(--class-color,var(--accent)); text-align: center; font-variant-numeric: tabular-nums; }
@@ -965,11 +924,13 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .guild-app .hero-stats { justify-self: start; max-width: 100%; }
   .guild-app .hero-stats div { min-width: 0; padding: 4px 9px; }
   .guild-app .hero-stats strong { font-size: 13px; }
+  #raidHero .eyebrow, #raidHero p { display: none; }
+  #raidHero .hero-stats { font-size: 12px; }
+  #raidHero .hero-stats div { display: flex; align-items: baseline; gap: 4px; }
+  #raidHero .hero-stats span { font-size: 8px; }
 
   .guild-app .raid-shell { grid-template-columns: minmax(0,1fr); align-content: start; }
   .guild-app .raid-sidebar { display: block; padding: 7px 12px; border-inline-end: 0; border-bottom: 1px solid var(--line); }
-  #raidMenuToggle[aria-expanded="false"] ~ .raid-sidebar-realm { display: none; }
-  .raid-sidebar-realm { margin-top: 10px; }
   .guild-app #raidMenuToggle { display: flex; width: 100%; min-height: 44px; margin: 0; padding: 6px 10px; border-color: var(--line); color: var(--accent); background: var(--field); }
   #raidMenuToggle .raid-menu-chevron { margin-inline-start: auto; }
   #raidMenuToggle[aria-expanded="true"] .raid-menu-chevron { transform: rotate(180deg); }
@@ -1152,7 +1113,7 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   white-space: nowrap;
 }
 .guild-app .guild-character-row.has-profession-progress {
-  background: linear-gradient(to right, color-mix(in srgb, var(--accent) 18%, transparent) var(--profession-progress), transparent var(--profession-progress));
+  background: linear-gradient(to right, #d4a85d32 var(--profession-progress), transparent var(--profession-progress)), var(--field);
 }
 .guild-app .guild-character-row.has-profession-progress:hover {
   background-color: var(--hover);
