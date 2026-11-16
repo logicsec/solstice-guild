@@ -852,26 +852,26 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .guild-app a.character-slot-button { color: var(--ink); text-decoration: none; }
 .guild-app a.character-slot-button:hover { border-color: var(--accent); }
 
-.character-talent-trees { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(210px,100%),1fr)); gap: 2px; margin: 12px 0; overflow: hidden; border: 1px solid #74511e; border-radius: 10px; background: #2d2112; }
-.character-talent-tree { min-width: 0; padding: 16px 12px 18px; background: linear-gradient(0deg,#070709cc,#07070940 65%,#0707098c),var(--tree-art,none) center / cover,#100d0b; }
-.character-talent-tree h4 { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid #bd8b4066; color: #f9eed8; font-size: 17px; }
-.character-talent-tree h4 img { width: 34px; height: 34px; border: 2px solid #a37833; border-radius: 50%; box-shadow: 0 2px 8px #000b; }
-.character-talent-points { padding: 2px 6px; border: 1px solid #765522; border-radius: 4px; background: #130f0a; color: #f1ce77; font-size: 11px; white-space: nowrap; }
+.character-talent-trees { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(210px,100%),1fr)); gap: 2px; margin: 12px 0; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--container); }
+.character-talent-tree { min-width: 0; padding: 16px 12px 18px; background: linear-gradient(0deg,#070709cc,#07070940 65%,#0707098c),var(--tree-art,none) center / cover,var(--field); }
+.character-talent-tree h4 { display: flex; align-items: center; justify-content: center; gap: 9px; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); color: var(--ink); font-size: 17px; }
+.character-talent-tree h4 img { width: 34px; height: 34px; border: 2px solid var(--deep-accent); border-radius: 50%; box-shadow: 0 2px 8px #000b; }
+.character-talent-points { padding: 2px 6px; border: 1px solid var(--line); border-radius: 4px; background: var(--field); color: var(--accent); font-size: 11px; white-space: nowrap; }
 .character-talent-grid { position: relative; display: grid; width: min(100%,240px); aspect-ratio: 4 / 7; margin-inline: auto; grid-template-columns: repeat(4,minmax(0,1fr)); grid-template-rows: repeat(7,minmax(0,1fr)); }
 .character-talent-connections { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
-.character-talent-connections path { fill: none; stroke: #8a744e; stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .68; }
-.character-talent-connections .is-unlocked { stroke: #f1c35c; opacity: 1; }
-.guild-app .character-talent-node { position: relative; display: grid; place-items: center; place-self: center; width: 68%; aspect-ratio: 1; min-width: 0; min-height: 0; padding: 1px; border: 2px solid #d4a64d; border-radius: 8px; background: #17100a; box-shadow: 0 2px 7px #000c; }
+.character-talent-connections path { fill: none; stroke: var(--deep-accent); stroke-width: 4; stroke-linecap: round; stroke-linejoin: round; opacity: .68; }
+.character-talent-connections .is-unlocked { stroke: var(--accent); opacity: 1; }
+.guild-app .character-talent-node { position: relative; display: grid; place-items: center; place-self: center; width: 68%; aspect-ratio: 1; min-width: 0; min-height: 0; padding: 1px; border: 2px solid var(--accent); border-radius: 8px; background: var(--field); box-shadow: 0 2px 7px #000c; }
 .character-talent-node img { width: 100%; height: 100%; object-fit: cover; border-radius: 4px; }
-.character-talent-node span { position: absolute; inset: auto 1px 0 auto; padding: 0 2px; border-radius: 2px; background: #080705ed; color: #f6d36b; font-size: 12px; line-height: 1.2; }
+.character-talent-node span { position: absolute; inset: auto 1px 0 auto; padding: 0 2px; border-radius: 2px; background: var(--field); color: var(--ink); font-size: 12px; line-height: 1.2; }
 .character-talent-node[data-state="maxed"] span { color: #a8e57a; }
 .character-talent-node[data-state="available"] img,.character-talent-node[data-state="locked"] img { filter: grayscale(1); }
 .character-talent-node[data-state="available"] img { opacity: .72; }
-.guild-app .character-talent-node[data-state="locked"] { border-color: #725522; }
+.guild-app .character-talent-node[data-state="locked"] { border-color: var(--line); }
 .character-talent-node[data-state="locked"] img { opacity: .36; }
-.guild-app .character-talent-node:is(:hover,:focus-visible) { border-color: #ffdf8e; box-shadow: 0 0 10px #ffd16688; }
+.guild-app .character-talent-node:is(:hover,:focus-visible) { border-color: var(--gold); box-shadow: 0 0 10px color-mix(in srgb, var(--accent) 45%, transparent); }
 .character-talent-detail { margin-bottom: 8px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--field); }
-.guild-app .character-talent-builds button[aria-pressed="true"] { border-color: #a37833; background: #26190e; color: #f1ce77; }
+.guild-app .character-talent-builds button[aria-pressed="true"] { border-color: var(--deep-accent); background: var(--hover); color: var(--accent); }
 
 .character-talent-tooltip { width: max-content; max-width: min(280px, calc(100vw - 16px)); }
 .character-talent-tooltip .character-tooltip-level { margin-bottom: 4px; }
@@ -1121,21 +1121,18 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 
 /* Character profiles */
 .guild-app .character-drawer {
-  --profile-ink: #eee3ca;
-  --profile-muted: #b7a890;
-  --profile-edge: #796640;
   --profile-gutter: max(28px, calc((100% - 1216px) / 2));
   width: 96vw;
   padding: 0;
-  background: #201b14;
-  color: var(--profile-ink);
+  background: var(--surface);
+  color: var(--ink);
 }
 .character-profile-hero {
   position: relative;
   padding: 46px var(--profile-gutter) 48px;
-  border-bottom: 1px solid #857862;
-  background: linear-gradient(180deg,#4a3e31a6,#211d1ce8),
-    url('/assets/solstice-dawn.webp') center 28% / cover;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 68%, transparent), var(--surface)),
+    url('/assets/solstice-dawn.webp') center 28% / cover var(--surface);
 }
 .character-profile-grid {
   display: grid;
@@ -1154,14 +1151,14 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .character-profile-hero .character-inspector-title > div { min-width: 0; }
 .guild-app .character-profile-hero h2 {
   margin: 0 0 12px;
-  color: #fff9ee;
+  color: var(--ink);
   font: 700 clamp(32px,4.2vw,62px)/.98 Georgia, serif;
   letter-spacing: -.035em;
   text-transform: uppercase;
   overflow-wrap: anywhere;
-  text-shadow: 0 2px 4px #100e0c;
+  text-shadow: 0 2px 4px var(--field);
 }
-.character-profile-hero :is(.inspector-meta,.character-profile-realm) { color: var(--profile-muted); }
+.character-profile-hero :is(.inspector-meta,.character-profile-realm) { color: var(--muted); }
 .character-profile-hero .inspector-meta { font-size: 16px; }
 .character-profile-realm { margin-top: 4px; font-size: 12px; }
 .guild-app .character-profile-hero .character-banner-close { inset: 12px 12px auto auto; }
@@ -1174,8 +1171,8 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   padding: 0;
   border-radius: 0;
   clip-path: polygon(50% 0,100% 50%,50% 100%,0 50%);
-  background: #d3b775;
-  color: #fff0b7;
+  background: var(--accent);
+  color: var(--ink);
   font: 700 23px/1 Georgia, serif;
   position: relative;
   isolation: isolate;
@@ -1185,35 +1182,32 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   inset: 2px;
   z-index: -1;
   clip-path: inherit;
-  background: #292218;
+  background: var(--field);
   content: '';
 }
-.character-drawer .character-review-tabs { margin: 0; padding: 9px var(--profile-gutter); border-width: 0 0 1px; border-radius: 0; background: #2a2319; }
+.character-drawer .character-review-tabs { margin: 0; padding: 9px var(--profile-gutter); border-width: 0 0 1px; border-radius: 0; background: var(--container); }
 .character-drawer > :not(header):not(nav) { padding: 26px var(--profile-gutter) 40px; }
 .character-drawer .character-review-tabs button { min-height: 34px; border-radius: 5px; }
 .profile-overview { min-width: 0; }
 .profile-overview .raid-stats { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
 .guild-app .profile-overview .raid-stats > div {
-  --stat-accent: #819ad9;
   min-height: 76px;
   margin: 0;
   padding: 10px 7px;
-  border: 1px solid color-mix(in srgb,var(--stat-accent) 65%,#483c2c);
-  border-top: 2px solid var(--stat-accent);
+  border: 1px solid var(--line);
+  border-top: 2px solid var(--deep-accent);
   border-radius: 5px;
-  background: linear-gradient(145deg,color-mix(in srgb,var(--stat-accent) 17%,#2b231c),#2b231ce8);
+  background: var(--glass-panel);
   text-align: center;
 }
-.guild-app .profile-overview .raid-stats > div:nth-child(2) { --stat-accent: #80baa2; }
-.guild-app .profile-overview .raid-stats > div:nth-child(3) { --stat-accent: #d7bd73; }
-.profile-overview .raid-stats small { display: block; color: var(--stat-accent); font: 11px/1.5 Georgia, serif; letter-spacing: .065em; text-transform: uppercase; }
-.guild-app .profile-overview .raid-stats strong { margin-top: 4px; color: #fff4dd; font: 700 clamp(17px,2.1vw,27px)/1.15 Georgia, serif; }
+.profile-overview .raid-stats small { display: block; color: var(--accent); font: 11px/1.5 Georgia, serif; letter-spacing: .065em; text-transform: uppercase; }
+.guild-app .profile-overview .raid-stats strong { margin-top: 4px; color: var(--ink); font: 700 clamp(17px,2.1vw,27px)/1.15 Georgia, serif; }
 .profile-level-history { margin-top: 20px; }
-.profile-level-history .eyebrow { color: var(--profile-muted); font: 10px/1.5 Georgia, serif; letter-spacing: .12em; }
+.profile-level-history .eyebrow { color: var(--muted); font: 10px/1.5 Georgia, serif; letter-spacing: .12em; }
 .profile-level-history svg { display: block; width: 100%; height: 66px; margin: 5px 0; }
-.profile-level-history polyline { fill: none; stroke: #faf4e9; stroke-width: 1.5; vector-effect: non-scaling-stroke; }
+.profile-level-history polyline { fill: none; stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; }
 .profile-attribute-details { margin-top: 14px; }
-.profile-attribute-details summary { width: fit-content; cursor: pointer; color: var(--profile-muted); font-size: 12px; }
+.profile-attribute-details summary { width: fit-content; cursor: pointer; color: var(--muted); font-size: 12px; }
 .profile-attribute-details .character-attributes { grid-template-columns: repeat(auto-fit,minmax(min(125px,100%),1fr)); margin-top: 8px; }
 .character-profile-hero .character-sheet {
   position: relative;
@@ -1222,10 +1216,10 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   gap: 8px;
   min-width: 0;
   padding: 11px;
-  border: 1px solid var(--profile-edge);
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: #272117;
-  box-shadow: inset 0 0 0 3px #18150f, 0 12px 30px #120c0970;
+  background: var(--container);
+  box-shadow: inset 0 0 0 3px var(--field), 0 12px 30px #0006;
 }
 .character-profile-hero .character-sheet.has-character-render { grid-template-columns: 40px minmax(0,1fr) 40px; }
 .character-showcase {
@@ -1233,9 +1227,9 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   align-self: stretch;
   min-width: 0;
   overflow: hidden;
-  border: 1px solid #71624d47;
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: radial-gradient(ellipse at 48% 30%,#756e65,#30271c 80%);
+  background: radial-gradient(ellipse at 48% 30%, color-mix(in srgb, var(--container) 78%, var(--accent)), var(--field) 80%);
 }
 .character-showcase[hidden] { display: none; }
 .character-showcase > img {
@@ -1252,45 +1246,44 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .character-weapons { display: flex; flex-wrap: wrap; justify-content: center; grid-column: 1 / -1; gap: 6px; }
 .character-slot-button { position: relative; }
 .character-item-level { display: none; }
-.character-sheet .character-slot-empty .character-slot-icon { color: #b5a389; font-size: 8px; line-height: 1.05; }
+.character-sheet .character-slot-empty .character-slot-icon { color: var(--muted); font-size: 8px; line-height: 1.05; }
 .character-sheet:not(.has-character-render) .character-slot-empty .character-slot-icon { font-size: 0; }
 .character-sheet.has-character-render :is(.character-slot-button,.character-slot-empty) { justify-content: center; width: 40px; min-height: 40px; padding: 0; background: transparent; border: 0; }
 .character-sheet.has-character-render :is(.character-slot-copy,.character-slot-empty > span + span) { display: none; }
 .character-sheet.has-character-render .character-slot-icon { flex-basis: 40px; height: 40px; }
-.character-sheet.has-character-render .character-slot-empty .character-slot-icon { border: 1px dashed #6d5b44; background: transparent; }
+.character-sheet.has-character-render .character-slot-empty .character-slot-icon { border: 1px dashed var(--deep-accent); background: transparent; }
 .character-sheet.has-character-render .character-item-level {
   display: block;
   position: absolute;
   inset: auto 3px 2px auto;
   padding: 0 2px;
   border-radius: 2px;
-  background: #161006e8;
-  color: #fff8da;
+  background: var(--field);
+  color: var(--ink);
   font-size: 9px;
   line-height: 1.2;
 }
 .profile-progress { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(0,1fr); gap: 22px; align-items: start; }
-.profile-section h3 { margin: 0 0 18px; color: var(--profile-ink); font: 700 24px/1.2 Georgia, serif; font-variant: small-caps; }
-.profile-section h4 { margin: 24px 0 11px; color: var(--profile-muted); font: 12px/1.4 Georgia, serif; letter-spacing: .12em; text-transform: uppercase; }
-.profile-timeline { list-style: none; margin: 0 0 12px 16px; padding: 0 0 0 24px; border-inline-start: 1px solid #5b4b34; }
+.profile-section h3 { margin: 0 0 18px; color: var(--ink); font: 700 24px/1.2 Georgia, serif; font-variant: small-caps; }
+.profile-section h4 { margin: 24px 0 11px; color: var(--muted); font: 12px/1.4 Georgia, serif; letter-spacing: .12em; text-transform: uppercase; }
+.profile-timeline { list-style: none; margin: 0 0 12px 16px; padding: 0 0 0 24px; border-inline-start: 1px solid var(--line); }
 .profile-timeline li { position: relative; padding-bottom: 16px; }
-.profile-timeline li::before { position: absolute; inset: 7px auto auto -28px; width: 7px; height: 7px; border-radius: 50%; background: #b89b65; content: ''; }
+.profile-timeline li::before { position: absolute; inset: 7px auto auto -28px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); content: ''; }
 .profile-timeline strong,.profile-achievements strong { display: block; font: 700 14px/1.25 Georgia, serif; font-variant: small-caps; }
-.profile-timeline time,.profile-achievements small { display: block; color: var(--profile-muted); font-size: 11px; }
+.profile-timeline time,.profile-achievements small { display: block; color: var(--muted); font-size: 11px; }
 .profile-achievements {
   display: grid;
   grid-template-columns: repeat(2,minmax(0,1fr));
   gap: 13px 10px;
   margin: 0;
   padding: 16px;
-  border: 1px solid var(--profile-edge);
+  border: 1px solid var(--line);
   border-radius: 5px;
-  background: linear-gradient(145deg,#30281e,#241f16);
-  box-shadow: inset 0 0 0 3px #201a11;
+  background: var(--container);
   list-style: none;
 }
-.profile-achievements li { display: flex; align-items: flex-start; gap: 9px; opacity: .57; }
-.profile-achievements .is-earned { opacity: 1; }
+.profile-achievements li { display: flex; align-items: flex-start; gap: 9px; color: var(--muted); }
+.profile-achievements .is-earned { color: var(--ink); }
 .profile-achievement-icon {
   display: grid;
   flex: 0 0 36px;
@@ -1298,12 +1291,12 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   place-items: center;
   border: 1px solid currentColor;
   border-radius: 50%;
-  color: var(--profile-muted);
+  color: var(--muted);
   font-size: 20px;
   line-height: 1;
 }
-.profile-achievements .is-earned .profile-achievement-icon { background: #55482152; color: #e8c765; }
-.profile-achievements .is-earned .profile-achievement-state { color: #e2c481; }
+.profile-achievements .is-earned .profile-achievement-icon { background: var(--hover); color: var(--accent); }
+.profile-achievements .is-earned .profile-achievement-state { color: var(--accent); }
 @media (max-width: 940px) {
   .guild-app .character-drawer { width: 100%; }
   .character-profile-grid { grid-template-columns: minmax(0,1.25fr) minmax(250px,1fr); }
