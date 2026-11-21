@@ -37,7 +37,7 @@ for(const action of ['activate','delete'])$(action).addEventListener('click',asy
  const r=await fetch('/api/raid-characters');if(!r.ok)throw Error('Could not load your characters');const data=await r.json();
  const names=new Set([...(data.characters||[]),...(data.signupCharacters||[])].map(x=>x.name).filter(Boolean));
  $('character').replaceChildren(new Option('Select character',''));for(const name of [...names].sort())$('character').add(new Option(name,name));
- if(names.size){$('character').selectedIndex=1;await load()}else{message('Add or link a character in Guild Hall first.');draw()}
+ if(names.size){const requested=new URLSearchParams(location.search).get('character');$('character').value=[...names].find(n=>n.toLowerCase()===requested?.toLowerCase())||[...names].sort()[0];await load()}else{message('Add or link a character in Guild Hall first.');draw()}
 }catch(e){message(e.message)}})();
 
 const raidId=new URLSearchParams(location.search).get('raid');
