@@ -48,7 +48,10 @@ $('save').addEventListener('click',async()=>{
  if(!id.value)continue;if(!Number.isSafeInteger(n)||n<1||n>99999999)throw Error('Enter a valid item ID.');
  items.push({slot:box.dataset.slot,item_id:n,item_name:name.value.trim(),priority:priority.value,acquired:box.querySelector('input[type=checkbox]').checked});
  }
- const result=await api({action:'save',id:current?.id,character:$('character').value,title:$('title').value,spec:$('spec').value,items});await load();$('build').value=result.id;choose();message('Build saved.');
+ const wasNew=!current;
+ const result=await api({action:'save',id:current?.id,character:$('character').value,title:$('title').value,spec:$('spec').value,items});
+ if(wasNew)await api({action:'activate',id:result.id});
+ await load();$('build').value=result.id;choose();message(wasNew?'Build saved and set active.':'Build saved.');
  }catch(e){message(e.message)}
 });
 for(const action of ['activate','delete'])$(action).addEventListener('click',async()=>{if(!current)return message('Select a saved build first.');if(action==='delete'&&!confirm('Delete this build?'))return;try{await api({action,id:current.id});await load();message(action==='activate'?'Active build updated.':'Build deleted.')}catch(e){message(e.message)}});
