@@ -450,6 +450,11 @@ export function openCharacterSheet(player, event, organizer) {
   inner.append(info,equipment);
   header.append(inner,close);
   const content = raidElement('div');
+  const plannerLink = raidElement('a','Plan Gear for '+player.character,'raid-primary');
+  plannerLink.href = '/gear-planner?character='+encodeURIComponent(player.character);
+  plannerLink.style.display='inline-block';
+  plannerLink.style.margin='12px 0';
+  content.append(plannerLink);
   const review = event ? raidElement('div',null,'character-raid-review') : null;
   const evidence = event ? raidElement('section',null,'raid-card raid-review-evidence') : null;
   if (event) {
@@ -530,7 +535,7 @@ export function openCharacterSheet(player, event, organizer) {
     overview.replaceChildren(profile.overview);
     equipment.replaceChildren(profile.equipment);
     equipment.hidden = content.hidden;
-    content.replaceChildren(profile.progress);
+    content.replaceChildren(plannerLink,profile.progress);
     professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
     const meta = identity.querySelector('.inspector-meta');
