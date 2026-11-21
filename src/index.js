@@ -1951,6 +1951,13 @@ async function openRaidWorkspace(view, revision) {
   else if (view === 'loot') {
     content.classList.add('raid-card');
     renderRaidReserves(content,data);
+    if (data.organizer) {
+      const planner = raidElement('a','Review Raid Gear Demand','raid-primary');
+      planner.href='/gear-planner?raid='+encodeURIComponent(data.event.id);
+      planner.style.display='inline-block';
+      planner.style.margin='14px 0';
+      content.prepend(planner);
+    }
     await renderLootHistory(root,data);
   } else renderTonight(content,data);
 }
