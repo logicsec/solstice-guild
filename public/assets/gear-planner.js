@@ -39,3 +39,23 @@ for(const action of ['activate','delete'])$(action).addEventListener('click',asy
  $('character').replaceChildren(new Option('Select character',''));for(const name of [...names].sort())$('character').add(new Option(name,name));
  if(names.size){$('character').selectedIndex=1;await load()}else{message('Add or link a character in Guild Hall first.');draw()}
 }catch(e){message(e.message)}})();
+
+const raidId=new URLSearchParams(location.search).get('raid');
+if(raidId){
+ $('raidPlanning').hidden=false;
+ api(null,'?raid='+encodeURIComponent(raidId)).then(data=>{
+  const root=$('raidPlanningResults');root.replaceChildren();
+  if(!data.items.length){root.textContent='No active gear targets from confirmed raiders yet.';return}
+  const grouped=new Map();
+  for(const item of data.items){const key=item.item_id+'|'+item.item_name;const group=grouped.get(key)||[];group.push(item);grouped.set(key,group)}
+  for(const [key,items] of grouped){
+   const box=document.createElement('div');box.className='slot';box.style.marginBottom='10px';
+   const name=document.createElement('strong');name.textContent=items[0].item_name||'Item '+items[0].item_id;
+   const link=document.createElement('a');link.href='https://www.wowhead.com/forever/item='+items[0].item_id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Wowhead';
+   const status=document.createElement('p');status.className='muted';status.textContent=items.some(x=>x.onLootTable)?'On raid loot table':'Not on this raid loot table';
+   box.append(name,link,status);
+   for(const item of items){const p=document.createElement('p');p.textContent=item.character+' · '+item.class_name+' · '+item.priority+(item.acquired?' · Acquired':'');box.append(p)}
+   root.append(box);
+  }
+ }).catch(e=>{$('raidPlanningResults').textContent=e.message});
+}
