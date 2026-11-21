@@ -22,6 +22,15 @@ export async function gearPlannerApi(request,env,url,session){
  const db=env.DB,member=session.discord_id;
  if(!db||!member)return reply({error:'Guild sign-in and storage required.'},401);
  if(request.method==='GET'){
+  const search=clean(url.searchParams.get('search'),80);
+  if(search){
+   if(search.length<2)return reply({items:[]});
+   const {results}=await db.prepare(`SELECT item_id AS id,item_name AS name,COUNT(*) AS demand FROM gear_build_items
+    WHERE item_name LIKE ? ESCAPE '\\' AND item_name <> '' GROUP BY item_id,item_name ORDER BY demand DESC,item_name COLLATE NOCASE LIMIT 30`)
+    .bind('%'+search.replace(/[\\%_]/g,'\\if(request.method==='GET'){
+  const character')+'%').all();
+   return reply({items:results,source:'guild-builds'});
+  }
   const character=clean(url.searchParams.get('character'),61);
   if(character){
    if(!await ownsCharacter(db,member,character))return reply({error:'Link or save this character first.'},403);
