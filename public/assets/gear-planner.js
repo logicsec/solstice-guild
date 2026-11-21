@@ -10,11 +10,30 @@ function draw(){
   const box=document.createElement('div');box.className='slot';
   const title=document.createElement('strong');title.textContent=slot;box.append(title);
   const id=document.createElement('input');id.type='number';id.min='1';id.max='99999999';id.placeholder='Wowhead item ID';id.value=item?.item_id||'';
-  const name=document.createElement('input');name.placeholder='Item name';name.maxLength=120;name.value=item?.item_name||'';
+  const name=document.createElement('input');name.placeholder='Item name or search guild items';name.maxLength=120;name.value=item?.item_name||'';
+  const suggestions=document.createElement('div');suggestions.className='item-suggestions';
+  let searchTimer;
+  name.addEventListener('input',()=>{
+   clearTimeout(searchTimer);suggestions.replaceChildren();
+   if(name.value.trim().length<2)return;
+   searchTimer=setTimeout(async()=>{
+    const query=name.value.trim();
+    try{
+     const data=await api(null,'?search='+encodeURIComponent(query));
+     if(name.value.trim()!==query)return;
+     suggestions.replaceChildren();
+     for(const found of data.items){
+      const pick=document.createElement('button');pick.type='button';pick.textContent=found.name+' (#'+found.id+')';
+      pick.addEventListener('click',()=>{id.value=found.id;name.value=found.name;suggestions.replaceChildren();id.dispatchEvent(new Event('input'))});
+      suggestions.append(pick);
+     }
+    }catch{}
+   },250);
+  });
   const priority=document.createElement('select');for(const v of ['BiS','Upgrade','Optional']){const o=new Option(v,v);priority.add(o)}priority.value=item?.priority||'Upgrade';
   const acquired=document.createElement('label');const check=document.createElement('input');check.type='checkbox';check.checked=!!item?.acquired;check.style.width='auto';check.style.display='inline';acquired.append(check,' Acquired');
   const link=document.createElement('a');link.target='_blank';link.rel='noopener noreferrer';link.textContent='View on Wowhead';const refresh=()=>{const n=Number(id.value);link.href=Number.isSafeInteger(n)&&n>0?'https://www.wowhead.com/forever/item='+n:'#';link.hidden=!n};id.addEventListener('input',refresh);refresh();
-  box.append(id,name,priority,acquired,link);box.dataset.slot=slot;$('slots').append(box);
+  box.append(id,name,suggestions,priority,acquired,link);box.dataset.slot=slot;$('slots').append(box);
  }
 }
 function selected(){return builds.find(b=>b.id===$('build').value)||null}
