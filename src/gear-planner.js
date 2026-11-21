@@ -39,13 +39,15 @@ export async function gearPlannerApi(request,env,url,session){
   if(!uuid(raidId))return reply({error:'Choose a character or raid.'},400);
   const raid=await db.prepare('SELECT owner,instance FROM raids WHERE id=?').bind(raidId).first();
   if(!raid||raid.owner!==member)return reply({error:'Only the raid organizer can review raid-wide gear plans.'},403);
-  const {results}=await db.prepare(`SELECT s.character,s.class_name,b.title,b.spec,i.slot,i.item_id,i.item_name,i.priority,i.acquired
+  const {results}=await db.prepare(`SELECT s.member,s.character,s.class_name,b.title,b.spec,i.slot,i.item_id,i.item_name,i.priority,i.acquired
   FROM raid_signups s JOIN gear_builds b ON b.member=s.member AND b.character=s.character COLLATE NOCASE AND b.is_active=1
   JOIN gear_build_items i ON i.build_id=b.id
   WHERE s.raid_id=? AND s.status='Going' ORDER BY i.item_name COLLATE NOCASE,s.character COLLATE NOCASE`).bind(raidId).all();
   const loot=await db.prepare('SELECT items FROM raid_loot_tables WHERE owner=? AND instance=?').bind(raid.owner,raid.instance).first();
   const allowed=new Set(loot?JSON.parse(loot.items).map(x=>x.toLowerCase()):[]);
-  return reply({raid:raidId,items:results.map(x=>({...x,onLootTable:allowed.has(x.item_name.toLowerCase())}))});
+  const {results:reserved}=await db.prepare('SELECT player_key,items FROM raid_reserves WHERE raid_id=?').bind(raidId).all();
+  const picks=new Map(reserved.map(row=>[row.player_key,new Set(JSON.parse(row.items).map(name=>name.toLowerCase()))]));
+  return reply({raid:raidId,items:results.map(({member,...x})=>({...x,onLootTable:allowed.has(x.item_name.toLowerCase()),reserved:!!picks.get('member:'+member)?.has(x.item_name.toLowerCase())}))});
  }
  if(request.method!=='POST')return reply({error:'Method not allowed.'},405);
  if(!sameOriginWrite(request,url)||!request.headers.get('Content-Type')?.startsWith('application/json'))return reply({error:'Invalid request origin.'},403);
