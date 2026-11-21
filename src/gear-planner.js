@@ -27,8 +27,7 @@ export async function gearPlannerApi(request,env,url,session){
    if(search.length<2)return reply({items:[]});
    const {results}=await db.prepare(`SELECT item_id AS id,item_name AS name,COUNT(*) AS demand FROM gear_build_items
     WHERE item_name LIKE ? ESCAPE '\\' AND item_name <> '' GROUP BY item_id,item_name ORDER BY demand DESC,item_name COLLATE NOCASE LIMIT 30`)
-    .bind('%'+search.replace(/[\\%_]/g,'\\if(request.method==='GET'){
-  const character')+'%').all();
+    .bind('%'+search.replace(/[\\%_]/g, match=>'\\'+match)+'%').all();
    return reply({items:results,source:'guild-builds'});
   }
   const character=clean(url.searchParams.get('character'),61);
