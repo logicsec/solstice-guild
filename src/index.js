@@ -13,6 +13,7 @@ import { raidLogs } from './raid-logs.js';
 import { renderRaidLogs } from './raid-logs-client.js';
 import { foreverTalentLayout } from './forever-talent-layout.js';
 import { parseTable, scanVendorFlips } from './vendor-flips.js';
+import { gearPlannerApi } from './gear-planner.js';
 import { changeRaidLoot, raidInstance, raidInstances, raidLoot } from './raid-loot.js';
 import { changeReserves, pendingGuestReserves, raidReserves, requestGuestReserves, reserveHistory } from './reserves.js';
 import { renderRaidReserves, showReserveHistory } from './reserve-client.js';
@@ -2644,6 +2645,10 @@ export default {
       return new Response('Guild Chronicle storage is unavailable. Check that migrations have run.', { status: 503 });
     }
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+    if (pathname === '/api/gear-planner') {
+      try { return await gearPlannerApi(request,env,url,session); }
+      catch { return Response.json({error:'Gear planner unavailable.'},{status:503}); }
+    }
     if (pathname === '/api/crafting-directory') {
       try { return await craftingDirectory(request, env, url, session, professions); }
       catch { return Response.json({ error: 'Crafting Directory is temporarily unavailable.' }, { status: 502, headers: { 'Cache-Control': 'no-store' } }); }
