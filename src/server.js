@@ -20,6 +20,7 @@ const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CM
 const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
   ['/assets/gear-planner.js', ['gear-planner.js', 'text/javascript; charset=utf-8']],
+  ['/assets/gear-planner.js', ['gear-planner.js', 'text/javascript; charset=utf-8']],
   ['/assets/mobile-tables.js', ['mobile-tables.js', 'text/javascript; charset=utf-8']],
   ['/assets/solstice-dawn.webp', ['solstice-dawn.webp', 'image/webp']],
   ['/assets/solstice-shield.svg', ['solstice-shield.svg', 'image/svg+xml']],
