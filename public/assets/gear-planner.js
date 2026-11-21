@@ -76,7 +76,7 @@ if(raidId){
    const link=document.createElement('a');link.href='https://www.wowhead.com/forever/item='+items[0].item_id;link.target='_blank';link.rel='noopener noreferrer';link.textContent='Wowhead';
    const status=document.createElement('p');status.className='muted';status.textContent=items.some(x=>x.onLootTable)?'On raid loot table':'Not on this raid loot table';
    box.append(name,link,status);
-   for(const item of items){const p=document.createElement('p');p.textContent=item.character+' · '+item.class_name+' · '+item.priority+(item.acquired?' · Acquired':'');box.append(p)}
+   for(const item of items){const p=document.createElement('p');p.textContent=item.character+' · '+item.class_name+' · '+item.priority+(item.acquired?' · Acquired':'')+(item.reserved?' · Reserved':'');box.append(p)}
    root.append(box);
   }
  }).catch(e=>{$('raidPlanningResults').textContent=e.message});
