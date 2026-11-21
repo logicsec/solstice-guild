@@ -51,9 +51,11 @@ export async function gearPlannerApi(request,env,url,session){
    if(!item||!slots.has(item.slot)||seen.has(item.slot)||!Number.isSafeInteger(item.item_id)||item.item_id<1||item.item_id>99999999||!priorities.has(item.priority)||typeof item.acquired!=='boolean'||typeof item.item_name!=='string'||item.item_name.length>120)return reply({error:'Invalid item, slot, or priority.'},400);
    seen.add(item.slot);
   }
-  const id=uuid(input.id)?input.id:crypto.randomUUID();
+  if(input.id!=null&&!uuid(input.id))return reply({error:'Invalid build ID.'},400);
+  const id=input.id||crypto.randomUUID();
   const existing=await db.prepare('SELECT member FROM gear_builds WHERE id=?').bind(id).first();
   if(existing&&existing.member!==member)return reply({error:'Build not found.'},404);
+  if(existing){const owner=await db.prepare('SELECT character FROM gear_builds WHERE id=? AND member=?').bind(id,member).first();if(owner.character.toLowerCase()!==character.toLowerCase())return reply({error:'A build cannot be moved to another character.'},400)}
   try{
    await db.prepare(`INSERT INTO gear_builds(id,member,character,title,spec,is_active) VALUES(?,?,?,?,?,0)
    ON CONFLICT(id) DO UPDATE SET character=excluded.character,title=excluded.title,spec=excluded.spec,updated_at=CURRENT_TIMESTAMP WHERE member=excluded.member`).bind(id,member,character,title,spec).run();
