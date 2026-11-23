@@ -11,7 +11,18 @@ export function tablerIcon(name, className = '') {
   icon.setAttribute('stroke-linejoin','round');
   icon.setAttribute('aria-hidden','true');
   const use = document.createElementNS(icon.namespaceURI,'use');
-  use.setAttribute('href','/assets/tabler-icons.svg?v=theme-2#'+name);
+  use.setAttribute('href','/assets/tabler-icons.svg?v=theme-3#'+name);
   icon.append(use);
+  return icon;
+}
+
+/** Original Solstice class, specialization, profession and role outline symbols. */
+export function guildIcon(kind, name, className = '') {
+  const slug = String(name ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+  const icon = tablerIcon('solstice-'+kind+'-'+slug,'guild-symbol'+(className ? ' '+className : ''));
+  icon.dataset.iconKind = kind;
+  icon.dataset.iconName = name;
+  const title = document.createElementNS(icon.namespaceURI,'title');title.textContent = name;
+  icon.prepend(title);
   return icon;
 }

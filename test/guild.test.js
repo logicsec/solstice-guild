@@ -344,8 +344,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
     assert.doesNotMatch(body,/<footer>/);
     assert.match(body,/Astra Mortis/);
     assert.match(body,/Ranged DPS/);
-    assert.match(body,/classicon_mage\.jpg/);
-    assert.match(body,/spell_frost_frostbolt02\.jpg/);
+    assert.match(body,/solstice-class-mage/);
+    assert.match(body,/solstice-spec-frost/);
     assert.match(body,/Level 60/);
     assert.match(body,/&lt;Solstice&gt;/);
     assert.doesNotMatch(body,/Needs access|Finish the entry quest|Save RSVP/);

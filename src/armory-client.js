@@ -1,4 +1,4 @@
-import { tablerIcon } from '../public/assets/icons.js';
+import { tablerIcon, guildIcon } from '../public/assets/icons.js';
 export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showOnClick = false) {
   trigger.setAttribute('aria-describedby',tooltip.id);
   if (typeof tooltip.showPopover !== 'function') {
@@ -28,41 +28,21 @@ export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showO
 }
 
 export function professionIcon(name, watermarkTarget) {
-  const icons = {
-    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
-    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
-    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
-    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
-  };
-  const icon = raidElement('span',name.slice(0,1),'profession-progress-icon');
-  const asset = icons[name.toLowerCase()];
-  if (asset) {
-    const image = raidElement('img');
-    image.alt = '';
-    image.addEventListener('load',()=>{
-      icon.replaceChildren(image);
-      if (watermarkTarget) {
-        const watermark = image.cloneNode();
-        watermark.className = 'guild-character-watermark guild-profession-watermark';
-        watermarkTarget.append(watermark);
-      }
-    },{once:true});
-    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
-  }
-  return icon;
+  return guildIcon('profession',name,'profession-progress-icon');
 }
 
 export function characterIcons(className,spec) {
   const icons = raidElement('span',null,'character-icons');
   if (!Object.hasOwn(armorySpecs,className)) return icons;
-  const specIcon = armorySpecs[className].find(([name])=>name.toLowerCase() === (spec ?? '').toLowerCase());
-  for (const [name,description] of [['classicon_'+className.toLowerCase(),className],...(specIcon ? [[specIcon[2],specIcon[0]]] : [])]) {
-    const image = raidElement('img');
-    image.alt = description;
-    image.title = description;
-    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+name+'.jpg';
-    image.addEventListener('error',()=>image.remove(),{once:true});
-    icons.append(image);
+  icons.dataset.wowClass = className;
+  const classIcon = guildIcon('class',className);
+  classIcon.setAttribute('role','img');classIcon.setAttribute('aria-label',className);classIcon.removeAttribute('aria-hidden');
+  icons.append(classIcon);
+  const match = armorySpecs[className].find(([name])=>name.toLowerCase() === (spec ?? '').toLowerCase());
+  if (match) {
+    const specIcon = guildIcon('spec',match[0]);
+    specIcon.setAttribute('role','img');specIcon.setAttribute('aria-label',match[0]);specIcon.removeAttribute('aria-hidden');
+    icons.append(specIcon);
   }
   return icons;
 }
@@ -677,15 +657,9 @@ export function renderArmoryConfirmation(card,character,search) {
   const portrait = raidElement('div',null,'armory-confirm-portrait');
   const initials = character.name.split(/\s+/).slice(0,2).map(word=>word[0]).join('').toUpperCase();
   portrait.textContent = initials;
-  function icon(name) {
-    const image = raidElement('img');
-    image.alt = '';
-    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+name+'.jpg';
-    return image;
-  }
   if (Object.hasOwn(armorySpecs,character.className)) {
-    const image = icon('classicon_'+character.className.toLowerCase());
-    image.addEventListener('load',()=>portrait.replaceChildren(image));
+    portrait.dataset.wowClass = character.className;
+    portrait.replaceChildren(guildIcon('class',character.className));
   }
   const identity = raidElement('div');
   identity.append(raidElement('h3',character.name),raidElement('p',[
@@ -714,8 +688,8 @@ export function renderArmoryConfirmation(card,character,search) {
       Object.assign(input,{type:'radio',name:'spec',value:name,checked:index===0});
       const text = raidElement('span');
       text.append(raidElement('strong',name),raidElement('small',defaultRole));
-      const specIcon = icon(iconName);
-      specIcon.addEventListener('error',()=>specIcon.hidden = true);
+      const specIcon = guildIcon('spec',name);
+      label.dataset.wowClass = character.className;
       label.append(input,specIcon,text);
       choices.append(label);
     }

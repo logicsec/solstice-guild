@@ -32,3 +32,5 @@ Interface icons use [Tabler Icons](https://tabler.io/icons), pinned to commit `8
 ## Google Sans
 
 Google Sans is loaded through the official Google Fonts stylesheet service.
+
+The `solstice-*` symbols in the shared SVG sprite are original outline artwork created for Solstice Guild. They are separate from the bundled Tabler symbols.

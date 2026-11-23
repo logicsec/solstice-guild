@@ -21,7 +21,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-6"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-7"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
     <svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-2#menu-2"></use></svg>
@@ -150,11 +150,11 @@ export async function publicRaidPage(env, id, roles, session, requested) {
     const profile = await publicRosterProfile(env,link?.slug);
     const specs = Object.hasOwn(armorySpecs,player.class_name) ? armorySpecs[player.class_name] : null;
     const spec = specs?.find(([name])=>name.toLowerCase() === (link?.spec ?? '').toLowerCase());
-    const icon = name => `<img src="https://wow.zamimg.com/images/wow/icons/medium/${escape(name)}.jpg" alt="" width="28" height="28" loading="lazy">`;
+    const icon = (kind,name) => `<svg class="tabler-icon guild-symbol" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#solstice-${kind}-${escape(name.toLowerCase().replace(/[^a-z0-9]+/g,"-"))}"></use></svg>`;
     const metadata = [player.class_name,spec?.[0],player.role,profile?.level != null ? 'Level '+profile.level : ''].filter(Boolean);
     return `<li class="news-card public-raider">
       <div class="public-raider-identity">
-        ${specs ? `<span class="public-raider-icons">${icon('classicon_'+player.class_name.toLowerCase())}${spec ? icon(spec[2]) : ''}</span>` : ''}
+        ${specs ? `<span class="public-raider-icons" data-wow-class="${escape(player.class_name)}">${icon('class',player.class_name)}${spec ? icon('spec',spec[0]) : ''}</span>` : ''}
         <div><strong data-wow-class="${escape(player.class_name)}">${escape(player.character)}</strong>
           <p>${metadata.map(escape).join(' · ')}</p>
         </div>

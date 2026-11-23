@@ -200,3 +200,11 @@ code { color:var(--theme-code-color); }
  background:linear-gradient(to right,color-mix(in srgb,var(--row-accent) 16%,transparent) var(--profession-progress),transparent var(--profession-progress)),var(--theme-secondary-bg);
 }
 @media(max-width:1050px) { .guild-app .guild-dashboard-lower { grid-template-columns:minmax(0,1fr); } }
+
+/* All identity symbols use the same outline, size and palette as navigation. */
+.character-icons .guild-symbol,.public-raider-icons .guild-symbol { width:24px; height:24px; color:var(--class-color,var(--theme-primary-text-emphasis)); }
+.guild-symbol.profession-progress-icon { width:24px; height:24px; padding:2px; box-sizing:border-box; color:var(--row-accent,var(--theme-purple-text-emphasis)); background:transparent; border:0; border-radius:0; }
+#guildCharacterIcon .guild-symbol,#guildCharacterOptions .guild-symbol { width:24px; height:24px; }
+.armory-confirm-portrait > .guild-symbol { width:36px; height:36px; color:var(--class-color,var(--theme-primary-text-emphasis)); }
+.armory-spec .guild-symbol { width:26px; height:26px; color:var(--class-color,var(--theme-primary-text-emphasis)); }
+.guild-app .raid-sidebar #raidMenu .tabler-icon { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; }
