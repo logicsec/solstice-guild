@@ -1601,3 +1601,83 @@ body.character-page-active > main > :not(.character-page-root) { display: none !
  .character-stat-rows { grid-template-columns: minmax(0,1fr); }
  .character-page-root .character-profile-hero { padding: 18px; }
 }
+
+/* Character detail views: compact game-style tables and achievement lists. */
+.character-page-root .character-talents { padding: 0; margin: 0; border: 0; background: transparent; }
+.character-page-root .character-talent-trees { gap: 12px; border: 0; background: transparent; overflow: visible; }
+.character-page-root .character-talent-tree { padding: 0 0 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--field); overflow: hidden; }
+.character-page-root .character-talent-tree h4 { justify-content: space-between; gap: 8px; margin: 0 0 10px; padding: 10px 12px; background: var(--field); color: var(--accent); font-size: 14px; }
+.character-page-root .character-talent-tree h4 img { display: none; }
+.character-page-root .character-talent-points { margin-left: auto; padding: 0; border: 0; background: transparent; color: var(--muted); font-size: 12px; }
+.character-page-root .character-talent-connections { opacity: .45; }
+.character-page-root .character-talent-node span { inset: auto 0 0; text-align: center; font: 11px/1.2 ui-monospace,monospace; }
+.character-page-root .character-talent-detail { background: var(--field); border-color: var(--line); font-size: 14px; }
+.character-stats-tables { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); align-items: start; gap: 14px; }
+.character-stat-column { min-width: 0; display: grid; gap: 14px; }
+.character-stat-table { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--field); }
+.character-stat-table h3 { margin: 0; padding: 10px 12px; border-bottom: 1px solid var(--line); color: var(--accent); font: 700 14px/1.5 var(--site-font); }
+.character-stat-table dl { margin: 0; }
+.character-stat-table dl > div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 10px 12px; border-bottom: 1px solid color-mix(in srgb,var(--line) 50%,transparent); }
+.character-stat-table dl > div:last-child { border-bottom: 0; }
+.character-stat-table dt { min-width: 0; color: var(--muted); font: 14px/1.35 var(--site-font); }
+.character-stat-table dd { margin: 0; flex-shrink: 0; color: var(--ink); font: 700 14px/1.4 ui-monospace,SFMono-Regular,monospace; font-variant-numeric: tabular-nums; }
+.character-data-note { margin: 7px 0 14px; color: var(--muted); font-size: 14px; line-height: 1.5; }
+.character-stats-tables > .character-data-note { grid-column: 1/-1; }
+.character-achievements > h3 { margin: 0; font: 700 16px/1.5 var(--site-font); }
+.character-achievement-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; margin: 16px 0; }
+.guild-app .character-achievement-tabs button { display: inline-flex; align-items: baseline; justify-content: center; gap: 5px; min-height: 34px; padding: 5px 11px; border: 1px solid var(--line); border-radius: 20px; background: var(--field); color: var(--muted); font: 14px/1.2 var(--site-font); white-space: nowrap; }
+.guild-app .character-achievement-tabs button[aria-pressed=true] { color: var(--accent); background: var(--hover); border-color: var(--deep-accent); }
+.character-achievement-tabs .character-achievement-tab-count { display: inline; color: var(--muted); font: 12px/1.2 ui-monospace,monospace; font-variant-numeric: tabular-nums; }
+.character-achievement-groups { display: grid; gap: 16px; }
+.character-achievement-group { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--field); }
+.character-achievement-group > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--line); }
+.character-achievement-group h4 { margin: 0; color: var(--accent); font: 700 14px/1.5 var(--site-font); }
+.character-achievement-group > header > span { font: 12px/1.5 ui-monospace,monospace; color: var(--muted); }
+.character-achievement-group ul { list-style: none; padding: 0; margin: 0; }
+.character-achievement-group li { display: grid; grid-template-columns: 34px minmax(0,1fr) 112px; gap: 12px; align-items: center; padding: 11px 12px; border-bottom: 1px solid color-mix(in srgb,var(--line) 45%,transparent); }
+.character-achievement-group li:last-child { border-bottom: 0; }
+.character-achievement-image { display: grid; place-items: center; width: 34px; height: 34px; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; color: var(--accent); background: var(--container); }
+.character-achievement-image img { width: 100%; height: 100%; object-fit: cover; }
+.character-achievement-copy { min-width: 0; }
+.character-achievement-copy strong { display: block; color: var(--ink); font: 700 14px/1.4 var(--site-font); }
+.character-achievement-copy p { color: var(--muted); font: 14px/1.4 var(--site-font); margin-top: 2px; }
+.character-achievement-progress { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; width: 112px; color: var(--ink); font: 12px/1.4 ui-monospace,monospace; font-variant-numeric: tabular-nums; text-align: right; }
+.character-achievement-progress progress { display: block; appearance: none; width: 100%; height: 5px; border: 0; border-radius: 5px; overflow: hidden; background: var(--container); accent-color: var(--accent); }
+.character-achievement-progress progress::-webkit-progress-bar { background: var(--container); border-radius: 5px; }
+.character-achievement-progress progress::-webkit-progress-value { background: var(--accent); border-radius: 5px; }
+.character-achievement-progress progress::-moz-progress-bar { background: var(--accent); border-radius: 5px; }
+.character-lifetime-metrics { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 12px; }
+.character-lifetime-card { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--field); }
+.character-lifetime-card > span { display: block; color: var(--muted); font-size: 14px; }
+.character-lifetime-card > strong { display: block; margin-top: 7px; color: var(--ink); font: 700 22px/1.25 ui-monospace,monospace; }
+.character-lifetime-card > small { display: block; margin-top: 8px; color: var(--muted); font: 12px/1.5 ui-monospace,monospace; }
+.character-lifetime-section { margin-top: 24px; min-width: 0; }
+.character-lifetime-section > header { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.character-lifetime-section h3 { margin: 0 0 8px; color: var(--muted); font: 700 12px/1.5 var(--site-font); letter-spacing: .08em; text-transform: uppercase; }
+.character-lifetime-section header > span { color: var(--muted); font: 12px/1.5 ui-monospace,monospace; }
+.character-death-bar { display: flex; width: 100%; height: 18px; overflow: hidden; border-radius: 10px; background: var(--field); }
+.character-death-bar > span { height: 100%; border-inline-end: 1px solid var(--field); }
+.character-death-legend { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px 24px; margin: 14px 0 0; }
+.character-death-legend > div { display: flex; justify-content: space-between; gap: 12px; min-width: 0; }
+.character-death-legend dt { font-size: 14px; color: var(--ink); }
+.character-death-legend dd { margin: 0; font: 12px/1.5 ui-monospace,monospace; white-space: nowrap; }
+.character-death-dot { display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; }
+.character-lifetime-pvp,.character-lifetime-columns { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; }
+.character-lifetime-table { margin: 8px 0 0; padding: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; background: var(--field); }
+.character-lifetime-table > div { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 10px 12px; border-bottom: 1px solid color-mix(in srgb,var(--line) 45%,transparent); }
+.character-lifetime-table > div:last-child { border-bottom: 0; }
+.character-lifetime-table dt { color: var(--muted); font-size: 14px; }
+.character-lifetime-table dd { margin: 0; color: var(--ink); font: 700 14px/1.5 ui-monospace,monospace; }
+@media(max-width:1150px) { .character-stats-tables { grid-template-columns: repeat(2,minmax(0,1fr)); } }
+@media(max-width:600px) {
+ .character-stats-tables { grid-template-columns: minmax(0,1fr); }
+ .character-lifetime-metrics { grid-template-columns: repeat(2,minmax(0,1fr)); }
+ .character-lifetime-pvp,.character-lifetime-columns,.character-death-legend { grid-template-columns: minmax(0,1fr); }
+ .character-achievement-group li { grid-template-columns: 34px minmax(0,1fr); }
+ .character-achievement-progress { grid-column: 2; width: 112px; align-items: flex-start; text-align: left; }
+}
+.character-page-root .character-talents > h3 { display: none; }
+.character-talent-summary { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; color: var(--muted); font-size: 14px; }
+.character-talent-summary > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
+.character-talent-summary strong { color: var(--ink); }
+.character-talent-summary small { padding: 2px 5px; border-radius: 3px; background: var(--hover); color: var(--accent); font-size: 10px; font-weight: 700; text-transform: uppercase; }

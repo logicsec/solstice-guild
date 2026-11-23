@@ -150,136 +150,10 @@ export function renderArmoryProfile(character) {
     }
     sheet.append(left,showcase,right,weapons);
   } else sheet.append(raidElement('p','No equipment data available.'));
-  const history = character.journey ?? [];
   const overview = raidElement('section',null,'profile-overview');
   const facts = raidElement('div',null,'raid-stats');
-  const milestones = [
-    ...[10,20,30,40,50,60].map(level => ['Level '+level,'Reach character level '+level, character.level >= level || history.some(day => day.level >= level)]),
-    ...[['UNCOMMON','Uncommon'],['RARE','Rare'],['EPIC','Epic']].map(([quality,label]) => [
-      label+' Equipment','Equip an item of '+label.toLowerCase()+' quality or higher.',
-      [...(character.gear ?? []),...history.flatMap(day => day.gear ?? [])].some(item =>
-        ['UNCOMMON','RARE','EPIC','LEGENDARY'].indexOf(item.quality) >= ['UNCOMMON','RARE','EPIC'].indexOf(quality)),
-    ]),
-  ];
-  raidStats(facts,[
-    ['Achievements',milestones.filter(([, ,earned]) => earned).length+' / '+milestones.length],
-    ['Item Level',character.itemLevel ?? 'Unavailable'],
-    ['Equipped Items',character.gear?.length ?? 'Unavailable'],
-  ]);
+  raidStats(facts,[['Achievements',character.achievementCount ?? '—'],['Item Level',character.itemLevel ?? 'Unavailable'],['Equipped Items',character.gear?.length ?? 'Unavailable']]);
   overview.append(facts);
-
-  const progress = raidElement('div',null,'profile-progress');
-  const journey = raidElement('section',null,'profile-section');
-  journey.append(raidElement('h3','The Journey'));
-  const journeyHistory = raidElement('div',null,'profile-journey-scroll');
-  journeyHistory.tabIndex = 0;
-  journeyHistory.setAttribute('role','region');
-  journeyHistory.setAttribute('aria-label','Journey history');
-  journey.append(journeyHistory);
-  const levels = history.filter(day => Number.isFinite(day.level));
-  if (levels.length > 1) {
-    const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-    const line = document.createElementNS(svg.namespaceURI,'polyline');
-    const low = Math.min(...levels.map(day => day.level));
-    const high = Math.max(...levels.map(day => day.level));
-    const start = Date.parse(levels[0].day);
-    const span = Date.parse(levels.at(-1).day) - start;
-    line.setAttribute('points',levels.map(day =>
-      (3 + 294 * (Date.parse(day.day) - start) / span)+','+
-      (53 - 47 * (day.level-low) / Math.max(1,high-low))).join(' '));
-    svg.setAttribute('viewBox','0 0 300 60');
-    svg.setAttribute('role','img');
-    svg.setAttribute('aria-label','Recorded level over time, from '+levels[0].level+' to '+levels.at(-1).level);
-    svg.setAttribute('preserveAspectRatio','none');
-    svg.append(line);
-    const chart = raidElement('div',null,'profile-level-history');
-    chart.append(raidElement('p','Level Over Time','eyebrow'),svg);
-    overview.append(chart);
-  }
-  const changes = [];
-  let lastGear = null;
-  const lastSkills = new Map();
-  for (const [index,day] of history.entries()) {
-    const previous = history[index-1];
-    if (!previous) changes.push([day.day,'First recorded profile'+(day.level == null ? '' : ' · Level '+day.level)]);
-    else if (day.level != null && previous.level != null && day.level > previous.level) changes.push([day.day,'Reached level '+day.level]);
-    if (day.gear) {
-      if (lastGear) for (const item of day.gear) {
-        if (item.slotType && !lastGear.some(old => old.slotType === item.slotType && old.id === item.id && old.name === item.name)) {
-          changes.push([day.day,'Equipped '+item.name]);
-        }
-      }
-      lastGear = day.gear;
-    }
-    for (const profession of day.professions ?? []) {
-      if (profession.skill == null) continue;
-      const previousSkill = lastSkills.get(profession.name);
-      if (previousSkill != null && profession.skill > previousSkill) changes.push([day.day,profession.name+' reached '+profession.skill]);
-      lastSkills.set(profession.name,profession.skill);
-    }
-  }
-  const timelineMonth = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric',timeZone:'UTC'});
-  const timelineDay = new Intl.DateTimeFormat(undefined,{day:'numeric',month:'long',timeZone:'UTC'});
-  let monthKey, timeline;
-  for (const [day,description] of changes.reverse()) {
-    if (monthKey !== day.slice(0,7)) {
-      monthKey = day.slice(0,7);
-      timeline = raidElement('ol',null,'profile-timeline');
-      journeyHistory.append(raidElement('h4',timelineMonth.format(new Date(day))),timeline);
-    }
-    const entry = raidElement('li');
-    const date = raidElement('time',timelineDay.format(new Date(day)));
-    date.dateTime = day;
-    entry.append(raidElement('strong',description),date);
-    timeline.append(entry);
-  }
-  if (!changes.length) journeyHistory.append(raidElement('p','No journey history recorded yet.'));
-
-  const achievements = raidElement('section',null,'profile-section');
-  achievements.append(raidElement('h3','Achievements'),raidElement('p','Milestones recorded from your Armory profile and journey history.','profile-achievement-summary'));
-  const achievementLayout = raidElement('div',null,'profile-achievement-layout');
-  const categories = raidElement('nav',null,'profile-achievement-categories');
-  categories.setAttribute('aria-label','Achievement categories');
-  const achievementContent = raidElement('div',null,'profile-achievement-content');
-  const categoryHeading = raidElement('h4');
-  const badges = raidElement('ul',null,'profile-achievements');
-  badges.setAttribute('aria-label','Character achievements');
-  const categorySummary = raidElement('p',null,'profile-achievement-summary');
-  categorySummary.setAttribute('aria-live','polite');
-  const achievementRows = [];
-  for (const [title,description,earned] of milestones) {
-    const badge = raidElement('li',null,earned ? 'is-earned' : '');
-    const icon = raidElement('span',title.startsWith('Level ') ? '⚑' : '◇','profile-achievement-icon');
-    icon.setAttribute('aria-hidden','true');
-    const copy = raidElement('div');
-    copy.append(raidElement('strong',title),raidElement('small',description),raidElement('small',earned ? 'Earned' : 'Not recorded','profile-achievement-state'));
-    badge.append(icon,copy);
-    badges.append(badge);
-    achievementRows.push({badge,earned,category:title.startsWith('Level ') ? 'Leveling' : 'Equipment'});
-  }
-  const categoryButtons = [];
-  function selectCategory(category) {
-    for (const [label,button] of categoryButtons) button.setAttribute('aria-pressed',String(label === category));
-    const visible = achievementRows.filter(row => category === 'General' || row.category === category);
-    for (const row of achievementRows) row.badge.hidden = !visible.includes(row);
-    categoryHeading.textContent = category;
-    categorySummary.textContent = visible.filter(row => row.earned).length+' / '+visible.length+' earned';
-    achievementContent.scrollTop = 0;
-  }
-  for (const category of ['General','Leveling','Equipment']) {
-    const rows = achievementRows.filter(row => category === 'General' || row.category === category);
-    const button = raidElement('button',null,category === 'General' ? '' : 'profile-achievement-subcategory');
-    button.type = 'button';
-    button.append(raidElement('span',category),raidElement('small',rows.filter(row => row.earned).length+' / '+rows.length));
-    button.addEventListener('click',()=>selectCategory(category));
-    categoryButtons.push([category,button]);
-    categories.append(button);
-  }
-  selectCategory('General');
-  achievementContent.append(categoryHeading,categorySummary,badges);
-  achievementLayout.append(categories,achievementContent);
-  achievements.append(achievementLayout);
-  progress.append(journey,achievements);
   const professions = raidElement('div',null,'character-profession-sections');
   const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
   for (const entry of character.professions ?? []) {
@@ -316,35 +190,31 @@ export function renderArmoryProfile(character) {
       professions.append(section);
     }
   }
-  const statistics = raidElement('section',null,'character-statistics');
-  const statStrip = raidElement('div',null,'character-stat-strip');
-  const activeBuild = character.talents?.find(build=>build.active) ?? character.talents?.[0];
-  const spec = activeBuild?.trees?.reduce((best,tree)=>(tree.points ?? 0) > (best?.points ?? -1) ? tree : best,null);
-  const specLabel = raidElement('div',null,'character-stat-spec');
-  specLabel.append(raidElement('strong',spec?.name || 'Specialization'),raidElement('small',activeBuild?.trees?.map(tree=>tree.points ?? 0).join(' / ') || 'Not reported'));
-  statStrip.append(specLabel);
-  const statValues = new Map((character.attributes ?? []).flatMap(([,values])=>values));
-  const keyStats = raidElement('div',null,'character-key-stats');
-  for (const label of ['Health','Mana','Intellect','Stamina']) {
-    const tile = raidElement('div');
-    tile.append(raidElement('strong',statValues.has(label) ? new Intl.NumberFormat().format(statValues.get(label)) : '—'),raidElement('small',label));
-    keyStats.append(tile);
+  const statistics = raidElement('section',null,'character-stats-tables');
+  const columns = Array.from({length:4},()=>raidElement('div',null,'character-stat-column'));
+  for (const group of character.statGroups ?? []) {
+    const card = raidElement('section',null,'character-stat-table');
+    card.append(raidElement('h3',group.name));
+    const rows = raidElement('dl');
+    for (const item of group.rows) {
+      const row = raidElement('div');
+      let value = '—';
+      if (item.value != null) {
+        if (item.format === 'range') value = item.value.map(number=>Math.round(number).toLocaleString()).join(' – ');
+        else {
+          const decimals = item.format === 'percent' || item.format === 'decimal' ? 1 : item.format === 'speed' ? 2 : 0;
+          value = new Intl.NumberFormat(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(item.value)+(item.format === 'percent' ? '%' : '');
+        }
+      }
+      row.append(raidElement('dt',item.label),raidElement('dd',value));
+      rows.append(row);
+    }
+    card.append(rows);
+    columns[({Base:0,Melee:1,Ranged:2,Spell:2,Defense:3})[group.name] ?? 0].append(card);
   }
-  statStrip.append(keyStats);
-  const detailed = raidElement('div',null,'character-detailed-stats');
-  detailed.append(raidElement('p','Character Sheet','eyebrow'),raidElement('h3','Detailed statistics'));
-  const rows = raidElement('dl',null,'character-stat-rows');
-  for (const [label,value] of statValues) {
-    if (['Health','Mana','Intellect','Stamina'].includes(label)) continue;
-    const row = raidElement('div');
-    row.append(raidElement('dt',label),raidElement('span',null,'stat-leader'),raidElement('dd',new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value)+(/crit|haste|dodge|parry|block chance/i.test(label) ? '%' : '')));
-    row.children[1].setAttribute('aria-hidden','true');
-    rows.append(row);
-  }
-  if (!rows.children.length) detailed.append(raidElement('p','No detailed statistics reported by the Armory.'));
-  detailed.append(rows);
-  statistics.append(statStrip,detailed);
-  return { overview, equipment:sheet, progress, professions, statistics, journey, achievements };
+  statistics.append(...columns);
+  statistics.append(raidElement('p','— indicates a value not reported by Blizzard.','character-data-note'));
+  return {overview,equipment:sheet,professions,statistics};
 }
 
 export function renderCharacterTalents(character) {
@@ -363,12 +233,19 @@ export function renderCharacterTalents(character) {
   source.href = 'https://theforeverera.com/en/talents/';
   source.target = '_blank';
   source.rel = 'noopener noreferrer';
-  panel.append(builds,trees,detail,source);
+  const buildSummary = raidElement('div',null,'character-talent-summary');
+  panel.append(buildSummary,builds,trees,detail,source);
   function select(index) {
     for (const [i,button] of [...builds.children].entries()) button.setAttribute('aria-pressed',String(i === index));
     trees.replaceChildren();
     detail.replaceChildren(raidElement('p','Hover over or select a talent to see what it does.'));
     const build = character.talents[index];
+    const totalPoints = build.trees.reduce((sum,tree)=>sum+(tree.points ?? tree.talents.reduce((count,talent)=>count+talent.rank,0)),0);
+    const primary = build.trees.reduce((best,tree)=>(tree.points ?? 0)>(best?.points ?? -1) ? tree : best,null);
+    const summaryTitle = raidElement('div');
+    summaryTitle.append(raidElement('strong',primary?.name || 'Talent build'),raidElement('span',build.trees.map(tree=>tree.points ?? 0).join('/')));
+    if (build.active) summaryTitle.append(raidElement('small','Active'));
+    buildSummary.replaceChildren(summaryTitle,raidElement('span',totalPoints+' points spent'));
     const labels = new Map(layout.map(tree=>[tree[0].toLowerCase(),tree]));
     for (const tree of build.trees) {
       if (!labels.has(tree.name.toLowerCase())) labels.set(tree.name.toLowerCase(),[tree.name,'',null,[]]);
@@ -378,7 +255,7 @@ export function renderCharacterTalents(character) {
       const learned = tree?.talents ?? [];
       const points = tree?.points ?? learned.reduce((sum,talent)=>sum+talent.rank,0);
       const card = raidElement('section',null,'character-talent-tree');
-      if (art) card.style.setProperty('--tree-art','url(https://theforeverera.com'+art+')');
+
       const title = raidElement('h4',name);
       title.append(raidElement('span',points+' pts','character-talent-points'));
       if (icon) {
@@ -440,7 +317,7 @@ export function renderCharacterTalents(character) {
           image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
           node.append(image);
         }
-        if (rank) node.append(raidElement('span',String(rank)));
+        node.append(raidElement('span',rankText));
         node.addEventListener('click',()=>detail.replaceChildren(raidElement('strong',talentName+' · '+rankLabel),
           ...(description ? [raidElement('p',description)] : [])));
         grid.append(node,tooltip);
@@ -550,9 +427,9 @@ export function openCharacterSheet(player, event, organizer) {
   talents.append(raidElement('p','Loading talents…'));
   const statisticsPanel = raidElement('div');
   const achievementsPanel = raidElement('div');
-  const journeyPanel = raidElement('div');
-  for (const panel of [statisticsPanel,achievementsPanel,journeyPanel]) panel.append(raidElement('p','Loading character data…'));
-  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Stats',statisticsPanel,'Attributes & combat'],['Achievements',achievementsPanel,'Earned & in progress'],['Journey',journeyPanel,'Recorded progression'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
+  const lifetimePanel = raidElement('div');
+  for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel]) panel.append(raidElement('p','Loading character data…'));
+  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Stats',statisticsPanel,'Attributes & combat'],['Achievements',achievementsPanel,'Earned & in progress'],['Lifetime',lifetimePanel,'Quests, kills & deaths'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
   const panels = sections.map(([label,panel,description])=>{
     const button = raidElement('button');
     button.append(raidElement('strong',label),raidElement('small',description));
@@ -563,9 +440,28 @@ export function openCharacterSheet(player, event, organizer) {
     tabs.append(button);
     return {button,panel};
   });
+  const loadedSections = new Set();
+  async function loadSection(selected) {
+    const section = selected === achievementsPanel ? 'achievements' : selected === lifetimePanel ? 'lifetime' : null;
+    if (!section || loadedSections.has(section)) return;
+    loadedSections.add(section);
+    selected.replaceChildren(raidElement('p','Loading '+section+' from Blizzard…','character-data-note'));
+    try {
+      const data = await armoryRequest('?name='+encodeURIComponent(player.armorySlug)+'&section='+section);
+      if (!dialog.isConnected) return;
+      selected.replaceChildren(section === 'achievements' ? renderCharacterAchievements(data.achievements) : renderCharacterLifetime(data.lifetime));
+    } catch (error) {
+      loadedSections.delete(section);
+      const retry = raidElement('button','Retry');
+      retry.type = 'button';
+      retry.addEventListener('click',()=>loadSection(selected));
+      selected.replaceChildren(raidElement('p',error.message,'character-data-note'),retry);
+    }
+  }
   function selectPanel(selected) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
     overview.hidden = false;
+    loadSection(selected);
     equipment.hidden = selected !== content || !equipment.hasChildNodes();
     for (const {button,panel} of panels) {
       button.setAttribute('aria-pressed',String(panel === selected));
@@ -586,7 +482,7 @@ export function openCharacterSheet(player, event, organizer) {
     pageLayout.append(tabs,pageContent);
     dialog.append(pageLayout);
     const requestedTab = new URLSearchParams(location.search).get('tab');
-    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === requestedTab)?.panel;
+    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (requestedTab === 'journey' ? 'lifetime' : requestedTab))?.panel;
     selectPanel(requestedPanel ?? content);
   } else {
     overview.replaceChildren();
@@ -605,8 +501,7 @@ export function openCharacterSheet(player, event, organizer) {
     equipment.hidden = content.hidden;
     content.replaceChildren(plannerLink,equipment);
     statisticsPanel.replaceChildren(profile.statistics);
-    achievementsPanel.replaceChildren(profile.achievements);
-    journeyPanel.replaceChildren(profile.journey);
+
     professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
     const meta = identity.querySelector('.inspector-meta');
@@ -633,7 +528,7 @@ export function openCharacterSheet(player, event, organizer) {
       raidElement('p','These figures come from Blizzard. Organizers set readiness for the selected raid.'));
   }).catch(error=>{
     overview.replaceChildren(raidElement('p',error.message));
-    for (const panel of [statisticsPanel,achievementsPanel,journeyPanel]) panel.replaceChildren(raidElement('p','Character data is unavailable. Return to Guild Hall and try again.'));
+    for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel]) panel.replaceChildren(raidElement('p','Character data is unavailable. Return to Guild Hall and try again.'));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
     talents.replaceChildren(raidElement('p','Talents are unavailable.'));
     evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
@@ -794,4 +689,147 @@ export function renderArmoryConfirmation(card,character,search) {
   });
   card.append(dialog);
   dialog.showModal();
+}
+
+export function renderCharacterAchievements(data) {
+  const root = raidElement('section',null,'character-achievements');
+  if (!Array.isArray(data?.items)) {
+    root.append(raidElement('p','Achievement data is unavailable from Blizzard.','character-data-note'));
+    return root;
+  }
+  const items = data.items;
+  const earned = items.filter(item=>item.earned).length;
+  root.append(raidElement('h3',earned+' of '+items.length+' achievements earned'));
+  root.append(raidElement('p','Some achievements are account-wide and may have been earned on another character.','character-data-note'));
+  if (data.partial) root.append(raidElement('p','Some achievement definitions could not be loaded. Counts include the available records.','character-data-note'));
+  const tabs = raidElement('nav',null,'character-achievement-tabs');
+  tabs.setAttribute('aria-label','Achievement categories');
+  const content = raidElement('div',null,'character-achievement-groups');
+  const categoryNames = ['All',...new Set(items.map(item=>item.category))];
+  function select(category) {
+    for (const button of tabs.children) button.setAttribute('aria-pressed',String(button.dataset.category === category));
+    content.replaceChildren();
+    const selected = items.filter(item=>category === 'All' || item.category === category);
+    const groups = new Map();
+    for (const item of selected) {
+      const key = item.category+' / '+item.group;
+      if (!groups.has(key)) groups.set(key,[]);
+      groups.get(key).push(item);
+    }
+    for (const group of groups.values()) {
+      const section = raidElement('section',null,'character-achievement-group');
+      const heading = raidElement('header');
+      heading.append(raidElement('h4',group[0].group),raidElement('span',group.filter(item=>item.earned).length+' / '+group.length));
+      section.append(heading);
+      const list = raidElement('ul');
+      for (const item of [...group].sort((a,b)=>Number(b.earned)-Number(a.earned))) {
+        const row = raidElement('li',null,item.earned ? 'is-earned' : 'is-incomplete');
+        const icon = raidElement('span',null,'character-achievement-image');
+        const image = raidElement('img');
+        image.alt = '';
+        image.loading = 'lazy';
+        image.src = typeof item.icon === 'string' && /^https:\/\/(?:render(?:-[a-z]+)?\.worldofwarcraft\.com|wow\.zamimg\.com)\//i.test(item.icon) ? item.icon : 'https://wow.zamimg.com/images/wow/icons/medium/achievement_general.jpg';
+        image.addEventListener('error',()=>{ image.remove();icon.textContent='◇'; },{once:true});
+        icon.append(image);
+        const copy = raidElement('div',null,'character-achievement-copy');
+        copy.append(raidElement('strong',item.name),raidElement('p',item.description));
+        const state = raidElement('div',null,'character-achievement-progress');
+        if (item.earned) {
+          const completed = item.completedAt ? new Date(item.completedAt) : null;
+          const date = completed && Number.isFinite(completed.getTime()) ? raidElement('time',new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric',year:'numeric',timeZone:'UTC'}).format(completed)) : raidElement('span','Earned');
+          if (date.tagName === 'TIME') date.dateTime = completed.toISOString();
+          state.append(date);
+        } else {
+          const total = Math.max(1,item.total ?? 1),current = Math.min(total,Math.max(0,item.current ?? 0));
+          const bar = raidElement('progress');
+          bar.max = total;
+          bar.value = current;
+          bar.setAttribute('aria-label',item.name+': '+current+' of '+total);
+          state.append(raidElement('span',current.toLocaleString()+' / '+total.toLocaleString()),bar);
+        }
+        row.append(icon,copy,state);
+        list.append(row);
+      }
+      section.append(list);
+      content.append(section);
+    }
+    if (!selected.length) content.append(raidElement('p','No achievements reported in this category.','character-data-note'));
+  }
+  for (const category of categoryNames) {
+    const group = items.filter(item=>category === 'All' || item.category === category);
+    const button = raidElement('button');
+    button.type = 'button';
+    button.dataset.category = category;
+    button.append(raidElement('span',category),raidElement('span',group.filter(item=>item.earned).length+'/'+group.length,'character-achievement-tab-count'));
+    button.addEventListener('click',()=>select(category));
+    tabs.append(button);
+  }
+  root.append(tabs,content);
+  select('All');
+  return root;
+}
+
+export function renderCharacterLifetime(data) {
+  const root = raidElement('section',null,'character-lifetime');
+  if (!Array.isArray(data)) {
+    root.append(raidElement('p','Lifetime statistics are unavailable from Blizzard.','character-data-note'));
+    return root;
+  }
+  const format = value => value == null ? '—' : new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value);
+  const find = (id,pattern) => (id == null ? undefined : data.find(row=>row.id === id)?.value) ?? data.find(row=>pattern?.test(row.name))?.value ?? null;
+  const metricCards = raidElement('div',null,'character-lifetime-metrics');
+  const bosses = data.filter(row=>/boss kills/i.test(row.group));
+  for (const [label,value] of [['Quests completed',find(98,/^quests completed$/i)],['Kills',find(1197,/^total kills$/i)],['Bosses killed',bosses.length ? bosses.reduce((sum,row)=>sum+row.value,0) : null],['Exalted reputations',find(null,/^total (?:factions|reputations) at exalted$/i)],['Need rolls',find(1044,/need rolls made/i)],['Duels won',find(null,/^duels won$/i)]]) {
+    const card = raidElement('div',null,'character-lifetime-card');
+    card.append(raidElement('span',label),raidElement('strong',format(value)));
+    metricCards.append(card);
+  }
+  root.append(metricCards);
+  const total = find(60,/^total deaths$/i);
+  const deathSection = raidElement('section',null,'character-lifetime-section');
+  const heading = raidElement('header');
+  heading.append(raidElement('h3','Deaths'),raidElement('span',format(total)+' in total'));
+  deathSection.append(heading);
+  const deathTypes = [['Other players',find(1501,/^total deaths from other players$/i),'#dc6947'],['Dungeons and raids',find(321,/^total raid and dungeon deaths$/i),'#239e83'],['Falling',find(114,/deaths from falling/i),'#d8a328'],['Fire and lava',find(null,/deaths from (?:fire|lava)/i),'#ce5688'],['Drowning',find(112,/deaths from drowning/i),'#65a65b'],['Fatigue',find(null,/deaths from (?:fatigue|exhaustion)/i),'#9282cf']];
+  const known = deathTypes.reduce((sum,[,value])=>sum+(value ?? 0),0);
+  const causes = [['Monsters & other',total == null ? null : Math.max(0,total-known),'#4a8ed8'],...deathTypes];
+  const bar = raidElement('div',null,'character-death-bar');
+  bar.setAttribute('role','img');
+  bar.setAttribute('aria-label',total == null ? 'Death statistics unavailable' : causes.map(([label,value])=>label+': '+format(value)).join(', '));
+  for (const [label,value,color] of causes) if (total > 0 && value > 0) {
+    const segment = raidElement('span');segment.style.width = Math.min(100,value/total*100)+'%';segment.style.background = color;segment.title=label+': '+format(value);bar.append(segment);
+  }
+  const legend = raidElement('dl',null,'character-death-legend');
+  for (const [label,value,color] of causes) {
+    const row = raidElement('div');const dot = raidElement('span',null,'character-death-dot');dot.style.background=color;
+    const term = raidElement('dt');term.append(dot,document.createTextNode(label));
+    row.append(term,raidElement('dd',format(value)+(total > 0 && value != null ? ' · '+(value/total*100).toFixed(value/total<.01 ? 1 : 0)+'%' : '')));legend.append(row);
+  }
+  deathSection.append(bar,legend);
+  root.append(deathSection);
+  const table = (label,rows) => {
+    const section = raidElement('section',null,'character-lifetime-section');
+    if (label) section.append(raidElement('h3',label));
+    const list = raidElement('dl',null,'character-lifetime-table');
+    for (const [name,value] of rows) {const row = raidElement('div');row.append(raidElement('dt',name),raidElement('dd',typeof value === 'string' ? value : format(value)));list.append(row);}
+    section.append(list);return section;
+  };
+  const played=find(839,/^battlegrounds played$/i),won=find(840,/^battlegrounds won$/i);
+  const bgDeathCounters=data.filter(row=>/deaths.*battlegrounds/i.test(row.group) && /^deaths in /i.test(row.name));
+  const bgKills=find(382,/^battleground honorable kills$/i),bgDeaths=find(null,/^battleground deaths$/i) ?? (bgDeathCounters.length ? bgDeathCounters.reduce((sum,row)=>sum+row.value,0) : played === 0 ? 0 : null);
+  const worldKills=find(381,/^world (?:pvp )?honorable kills$/i),playerDeaths=find(1501,/^total deaths from other players$/i);
+  const worldDeaths=playerDeaths != null && bgDeaths != null ? Math.max(0,playerDeaths-bgDeaths) : null;
+  const pvp=raidElement('section',null,'character-lifetime-section');pvp.append(raidElement('h3','PvP'));
+  const pvpCards=raidElement('div',null,'character-lifetime-pvp');
+  for (const [label,kills,deaths] of [['Battlegrounds K/D',bgKills,bgDeaths],['World PvP K/D',worldKills,worldDeaths]]) {
+    const card=raidElement('div',null,'character-lifetime-card');
+    const ratio=kills == null || deaths == null || deaths === 0 ? '—' : (kills/deaths).toFixed(2);
+    card.append(raidElement('span',label),raidElement('strong',ratio),raidElement('small',format(kills)+' honorable kills / '+format(deaths)+' deaths'));pvpCards.append(card);
+  }
+  pvp.append(pvpCards,table('',[['Battlegrounds played',played],['Battlegrounds won',won],['Win rate',played > 0 && won != null ? (won/played*100).toFixed(1)+'%' : null]]));
+  root.append(pvp);
+  const columns=raidElement('div',null,'character-lifetime-columns');
+  columns.append(table('Travel',[['Flight paths taken',find(349,/flight paths taken/i)],['Times hearthed',find(353,/times hearthed/i)],['Mage portals taken',find(null,/^mage portals taken$/i)],['Summons accepted',find(2277,/summons accepted/i)],['Times camped',find(64222,/times camped/i)]]),table('Consumables',[['Food eaten',find(347,/food eaten/i)],['Beverages drunk',find(346,/beverages consumed/i)],['Health potions',find(345,/health potions consumed/i)],['Mana potions',find(922,/mana potions consumed/i)],['Elixirs',find(923,/elixirs consumed/i)],['Bandages used',find(344,/bandages used/i)],['Healthstones used',find(812,/healthstones used/i)]]));
+  root.append(columns,raidElement('p','Lifetime counters come from Blizzard. — indicates a value not reported.','character-data-note'));
+  return root;
 }

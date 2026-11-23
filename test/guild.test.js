@@ -47,7 +47,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
       assert.equal(options.headers.Authorization,'Bearer blizzard-token');
       const profile = new URL(url);
       assert.equal(profile.searchParams.get('namespace'),'profile-forever-us');
+      if (profile.pathname.endsWith('/achievements/statistics')) return Response.json({categories:[{name:'Quests',statistics:[{id:98,name:'Quests completed',quantity:830}]}]});
       const suffix = profile.pathname.split('/').at(-1);
+      if (suffix === 'reputations') return Response.json({reputations:[{standing:{tier:7,raw:42000}},{standing:{tier:6,raw:21000}}]});
+      if (suffix === 'achievements') return Response.json({total_quantity:2,achievements:[]});
       if (suffix === 'equipment') return Response.json({equipped_items:[{item:{id:123},name:'Staff',slot:{name:'Main Hand',type:'MAIN_HAND'},level:{value:27},
         quality:{type:'RARE'},enchantments:[{display_string:'Intellect'}]}]});
       if (suffix === 'specializations') return Response.json({specialization_groups:[{is_active:true,specializations:[
@@ -252,6 +255,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(armory.character.professions[0].name,'Alchemy');
   assert.match(armory.character.render,/^https:\/\/render\./);
   assert.equal(armory.character.renderStyle,'main-raw');
+  assert.equal(armory.character.achievementCount,2);
+  const lifetimeResponse=await send('/api/armory?name=Astra+Mortis&section=lifetime',options);
+  assert.equal(lifetimeResponse.status,200);
+  const lifetimeData=(await lifetimeResponse.json()).lifetime;
+  assert.equal(lifetimeData.find(row=>row.id===98).value,830);
+  assert.equal(lifetimeData.find(row=>row.name==='Total reputations at Exalted').value,1);
+
   const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);

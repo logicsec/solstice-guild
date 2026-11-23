@@ -1,3 +1,4 @@
+import { characterStatGroups, flattenLifetime, characterAchievements } from './character-data.js';
 import { sameOriginWrite } from './auth.js';
 
 const roles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
@@ -145,8 +146,8 @@ async function loadCharacter(env, slug) {
       return result.ok ? await result.json() : null;
     } catch { return null; }
   }
-  const [data, equipment, media, statistics, specializations] = await Promise.all([
-    optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'), optional('/specializations'),
+  const [data, equipment, media, statistics, specializations, achievementSummary] = await Promise.all([
+    optional('/professions'), optional('/equipment'), optional('/character-media'), optional('/statistics'), optional('/specializations'), optional('/achievements'),
   ]);
   const professions = parseProfessions(data);
   const renders = Array.isArray(media?.assets) ? media.assets : [];
@@ -184,6 +185,7 @@ async function loadCharacter(env, slug) {
     ruleset: localized(profile.ruleset?.name),
     guild: localized(profile.guild?.name),
     itemLevel: profile.equipped_item_level ?? null,
+    statGroups:characterStatGroups(statistics), achievementCount:achievementSummary?.total_quantity ?? null,
     professions, gear, attributes, talents:parseTalents(specializations), portrait: mediaUrl(['avatar','inset']) ?? null,
     render: rawRender ?? mediaUrl(['main']) ?? null, renderStyle: rawRender ? 'main-raw' : null,
   };
@@ -218,6 +220,29 @@ export async function armoryApi(request, env, url, member) {
       if (!configured) return reply({ error: 'The guild administrator needs to configure Blizzard API credentials.' }, 503);
       const slug = profileSlug(query);
       if (!slug) return reply({ error: 'Enter your character’s first and last name.' }, 400);
+      const section = url.searchParams.get('section');
+      if (section === 'achievements' || section === 'lifetime') {
+        const token = await battleNetToken(env);
+        const suffix = section === 'achievements' ? '/achievements' : '/achievements/statistics';
+        const response = await requestCharacterProfile(token,slug,suffix);
+        if (!response.ok) return reply({error:'This character’s '+section+' data is unavailable from Blizzard.'},response.status === 404 ? 404 : 502);
+        const data = await response.json();
+        if (section === 'lifetime') {
+          const lifetime = flattenLifetime(data);
+          if (lifetime) {
+            try {
+              const reputationsResponse = await requestCharacterProfile(token,slug,'/reputations');
+              const reputations = reputationsResponse.ok ? await reputationsResponse.json() : null;
+              if (Array.isArray(reputations?.reputations)) lifetime.push({id:null,name:'Total reputations at Exalted',value:reputations.reputations.filter(row=>row.standing?.tier >= 7 || row.standing?.raw >= 42000).length,group:'Reputation'});
+            } catch { /* Existing lifetime statistics remain usable. */ }
+          }
+          return reply({lifetime});
+        }
+        const profileResponse = await requestCharacterProfile(token,slug);
+        if (!profileResponse.ok) return reply({error:'Character profile is unavailable.'},502);
+        try { return reply({achievements:await characterAchievements(token,await profileResponse.json(),data)}); }
+        catch { return reply({error:'Achievement definitions are temporarily unavailable. Please try again.'},502); }
+      }
       const character = await loadCharacter(env, slug);
       if (character) {
         character.journey = await characterJourney(db,character).catch(() => null);
