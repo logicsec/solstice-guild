@@ -122,6 +122,11 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.match(plannerHtml,/class="panel planner-equipment"/);
   assert.match(plannerHtml,/class="panel planner-stats"/);
   assert.doesNotMatch(plannerHtml,/<div class="raid-nav-group">/);
+  const accountStart = plannerHtml.indexOf('id="discordAccountCard"');
+  const accountPanel = plannerHtml.slice(accountStart,plannerHtml.indexOf('</aside>',accountStart));
+  assert.match(accountPanel,/data-raid-view="characters"/);
+  assert.doesNotMatch(plannerHtml.slice(0,plannerHtml.indexOf('<section id="marketHero"')),/class="guild-account"/);
+
 
 
   assert.match(page, /Invite link/);

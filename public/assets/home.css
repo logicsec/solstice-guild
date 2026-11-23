@@ -2047,3 +2047,22 @@ body.planner-site-active .raid-content > :not(.planner-page) { display: none !im
  .guild-app .guild-topbar .masthead { flex: 1; }
  .guild-app .guild-topbar .guild-nav { flex: 0 0 auto; padding: 0; }
 }
+
+/* Account controls live at the foot of the shared sidebar. */
+.guild-app .raid-sidebar > .guild-account { display: flex; width: 100%; margin: auto 0 0; padding: 12px 0 0; border-top: 1px solid var(--line); }
+.guild-app .raid-sidebar .guild-discord-account { position: relative; width: 100%; }
+.guild-app .raid-sidebar .guild-discord-trigger { position: static; width: 100%; padding: 6px 8px; margin: 0; min-height: 44px; }
+.guild-app .raid-sidebar .guild-discord-icon { width: 20px; height: 20px; stroke: none; fill: currentColor; }
+.guild-app .raid-sidebar .guild-discord-status { margin-inline-start: auto; }
+.guild-app .raid-sidebar .guild-discord-card { inset: auto auto calc(100% + 8px) 0; width: min(300px,calc(100vw - 32px)); max-height: 70dvh; overflow-y: auto; }
+.guild-app .raid-sidebar .guild-discord-card > button { width: 100%; margin-top: 10px; padding: 8px 0; font-size: 13px; }
+@media(min-width:901px) {
+ .guild-app .guild-topbar { position: sticky; top: 0; z-index: 50; height: 72px; min-height: 72px; box-sizing: border-box; }
+ .guild-app .raid-sidebar { display: flex; flex-direction: column; align-items: stretch; align-self: start; position: sticky; top: 72px; height: calc(100dvh - 72px); min-height: 480px; box-sizing: border-box; }
+ .guild-app .raid-sidebar > #raidMenu { overflow-y: auto; min-height: 0; flex: 1; }
+ .guild-app .raid-sidebar > .guild-account { flex-shrink: 0; }
+}
+@media(max-width:900px) {
+ .guild-app .raid-sidebar > .guild-account { margin-top: 12px; }
+ .guild-app .raid-sidebar:has(#raidMenuToggle[aria-expanded="false"]) > .guild-account { display: none; }
+}
