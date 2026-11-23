@@ -1639,15 +1639,7 @@ function renderGuildRoster(list, characters) {
       const arrow = raidElement('span','›','guild-character-arrow');
       arrow.setAttribute('aria-hidden','true');
       const icons = characterIcons(character.class_name,character.spec);
-      const specIcon = icons.children[1]?.cloneNode();
       row.append(level,icons,info,arrow);
-      if (specIcon) {
-        specIcon.alt = '';
-        specIcon.removeAttribute('title');
-        specIcon.className = 'guild-character-watermark';
-        specIcon.setAttribute('aria-hidden','true');
-        row.append(specIcon);
-      }
       row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
       rows.append(row);
     }
@@ -1972,7 +1964,8 @@ ${guildIcon.toString()}
 function decorateCardHeaders() {
   const selector = '.raid-card > h3,.raid-card > header h3,.guild-upcoming-heading h3,.tool-card-heading h2,.planner-card-header h2,.planner-page .panel > h2,.planner-page .panel > h3,.character-section-header h2,.character-section-header h3,.market-deals-heading h2,.weekly-gold-panel h3';
   for (const title of document.querySelectorAll(selector)) {
-    if (title.querySelector('svg,img')) continue;
+    const header = title.closest('header');
+    if (title.querySelector('svg,img') || header?.querySelector(':scope > svg,:scope > img')) continue;
     const text = title.textContent.trim();
     if (!text) continue;
     const options = [

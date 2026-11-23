@@ -428,7 +428,7 @@ export function openCharacterSheet(player, event, organizer) {
     const section = raidElement('section',null,'character-page-section');
     section.id = 'character-'+label.toLowerCase().replace(/ /g,'-');
     const cardHeader = raidElement('header',null,'character-section-header');
-    cardHeader.append(characterSectionIcon(label),raidElement('h2',label === 'Gear' ? 'Equipment' : label,'character-section-heading'));
+    cardHeader.append(raidElement('h2',label === 'Gear' ? 'Equipment' : label,'character-section-heading'));
     if (label === 'Gear') cardHeader.append(plannerLink);
     if (label === 'Gear') {
       section.classList.add('character-equipment-section');
@@ -539,7 +539,7 @@ export function openCharacterSheet(player, event, organizer) {
     equipment.hidden = content.hidden;
     content.replaceChildren(equipmentLayout);
     const statsHeader = raidElement('header',null,'character-section-header');
-    statsHeader.append(characterSectionIcon('Stats'),raidElement('h3','Stats'));
+    statsHeader.append(raidElement('h3','Stats'));
     statisticsPanel.replaceChildren(statsHeader,profile.statistics);
 
     professions.replaceChildren(profile.professions);
