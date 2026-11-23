@@ -71,7 +71,6 @@ export function renderArmoryProfile(character) {
   const sheet = raidElement('div',null,'character-sheet');
   const left = raidElement('div',null,'character-gear');
   const right = raidElement('div',null,'character-gear character-gear-right');
-  const weapons = raidElement('div',null,'character-gear character-weapons');
   const weaponSlots = [['MAIN_HAND','Main Hand'],['OFF_HAND','Off Hand'],['RANGED','Ranged']];
   let tooltipCount = 0;
   const leftSlots = [['HEAD','Head'],['NECK','Neck'],['SHOULDER','Shoulder'],['BACK','Back'],['CHEST','Chest'],
@@ -128,27 +127,19 @@ export function renderArmoryProfile(character) {
     column.append(row);
   }
   if (character.gear) {
-    for (const [slots,column] of [[leftSlots,left],[rightSlots,right],[weaponSlots,weapons]]) {
+    for (const [slots,column] of [[leftSlots,left],[rightSlots,right]]) {
       for (const [key,label] of slots) {
         appendSlot(column,label,equipped.get(key));
         equipped.delete(key);
       }
     }
-    for (const item of equipped.values()) appendSlot(right,item.slot,item);
-    const showcase = raidElement('div',null,'character-showcase');
-    showcase.hidden = true;
-    if (character.render) {
-      const model = raidElement('img');
-      model.alt = character.name+' Armory render';
-      if (character.renderStyle === 'main-raw') model.className = 'character-model-raw';
-      model.addEventListener('load',()=>{
-        showcase.hidden = false;
-        sheet.classList.add('has-character-render');
-      },{once:true});
-      model.src = character.render;
-      showcase.append(model);
+    for (const [key,label] of weaponSlots) {
+      const item = equipped.get(key);
+      if (item) appendSlot(key === 'RANGED' ? right : left,label,item);
+      equipped.delete(key);
     }
-    sheet.append(left,showcase,right,weapons);
+    for (const item of equipped.values()) appendSlot(right,item.slot,item);
+    sheet.append(left,right);
   } else sheet.append(raidElement('p','No equipment data available.'));
   const overview = raidElement('section',null,'profile-overview');
   const facts = raidElement('div',null,'raid-stats');
@@ -177,6 +168,7 @@ export function renderArmoryProfile(character) {
     const advanced = raidElement('dl');
     for (const item of group.rows) {
       const row = raidElement('div');
+      row.dataset.statLabel = item.label;
       let value = '—';
       if (item.value != null) {
         if (item.format === 'range') value = item.value.map(number=>Math.round(number).toLocaleString()).join(' – ');
@@ -202,7 +194,26 @@ export function renderArmoryProfile(character) {
   }
   statistics.append(...columns);
   statistics.append(raidElement('p','— indicates a value not reported by Blizzard.','character-data-note'));
-  return {overview,equipment:sheet,professions,statistics};
+  const compact = raidElement('section',null,'character-compact-stats');
+  const resources = raidElement('div',null,'character-stat-resources');
+  const findRow = label => [...statistics.querySelectorAll('[data-stat-label]')].find(row=>row.dataset.statLabel === label);
+  for (const label of ['Health','Mana']) {
+    const row = findRow(label);
+    if (row) { const tile = raidElement('div');tile.append(raidElement('small',label),raidElement('strong',row.querySelector('dd').textContent));resources.append(tile); }
+  }
+  compact.append(resources);
+  const caster = ['Mage','Priest','Warlock','Druid','Shaman','Paladin'].includes(character.className);
+  for (const [title,labels] of [
+    ['Attributes',['Strength','Agility','Stamina','Intellect','Spirit']],
+    [caster ? 'Spell' : 'Melee',caster ? ['Spell Power','Spell Healing','Spell Crit','Mana Regen','Mana Regen (Combat)'] : ['Attack Power','Main Hand Damage','Main Hand Speed','Melee Crit']],
+    ['Defense',['Armor','Defense','Dodge']]
+  ]) {
+    const group = raidElement('section');group.append(raidElement('h3',title));const rows = raidElement('dl');
+    for (const label of labels) { const row = findRow(label);if (row) { const copy = row.cloneNode(true);copy.querySelector('dt').textContent = label === 'Spell Healing' ? 'Healing' : label === 'Mana Regen (Combat)' ? 'Regen in combat' : label;rows.append(copy); } }
+    if (rows.children.length) { group.append(rows);compact.append(group); }
+  }
+  const more = raidElement('details',null,'character-stat-more');more.append(raidElement('summary','All stats'),statistics);compact.append(more);
+  return {overview,equipment:sheet,professions,statistics:compact};
 }
 
 export function renderCharacterTalents(character) {
@@ -419,8 +430,6 @@ export function openCharacterSheet(player, event, organizer) {
   }
   const professions = raidElement('div');
   professions.append(raidElement('p','Loading professions…'));
-  const tabs = raidElement('nav',null,'character-review-tabs');
-  tabs.setAttribute('aria-label','Character Sheet Sections');
   const talents = raidElement('div');
   talents.append(raidElement('p','Loading talents…'));
   const statisticsPanel = raidElement('aside',null,'character-gear-stats');
@@ -433,21 +442,23 @@ export function openCharacterSheet(player, event, organizer) {
   const reputationPanel = raidElement('div');
   for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel,reputationPanel]) panel.append(raidElement('p','Loading character data…'));
   const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Professions',professions,'Skills & trades'],['Reputation',reputationPanel,'Faction standings'],['Achievements',achievementsPanel,'Earned & in progress'],['Activity',lifetimePanel,'Statistics & boss kills'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
-  const panels = sections.map(([label,panel,description])=>{
-    const button = raidElement('a',label);
+  const panels = sections.map(([label,panel])=>{
     const section = raidElement('section',null,'character-page-section');
     section.id = 'character-'+label.toLowerCase().replace(/ /g,'-');
     const cardHeader = raidElement('header',null,'character-section-header');
-    cardHeader.append(characterSectionIcon(label),raidElement('h2',label === 'Gear' ? 'Equipment & Stats' : label,'character-section-heading'));
+    cardHeader.append(characterSectionIcon(label),raidElement('h2',label === 'Gear' ? 'Equipment' : label,'character-section-heading'));
     if (label === 'Gear') cardHeader.append(plannerLink);
-    section.append(cardHeader,panel);
-    button.href = '#'+section.id;
-    button.title = description;
+    if (label === 'Gear') {
+      section.classList.add('character-equipment-section');
+      const gearCard = raidElement('div',null,'character-equipment-card');
+      gearCard.append(cardHeader,equipment);
+      equipmentLayout.replaceChildren(gearCard,statisticsPanel);
+      section.append(panel);
+    } else section.append(cardHeader,panel);
     panel.classList.add('character-page-panel');
     panel.setAttribute('aria-label',label);
     panel.setAttribute('role','region');
-    tabs.append(button);
-    return {button,panel,section};
+    return {panel,section};
   });
   const loadedSections = new Set();
   async function loadSection(selected) {
@@ -467,23 +478,6 @@ export function openCharacterSheet(player, event, organizer) {
       selected.replaceChildren(raidElement('p',error.message,'character-data-note'),retry);
     }
   }
-  function selectPanel(selected) {
-    dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
-    loadSection(selected);
-    for (const {button,panel} of panels) {
-      if (panel === selected) button.setAttribute('aria-current','location');
-      else button.removeAttribute('aria-current');
-    }
-  }
-  for (const {button,panel,section} of panels) button.addEventListener('click',event=>{
-    event.preventDefault();
-    selectPanel(panel);
-    const url = new URL(location.href);
-    url.searchParams.delete('tab');
-    url.hash = section.id;
-    history.replaceState(null,'',url);
-    section.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',block:'start'});
-  });
   dialog.append(header);
   if (player.armorySlug) {
     const pageLayout = raidElement('div',null,'character-page-layout');
@@ -494,11 +488,11 @@ export function openCharacterSheet(player, event, organizer) {
     const reputationSection = panels.find(item=>item.panel === reputationPanel).section;
     pageContent.insertBefore(paired,professionSection);
     paired.append(professionSection,reputationSection);
-    pageLayout.append(tabs,pageContent);
+    pageLayout.append(pageContent);
     dialog.append(pageLayout);
     const requestedTab = new URLSearchParams(location.search).get('tab');
     const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (['journey','lifetime'].includes(requestedTab) ? 'activity' : requestedTab === 'stats' ? 'gear' : requestedTab))?.panel;
-    selectPanel(requestedPanel ?? content);
+    loadSection(requestedPanel ?? content);
   } else {
     overview.replaceChildren();
     dialog.append(review ?? raidElement('p','This character was added manually and has no linked Armory profile.','raid-card'));

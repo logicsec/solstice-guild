@@ -1952,3 +1952,32 @@ body.character-page-active .character-page-root { min-width: 0; }
 
 /* Keep talent buttons square within the compact character cards. */
 .guild-app .character-page-root .character-talent-node { height: auto; min-height: 0; padding: 1px; aspect-ratio: 1; }
+
+/* Compact equipment and statistics are independent cards. */
+.character-page-root .character-equipment-section { background: transparent; border: 0; overflow: visible; }
+.character-equipment-section > .character-page-panel { padding: 0; }
+.character-equipment-card { min-width: 0; background: #141b21; border: 1px solid #1d2730; border-radius: 10px; overflow: hidden; }
+.character-page-root .character-equipment-card .character-sheet { grid-template-columns: repeat(2,minmax(0,1fr)); padding: 12px; border: 0; border-radius: 0; background: transparent; gap: 12px; }
+.character-equipment-card .character-gear { gap: 4px; }
+.guild-app .character-equipment-card :is(.character-slot-button,.character-slot-empty) { min-height: 44px; padding: 4px; border: 0; border-radius: 5px; background: transparent; gap: 10px; }
+.character-equipment-card .character-gear-right :is(.character-slot-button,.character-slot-empty) { flex-direction: row; text-align: left; }
+.character-equipment-card .character-slot-icon { flex-basis: 32px; height: 32px; border-radius: 2px; }
+.character-equipment-card .character-slot-copy strong { font-size: 12px; }
+.character-equipment-card .character-slot-copy small { font-size: 11px; }
+.character-equipment-card :is(.character-item-level,.character-slot-enchant) { display: none; }
+.character-equipment-layout { grid-template-columns: minmax(0,2fr) minmax(250px,1fr); gap: 20px; }
+.character-gear-stats { max-height: none; overflow: visible; }
+.character-compact-stats { padding: 14px; }
+.character-stat-resources { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
+.character-stat-resources > div { padding: 10px; background: #182027; border-radius: 5px; }
+.character-stat-resources small { display: block; color: #718fa6; text-transform: uppercase; font-size: 10px; letter-spacing: .06em; }
+.character-stat-resources strong { color: #39c77a; font-size: 13px; }
+.character-stat-resources > div:nth-child(2) strong { color: #4ba2ff; }
+.guild-app .character-compact-stats h3 { margin: 16px 0 8px; font-size: 10px; font-weight: 400; text-transform: uppercase; color: #718fa6; }
+.character-compact-stats > section > dl { margin: 0; }
+.character-compact-stats > section > dl > div { display: flex; justify-content: space-between; gap: 12px; padding: 3px 0; font-size: 12px; }
+.character-compact-stats dt { color: #92a9bd; }
+.character-compact-stats dd { margin: 0; color: #e7edf3; font-weight: 700; font-variant-numeric: tabular-nums; }
+.character-compact-stats > details { margin-top: 12px; }
+@media(max-width:800px) { .character-equipment-layout { grid-template-columns: minmax(0,1fr); } }
+@media(max-width:480px) { .character-page-root .character-equipment-card .character-sheet { grid-template-columns: minmax(0,1fr); } }
