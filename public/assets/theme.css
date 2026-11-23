@@ -109,3 +109,42 @@ code { color:var(--theme-code-color); }
 .guild-app .raid-sidebar #raidMenu .guild-menu-items :is([aria-current="true"],[aria-current="page"]) { background:transparent; color:var(--theme-primary-text-emphasis); font-weight:600; }
 
 .guild-menu-items { border-left:0; }
+
+/* Auction categories are navigation rows, matching the compact email reference. */
+.guild-app .categories { background:var(--theme-secondary-bg); }
+.guild-app .categories #category button {
+ display:flex; align-items:center; gap:10px; min-height:34px; padding:7px 10px;
+ background:transparent; color:var(--theme-secondary-color); border:0; border-radius:4px;
+ font-weight:500; box-shadow:none;
+}
+.guild-app .categories #category button:hover { background:var(--theme-light-bg-subtle); color:var(--theme-body-color); }
+.guild-app .categories #category > .category-group > button[aria-pressed="true"] {
+ background:var(--theme-tertiary-bg); color:var(--theme-body-color); font-weight:600;
+}
+.guild-app .categories #category .subcategory-list button[aria-pressed="true"] {
+ background:transparent; color:var(--theme-primary-text-emphasis); font-weight:600;
+}
+.guild-app .categories #category .tabler-icon { width:16px; height:16px; color:inherit; }
+
+/* Profession artwork and individual color bands, following the traffic-source rows. */
+.guild-app #raidList .guild-profession-link {
+ --profession-color:var(--theme-primary); border-radius:4px;
+ background:linear-gradient(to right,color-mix(in srgb,var(--profession-color) 23%,transparent) 78%,color-mix(in srgb,var(--profession-color) 9%,transparent) 78%);
+ border-color:transparent;
+}
+.guild-app #raidList .guild-profession-link[data-profession="mining"] { --profession-color:var(--theme-warning); }
+.guild-app #raidList .guild-profession-link[data-profession="engineering"] { --profession-color:var(--theme-info); }
+.guild-app #raidList .guild-profession-link[data-profession="skinning"] { --profession-color:var(--theme-danger); }
+.guild-app #raidList .guild-profession-link[data-profession="tailoring"] { --profession-color:var(--theme-purple); }
+.guild-app #raidList .guild-profession-link[data-profession="alchemy"] { --profession-color:var(--theme-success); }
+.guild-app #raidList .guild-profession-link[data-profession="blacksmithing"] { --profession-color:var(--theme-warning); }
+.guild-app #raidList .guild-profession-link[data-profession="herbalism"] { --profession-color:var(--theme-success); }
+.guild-app #raidList .guild-profession-link[data-profession="leatherworking"] { --profession-color:var(--theme-danger); }
+.guild-app #raidList .guild-profession-link[data-profession="enchanting"] { --profession-color:var(--theme-purple); }
+.guild-app #raidList .guild-profession-link[data-profession="cooking"] { --profession-color:var(--theme-warning); }
+.guild-app #raidList .guild-profession-link[data-profession="fishing"] { --profession-color:var(--theme-info); }
+.guild-app #raidList .guild-profession-link[data-profession="first aid"] { --profession-color:var(--theme-danger); }
+.guild-app #raidList .guild-profession-link:is(:hover,:focus-visible) { border-color:var(--profession-color); background-color:color-mix(in srgb,var(--profession-color) 8%,transparent); }
+.guild-profession-link .guild-profession-watermark { display:none; }
+.guild-profession-link .guild-dashboard-count { background:transparent; border:0; }
+.guild-app #professionGrid .profession-progress-icon { display:inline-flex; width:24px; height:24px; padding:0; border-radius:4px; }

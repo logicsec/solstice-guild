@@ -1,4 +1,4 @@
-import { tablerIcon } from './icons.js';
+import { tablerIcon } from './icons.js?v=theme-2';
 import { gearItems, itemFitsSlot } from './gear-items.js';
 const slots=['Head','Neck','Shoulder','Back','Chest','Wrist','Hands','Waist','Legs','Feet','Finger 1','Finger 2','Trinket 1','Trinket 2','Main Hand','Off Hand','Ranged'];
 const $=id=>document.getElementById(id);

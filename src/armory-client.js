@@ -28,10 +28,26 @@ export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showO
 }
 
 export function professionIcon(name, watermarkTarget) {
-  const symbols = {alchemy:'flask',blacksmithing:'hammer',cooking:'tools-kitchen-2',enchanting:'wand',engineering:'settings','first aid':'first-aid-kit',fishing:'fish',herbalism:'leaf',leatherworking:'needle-thread',mining:'pick',skinning:'scissors',tailoring:'needle-thread'};
-  const icon = tablerIcon(symbols[name.toLowerCase()] ?? 'book','profession-progress-icon');
-  if (watermarkTarget) {
-    const watermark = icon.cloneNode(true);watermark.setAttribute('class','tabler-icon guild-character-watermark guild-profession-watermark');watermarkTarget.append(watermark);
+  const icons = {
+    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
+    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
+    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
+    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
+  };
+  const icon = raidElement('span',name.slice(0,1),'profession-progress-icon');
+  const asset = icons[name.toLowerCase()];
+  if (asset) {
+    const image = raidElement('img');
+    image.alt = '';
+    image.addEventListener('load',()=>{
+      icon.replaceChildren(image);
+      if (watermarkTarget) {
+        const watermark = image.cloneNode();
+        watermark.className = 'guild-character-watermark guild-profession-watermark';
+        watermarkTarget.append(watermark);
+      }
+    },{once:true});
+    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
   }
   return icon;
 }

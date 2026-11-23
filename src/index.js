@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-2"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-3"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -636,13 +636,14 @@ function auctionSubclass(categoryId, title, slot) {
 let selectedCategory = '';
 let selectedSubclass = '';
 const categoryGroups = new Map();
+const categoryIcons = {'':'layout-dashboard',weapon:'swords',armor:'shield',container:'package',consumable:'flask','trade-goods':'hammer',ammo:'target',recipe:'book',quest:'script',miscellaneous:'sparkles'};
 for (const [id, title] of sidebarCategories) {
   const group = document.createElement('div');
   group.className = 'category-group';
   group.setAttribute('aria-expanded', 'false');
   const button = document.createElement('button');
   button.type = 'button';
-  button.textContent = title;
+  button.append(tablerIcon(categoryIcons[id]),document.createTextNode(title));
   const children = document.createElement('div');
   children.className = 'subcategory-list';
   button.addEventListener('click', () => {
@@ -715,9 +716,7 @@ for (const [name, iconPath] of professionTiles) {
   const button = document.createElement('button');
   button.type = 'button';
   button.setAttribute('aria-pressed', String(name === selectedProfession));
-  const professionSymbols = {'Blacksmithing':'hammer','Enchanting':'wand','Leatherworking':'needle-thread','Alchemy':'flask','Mining':'pick','Tailoring':'needle-thread','Engineering':'settings','First Aid':'first-aid-kit','Cooking':'tools-kitchen-2'};
-  const svg = tablerIcon(professionSymbols[name] ?? 'tools-kitchen-2');
-  button.append(svg, name);
+  button.append(professionIcon(name), name);
   button.addEventListener('click', () => {
     selectedProfession = name;
     for (const tile of professionGrid.children) tile.setAttribute('aria-pressed', String(tile === button));
@@ -1676,6 +1675,12 @@ function renderGuildRoster(list, characters) {
   return filterByProfession;
 }
 async function openRaidView(view, id, navigate = true) {
+  if (navigate && location.pathname === '/character') {
+    const params = new URLSearchParams({tool:'raid',view});
+    if (id) params.set('raid',id);
+    location.href = '/?'+params;
+    return;
+  }
   const showGuildRoster = view === 'guildCharacters';
   if (showGuildRoster) view = 'guildDashboard';
   if (navigate) writeRoute('raid', view, id);
@@ -1773,6 +1778,7 @@ async function openRaidView(view, id, navigate = true) {
           if (kind !== category) continue;
           const button = raidElement('button',null,'guild-dashboard-entry guild-profession-tile guild-profession-link');
           button.type = 'button';
+          button.dataset.profession = name.toLowerCase();
           button.setAttribute('aria-controls','guildRoster');
           button.setAttribute('aria-label','Show '+count+(count === 1 ? ' character' : ' characters')+' with '+name);
           const icon = professionIcon(name,button);
