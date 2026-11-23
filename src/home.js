@@ -21,10 +21,10 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-compact-actions"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-google-sans"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
-    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+    <svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#menu-2"></use></svg>
     Menu
   </button>
   <nav id="site-navigation" aria-label="Main navigation">${raidView ? '' : '<a class="journal-link" href="/#chronicle">Chronicle</a>'}${editor ? '<a href="/cms">Article Editor</a>' : ''}
@@ -93,7 +93,7 @@ export async function publicHome(env, url, session) {
     <h1 id="home-title">Solstice</h1>
     <p class="home-intro">An Alliance guild for the people you want beside you in Azeroth.</p>
     ${notice ? '<p class="notice" role="status">' + escape(notice) + '</p>' : ''}
-    <a class="button outline home-chronicle-link" href="#chronicle">Read the Chronicle <span aria-hidden="true">↓</span></a>
+    <a class="button outline home-chronicle-link" href="#chronicle">Read the Chronicle <svg class="tabler-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/tabler-icons.svg#arrow-down"></use></svg></a>
     </div>
     <aside class="home-about" aria-labelledby="about-title">
       ${solsticeMark}

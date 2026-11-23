@@ -1,3 +1,4 @@
+import { tablerIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 
 export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid }) {
@@ -9,6 +10,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   };
   const button = (text, action, label) => {
     const element = make('button',text);
+    if (['←','→'].includes(text)) element.replaceChildren(tablerIcon(text === '←' ? 'arrow-left' : 'arrow-right'));
     element.type = 'button';
     if (label) element.setAttribute('aria-label',label);
     element.addEventListener('click',action);

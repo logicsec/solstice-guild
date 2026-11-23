@@ -1,3 +1,4 @@
+import { tablerIcon } from '../public/assets/icons.js';
 export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showOnClick = false) {
   trigger.setAttribute('aria-describedby',tooltip.id);
   if (typeof tooltip.showPopover !== 'function') {
@@ -27,26 +28,10 @@ export function attachCharacterTooltip(trigger, anchor, tooltip, fallback, showO
 }
 
 export function professionIcon(name, watermarkTarget) {
-  const icons = {
-    alchemy:'trade_alchemy', blacksmithing:'trade_blacksmithing', cooking:'inv_misc_food_15',
-    enchanting:'trade_engraving', engineering:'trade_engineering', 'first aid':'spell_holy_sealofsacrifice',
-    fishing:'trade_fishing', herbalism:'spell_nature_naturetouchgrow', leatherworking:'inv_misc_armorkit_17',
-    mining:'trade_mining', skinning:'inv_misc_pelt_wolf_01', tailoring:'trade_tailoring',
-  };
-  const icon = raidElement('span',name.slice(0,1),'profession-progress-icon');
-  const asset = icons[name.toLowerCase()];
-  if (asset) {
-    const image = raidElement('img');
-    image.alt = '';
-    image.addEventListener('load',()=>{
-      icon.replaceChildren(image);
-      if (watermarkTarget) {
-        const watermark = image.cloneNode();
-        watermark.className = 'guild-character-watermark guild-profession-watermark';
-        watermarkTarget.append(watermark);
-      }
-    },{once:true});
-    image.src = 'https://wow.zamimg.com/images/wow/icons/medium/'+asset+'.jpg';
+  const symbols = {alchemy:'flask',blacksmithing:'hammer',cooking:'tools-kitchen-2',enchanting:'wand',engineering:'settings','first aid':'first-aid-kit',fishing:'fish',herbalism:'leaf',leatherworking:'needle-thread',mining:'pick',skinning:'scissors',tailoring:'needle-thread'};
+  const icon = tablerIcon(symbols[name.toLowerCase()] ?? 'book','profession-progress-icon');
+  if (watermarkTarget) {
+    const watermark = icon.cloneNode(true);watermark.setAttribute('class','tabler-icon guild-character-watermark guild-profession-watermark');watermarkTarget.append(watermark);
   }
   return icon;
 }
@@ -792,7 +777,7 @@ export function renderCharacterAchievements(data) {
         image.alt = '';
         image.loading = 'lazy';
         image.src = typeof item.icon === 'string' && /^https:\/\/(?:render(?:-[a-z]+)?\.worldofwarcraft\.com|wow\.zamimg\.com)\//i.test(item.icon) ? item.icon : 'https://wow.zamimg.com/images/wow/icons/medium/achievement_general.jpg';
-        image.addEventListener('error',()=>{ image.remove();icon.textContent='◇'; },{once:true});
+        image.addEventListener('error',()=>{ image.remove();icon.replaceChildren(tablerIcon('trophy')); },{once:true});
         icon.append(image);
         const copy = raidElement('div',null,'character-achievement-copy');
         copy.append(raidElement('strong',item.name),raidElement('p',item.description));
@@ -863,7 +848,7 @@ export function renderCharacterLifetime(data) {
   for(const boss of bosses) {
     const match=boss.name.match(/^(.*?)(?: kills)?\s*\((.*?)\)$/i);
     const badge=raidElement('div',null,'activity-boss-badge');
-    const skull=raidElement('span','☠︎','activity-boss-skull');skull.setAttribute('aria-hidden','true');
+    const skull=tablerIcon('skull','activity-boss-skull');skull.setAttribute('aria-hidden','true');
     badge.append(skull,raidElement('strong',match?.[1] ?? boss.name),...(match ? [raidElement('span',match[2])] : []),raidElement('b','×'+number(boss.value)));
     badges.append(badge);
   }
@@ -926,11 +911,8 @@ export function renderCharacterReputations(data) {
  return root;
 }
 
-// Font Awesome Free 6.7.2 by Fonticons, Inc. Icons: CC BY 4.0. See THIRD_PARTY_NOTICES.md.
 export function characterSectionIcon(name) {
- const icons = {"Stats":["0 0 512 512",["M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64L0 400c0 44.2 35.8 80 80 80l400 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 416c-8.8 0-16-7.2-16-16L64 64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L240 221.3l57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z"],"#39c77a"],"Gear":["0 0 512 512",["M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zm0 66.8l0 378.1C394 378 431.1 230.1 432 141.4L256 66.8s0 0 0 0z"],"#439cff"],"Talents":["0 0 576 512",["M234.7 42.7L197 56.8c-3 1.1-5 4-5 7.2s2 6.1 5 7.2l37.7 14.1L248.8 123c1.1 3 4 5 7.2 5s6.1-2 7.2-5l14.1-37.7L315 71.2c3-1.1 5-4 5-7.2s-2-6.1-5-7.2L277.3 42.7 263.2 5c-1.1-3-4-5-7.2-5s-6.1 2-7.2 5L234.7 42.7zM46.1 395.4c-18.7 18.7-18.7 49.1 0 67.9l34.6 34.6c18.7 18.7 49.1 18.7 67.9 0L529.9 116.5c18.7-18.7 18.7-49.1 0-67.9L495.3 14.1c-18.7-18.7-49.1-18.7-67.9 0L46.1 395.4zM484.6 82.6l-105 105-23.3-23.3 105-105 23.3 23.3zM7.5 117.2C3 118.9 0 123.2 0 128s3 9.1 7.5 10.8L64 160l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L128 160l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L128 96 106.8 39.5C105.1 35 100.8 32 96 32s-9.1 3-10.8 7.5L64 96 7.5 117.2zm352 256c-4.5 1.7-7.5 6-7.5 10.8s3 9.1 7.5 10.8L416 416l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L480 416l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L480 352l-21.2-56.5c-1.7-4.5-6-7.5-10.8-7.5s-9.1 3-10.8 7.5L416 352l-56.5 21.2z"],"#a886ef"],"Professions":["0 0 448 512",["M288 0L160 0 128 0C110.3 0 96 14.3 96 32s14.3 32 32 32l0 132.8c0 11.8-3.3 23.5-9.5 33.5L10.3 406.2C3.6 417.2 0 429.7 0 442.6C0 480.9 31.1 512 69.4 512l309.2 0c38.3 0 69.4-31.1 69.4-69.4c0-12.8-3.6-25.4-10.3-36.4L329.5 230.4c-6.2-10.1-9.5-21.7-9.5-33.5L320 64c17.7 0 32-14.3 32-32s-14.3-32-32-32L288 0zM192 196.8L192 64l64 0 0 132.8c0 23.7 6.6 46.9 19 67.1L309.5 320l-171 0L173 263.9c12.4-20.2 19-43.4 19-67.1z"],"#ac88f4"],"Reputation":["0 0 640 512",["M144 0a80 80 0 1 1 0 160A80 80 0 1 1 144 0zM512 0a80 80 0 1 1 0 160A80 80 0 1 1 512 0zM0 298.7C0 239.8 47.8 192 106.7 192l42.7 0c15.9 0 31 3.5 44.6 9.7c-1.3 7.2-1.9 14.7-1.9 22.3c0 38.2 16.8 72.5 43.3 96c-.2 0-.4 0-.7 0L21.3 320C9.6 320 0 310.4 0 298.7zM405.3 320c-.2 0-.4 0-.7 0c26.6-23.5 43.3-57.8 43.3-96c0-7.6-.7-15-1.9-22.3c13.6-6.3 28.7-9.7 44.6-9.7l42.7 0C592.2 192 640 239.8 640 298.7c0 11.8-9.6 21.3-21.3 21.3l-213.3 0zM224 224a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zM128 485.3C128 411.7 187.7 352 261.3 352l117.3 0C452.3 352 512 411.7 512 485.3c0 14.7-11.9 26.7-26.7 26.7l-330.7 0c-14.7 0-26.7-11.9-26.7-26.7z"],"#419aff"],"Achievements":["0 0 576 512",["M400 0L176 0c-26.5 0-48.1 21.8-47.1 48.2c.2 5.3 .4 10.6 .7 15.8L24 64C10.7 64 0 74.7 0 88c0 92.6 33.5 157 78.5 200.7c44.3 43.1 98.3 64.8 138.1 75.8c23.4 6.5 39.4 26 39.4 45.6c0 20.9-17 37.9-37.9 37.9L192 448c-17.7 0-32 14.3-32 32s14.3 32 32 32l192 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-26.1 0C337 448 320 431 320 410.1c0-19.6 15.9-39.2 39.4-45.6c39.9-11 93.9-32.7 138.2-75.8C542.5 245 576 180.6 576 88c0-13.3-10.7-24-24-24L446.4 64c.3-5.2 .5-10.4 .7-15.8C448.1 21.8 426.5 0 400 0zM48.9 112l84.4 0c9.1 90.1 29.2 150.3 51.9 190.6c-24.9-11-50.8-26.5-73.2-48.3c-32-31.1-58-76-63-142.3zM464.1 254.3c-22.4 21.8-48.3 37.3-73.2 48.3c22.7-40.3 42.8-100.5 51.9-190.6l84.4 0c-5.1 66.3-31.1 111.2-63 142.3z"],"#edbe39"],"Activity":["0 0 576 512",["M0 80l0 48c0 17.7 14.3 32 32 32l16 0 48 0 0-80c0-26.5-21.5-48-48-48S0 53.5 0 80zM112 32c10 13.4 16 30 16 48l0 304c0 35.3 28.7 64 64 64s64-28.7 64-64l0-5.3c0-32.4 26.3-58.7 58.7-58.7L480 320l0-192c0-53-43-96-96-96L112 32zM464 480c61.9 0 112-50.1 112-112c0-8.8-7.2-16-16-16l-245.3 0c-14.7 0-26.7 11.9-26.7 26.7l0 5.3c0 53-43 96-96 96l176 0 96 0z"],"#efbf39"],"Raid Review":["0 0 448 512",["M64 32C64 14.3 49.7 0 32 0S0 14.3 0 32L0 64 0 368 0 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-128 64.3-16.1c41.1-10.3 84.6-5.5 122.5 13.4c44.2 22.1 95.5 24.8 141.7 7.4l34.7-13c12.5-4.7 20.8-16.6 20.8-30l0-247.7c0-23-24.2-38-44.8-27.7l-9.6 4.8c-46.3 23.2-100.8 23.2-147.1 0c-35.1-17.6-75.4-22-113.5-12.5L64 48l0-16z"],"#ef6269"]};
- const [box,paths,color]=icons[name] ?? icons.Gear;
- const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox',box);icon.setAttribute('class','character-section-icon');icon.setAttribute('aria-hidden','true');icon.style.color=color;
- for(const shape of paths){const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',shape);path.setAttribute('fill','currentColor');icon.append(path);}
- return icon;
+ const icons = {Gear:['shield','primary'],Talents:['wand','purple'],Professions:['flask','purple'],Reputation:['users','primary'],Achievements:['trophy','warning'],Activity:['script','warning'],'Raid Review':['shield-check','danger'],Stats:['chart-line','success']};
+ const [symbol,color] = icons[name] ?? icons.Gear;
+ const icon = tablerIcon(symbol,'character-section-icon');icon.style.color='var(--theme-'+color+')';return icon;
 }

@@ -1,13 +1,14 @@
+import { tablerIcon } from './icons.js';
 import { gearItems, itemFitsSlot } from './gear-items.js';
 const slots=['Head','Neck','Shoulder','Back','Chest','Wrist','Hands','Waist','Legs','Feet','Finger 1','Finger 2','Trinket 1','Trinket 2','Main Hand','Off Hand','Ranged'];
 const $=id=>document.getElementById(id);
 let plannerCharacters=[],builds=[],current=null,catalog=gearItems,draft=new Map(),editingSlot=null,loading=false,loadVersion=0;
-const colors={2:'#69bd75',3:'#78acf5',4:'#c89be9',5:'#efad60'};
+const colors={2:'var(--theme-success-text-emphasis)',3:'var(--theme-primary-text-emphasis)',4:'var(--theme-purple-text-emphasis)',5:'var(--theme-warning-text-emphasis)'};
 const statLabels={0:'Strength',1:'Agility',2:'Stamina',3:'Intellect',4:'Healing power',5:'Spell damage',13:'Spirit',14:'Attack power',17:'Hit rating',18:'Crit rating',19:'Haste rating',22:'Defense rating',27:'Armor',29:'Health',30:'Mana',31:'Mana per 5 sec'};
 const api=async(data,query='')=>{const r=await fetch('/api/gear-planner'+query,data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:undefined);const j=await r.json();if(!r.ok)throw Error(j.error||'Request failed');return j};
 function element(tag,text,className){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(className)node.className=className;return node}
 function message(s){$('status').textContent=s}
-function icon(item){const tile=element('span',item?.icon?'':'◇','gear-icon');if(item?.icon&&/^[a-z0-9_]+$/i.test(item.icon)){const img=element('img');img.src='https://wow.zamimg.com/images/wow/icons/medium/'+item.icon+'.jpg';img.alt='';img.className='gear-icon';img.loading='lazy';img.addEventListener('error',()=>img.replaceWith(tile),{once:true});return img}return tile}
+function icon(item){const tile=element('span',null,'gear-icon');tile.append(tablerIcon('package'));if(item?.icon&&/^[a-z0-9_]+$/i.test(item.icon)){const img=element('img');img.src='https://wow.zamimg.com/images/wow/icons/medium/'+item.icon+'.jpg';img.alt='';img.className='gear-icon';img.loading='lazy';img.addEventListener('error',()=>img.replaceWith(tile),{once:true});return img}return tile}
 function updateCharacterReturn(){
  const link=$('plannerCharacterReturn'),name=$('character').value;
  if(!link)return;

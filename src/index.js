@@ -1,3 +1,4 @@
+import { tablerIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
 import { renderGuildEvents } from './guild-events-client.js';
@@ -257,32 +258,32 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
 }
 
 const page = String.raw`<!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Solstice Guild</title>
 ${solsticeFavicon}
 <style>
-:root{color-scheme:dark;--bg:#111112;--panel:#1a1817;--raised:#24211f;--line:#423b35;--muted:#bdb4aa;--ink:#f9f6f2;--gold:#ffbd0a}
+:root{color-scheme:dark;--bg:#000000;--panel:#1a1d20;--raised:#1a1d20;--line:#293036;--muted:#b0bbc5;--ink:#ffffff;--gold:#f9bf59}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 var(--site-font)}
-main{max-width:1280px;margin:auto;min-height:100vh;background:#191817;border-inline:1px solid #292725}
+main{max-width:1280px;margin:auto;min-height:100vh;background:#1a1d20;border-inline:1px solid #1a1d20}
 h1,h2,p{margin:0}h2{font-size:18px}a{color:var(--gold)}small,footer,p{color:var(--muted)}
-button,input,select{font:inherit;color:inherit;background:#181615;border:1px solid var(--line);border-radius:3px;padding:8px 11px}
+button,input,select{font:inherit;color:inherit;background:#1a1d20;border:1px solid var(--line);border-radius:3px;padding:8px 11px}
 button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold)}button:disabled{opacity:.45;cursor:default}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}label{display:block;font-weight:600;margin-bottom:5px}
-.masthead{display:flex;align-items:center;gap:11px;padding:12px 22px;background:var(--raised);border-bottom:1px solid #100f0f}
+.masthead{display:flex;align-items:center;gap:11px;padding:12px 22px;background:var(--raised);border-bottom:1px solid #000000}
 .crest{width:37px;flex:none;color:var(--gold)}.masthead strong{display:block;text-transform:uppercase;font-size:17px;letter-spacing:.12em;line-height:1.1}
 .masthead small{font-size:10px;text-transform:uppercase;letter-spacing:.13em}
-.guild-nav{display:flex;background:#211f1f;border-bottom:1px solid #080808;padding-inline:14px}
-.guild-nav button{border:0;border-radius:0;border-inline-end:1px solid #111;padding:9px 15px;background:transparent;font-weight:700;font-size:13px}
-.guild-nav [aria-pressed=true]{color:var(--gold);box-shadow:inset 0 -2px var(--gold);background:#181717}
+.guild-nav{display:flex;background:#1a1d20;border-bottom:1px solid #000000;padding-inline:14px}
+.guild-nav button{border:0;border-radius:0;border-inline-end:1px solid #000000;padding:9px 15px;background:transparent;font-weight:700;font-size:13px}
+.guild-nav [aria-pressed=true]{color:var(--gold);box-shadow:inset 0 -2px var(--gold);background:#1a1d20}
 .character-review-tabs button{background:transparent;border:1px solid transparent;padding:7px 12px;font-weight:700}
 .character-review-tabs button:hover{background:var(--hover);border-color:var(--line)}
-.hero{position:relative;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:30px 24px;border-bottom:1px solid #534020;background:radial-gradient(ellipse at 90% -40%,#645026 0%,transparent 67%),linear-gradient(115deg,#242526,#121312 72%);isolation:isolate;overflow:hidden}
+.hero{position:relative;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:end;padding:30px 24px;border-bottom:1px solid #664d03;background:radial-gradient(ellipse at 90% -40%,#664d03 0%,transparent 67%),linear-gradient(115deg,#1a1d20,#1a1d20 72%);isolation:isolate;overflow:hidden}
 .hero::before{content:"";position:absolute;inset:0;z-index:-1;background:repeating-linear-gradient(132deg,transparent 0 23px,#ffffff08 24px,transparent 25px 36px);mask-image:linear-gradient(90deg,transparent 25%,#000)}
 .eyebrow{color:var(--gold);font-size:11px;font-weight:800;letter-spacing:.13em;text-transform:uppercase}
 .hero h1{font-size:clamp(29px,5vw,46px);letter-spacing:-.035em;line-height:1.05;margin:6px 0 9px}
-.hero-stats{display:flex;gap:1px;border:1px solid #5b4931;background:#5b4931;border-radius:4px;overflow:hidden}
-.hero-stats div{padding:9px 13px;background:#181615;min-width:105px}.hero-stats span{display:block;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.hero-stats strong{color:var(--ink);font-size:15px;white-space:nowrap}
+.hero-stats{display:flex;gap:1px;border:1px solid #664d03;background:#664d03;border-radius:4px;overflow:hidden}
+.hero-stats div{padding:9px 13px;background:#1a1d20;min-width:105px}.hero-stats span{display:block;color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}.hero-stats strong{color:var(--ink);font-size:15px;white-space:nowrap}
 .board{margin:16px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:4px}
 .guild-app #auctionPanel{margin-bottom:24px}
 .guild-app #marketFooter{padding:20px 24px;gap:12px 24px}
@@ -299,8 +300,8 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 .gold-chart-value{font-variant-numeric:tabular-nums}
 .gold-chart-track{grid-column:1/-1;height:5px;background:var(--raised);position:relative}
 .gold-chart-track i{position:absolute;top:0;bottom:0;left:var(--bar-start,0%);width:var(--bar-size);background:var(--accent)}
-.gold-chart-track[data-direction="up"] i{background:#77c391}
-.gold-chart-track[data-direction="down"] i{background:#e29488}
+.gold-chart-track[data-direction="up"] i{background:#02bc9c}
+.gold-chart-track[data-direction="down"] i{background:#fa9ab2}
 .gold-chart-track[data-direction]::after{content:"";position:absolute;left:var(--bar-zero);top:0;bottom:0;border-left:1px solid var(--muted)}
 .weekly-gold-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,430px),1fr));gap:14px}
 .weekly-gold-grid>section{min-width:0;border:1px solid var(--line);background:var(--field)}
@@ -321,27 +322,27 @@ button,summary{cursor:pointer}button:hover,summary:hover{border-color:var(--gold
 @media(max-width:760px){.market-deals-stats{gap:4px}.market-deals-stats div{padding:6px}.market-deals-stats dd{font-size:13px}.market-deals-nav button{min-height:44px}}
 .guild-roster-directory{margin-top:14px}
 .auction-toolbar{align-items:center}.auction-toolbar input{flex:1;min-width:125px}.market-tag{padding:7px 9px;border:1px solid var(--line);border-radius:3px;font-weight:700;white-space:nowrap;font-size:12px}
-.search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#1c1400;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#ffd354}
-.filters{position:relative}.filters summary{padding:7px 10px;background:#181615;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
+.search{flex:1;min-width:200px}.search input{width:100%}.search-button{background:var(--gold);color:#000000;font-weight:800;min-width:90px;border-color:var(--gold)}.search-button:hover{background:#f9bf59}
+.filters{position:relative}.filters summary{padding:7px 10px;background:#1a1d20;border:1px solid var(--line);border-radius:3px;white-space:nowrap}.filters>div{position:absolute;right:0;top:calc(100% + 5px);z-index:2;background:var(--raised);border:1px solid var(--line);padding:10px;border-radius:3px}
 .auction-layout{display:grid;grid-template-columns:164px minmax(0,1fr);min-height:420px}
-.categories{background:#171616;border-right:1px solid var(--line);padding:10px 8px}
+.categories{background:#1a1d20;border-right:1px solid var(--line);padding:10px 8px}
 .categories h2{font-size:11px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);margin:3px 5px 9px}
-#category{display:grid;gap:3px}.categories button{width:100%;text-align:left;padding:5px 8px;background:var(--raised);font-size:13px}.categories button[aria-pressed=true]{background:#352a13;color:var(--gold);border-color:#98700d}
+#category{display:grid;gap:3px}.categories button{width:100%;text-align:left;padding:5px 8px;background:var(--raised);font-size:13px}.categories button[aria-pressed=true]{background:#1a1d20;color:var(--gold);border-color:#957335}
 .results{min-width:0}.status,.pager{padding:10px 13px}.status{font-size:12px}.scroll{overflow:auto}
 table{border-collapse:collapse;width:100%;white-space:nowrap;text-align:right;font-variant-numeric:tabular-nums}
-th,td{padding:7px 12px;border-top:1px solid #37312c}th{background:#24211f;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.035em}
-td:first-child,th:first-child{text-align:left}tbody tr:nth-child(even){background:#211e1c}tbody tr:hover{background:#2c251c}
+th,td{padding:7px 12px;border-top:1px solid #293036}th{background:#1a1d20;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.035em}
+td:first-child,th:first-child{text-align:left}tbody tr:nth-child(even){background:#1a1d20}tbody tr:hover{background:#1a1d20}
 td button{border:0;padding:0;color:var(--ink);background:none;text-align:left}td button:hover{color:var(--gold);text-decoration:underline}.price{color:var(--gold)}
 .pager{display:flex;align-items:center;gap:12px;border-top:1px solid var(--line)}footer{padding:14px 16px;font-size:12px}
 dialog{max-width:540px;width:calc(100% - 34px);border:1px solid var(--line);border-radius:4px;padding:20px;background:var(--panel);color:var(--ink)}
 dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;grid-template-columns:1fr 1fr;gap:12px}.metric{border-top:1px solid var(--line);padding:10px 0}.metric strong{display:block;color:var(--gold);margin-top:5px}
-.craft-section{padding:13px}.craft-section p{margin-top:4px}.toggle{margin:0;padding:8px 0}.positive{color:#aadea7}.negative{color:#f4a89e}details ul{margin:8px 0;padding-left:20px;white-space:normal}
+.craft-section{padding:13px}.craft-section p{margin-top:4px}.toggle{margin:0;padding:8px 0}.positive{color:#67d7c4}.negative{color:#fa9ab2}details ul{margin:8px 0;padding-left:20px;white-space:normal}
 @media(max-width:640px){.hero{grid-template-columns:1fr;gap:14px;padding:19px 14px}.hero-stats{justify-self:start}.hero-stats div{min-width:0}.masthead{padding-inline:14px}.board{margin:10px 8px 0}.auction-layout{grid-template-columns:1fr}.categories{border-right:0;border-bottom:1px solid var(--line)}#category{display:flex;overflow:auto;padding-bottom:4px}.categories button{width:auto;flex:none}}
 
 .profession-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin-top:14px}
-.profession-grid button{display:grid;justify-items:center;gap:8px;padding:12px 5px;color:var(--ink);background:#22201e;font-size:12px;font-weight:700}
-.profession-grid button[aria-pressed=true]{background:#342912;border-color:var(--gold);color:var(--gold)}
-.profession-grid svg{width:37px;height:37px;padding:6px;border:1px solid #6c542d;border-radius:5px;background:radial-gradient(circle at top,#574021,#231b13);color:var(--gold)}
+.profession-grid button{display:grid;justify-items:center;gap:8px;padding:12px 5px;color:var(--ink);background:#1a1d20;font-size:12px;font-weight:700}
+.profession-grid button[aria-pressed=true]{background:#1a1d20;border-color:var(--gold);color:var(--gold)}
+.profession-grid svg{width:37px;height:37px;padding:6px;border:1px solid #664d03;border-radius:5px;background:radial-gradient(circle at top,#664d03,#1a1d20);color:var(--gold)}
 .market-scroll{max-block-size:min(62vh,36rem);overflow:auto;scrollbar-gutter:stable;background:var(--panel);border-block:1px solid var(--line)}
 .guild-app .market-scroll :is(th,td){padding:5px 10px;border-top:0;border-bottom:1px solid var(--line)}
 .guild-app .market-scroll thead th,.recipe-columns{position:sticky;top:0;z-index:1;background:var(--raised);color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.075em;text-transform:uppercase}
@@ -364,9 +365,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 .coin-value,.coin-part{display:inline-flex;align-items:center;gap:.2em;white-space:nowrap;font-variant-numeric:tabular-nums}
 .coin-value{gap:.42em;justify-self:end}
 .coin{display:inline-block;width:.76em;height:.76em;border-radius:50%;border:1px solid var(--coin-edge);background:radial-gradient(circle at 36% 29%,var(--coin-light) 0%,var(--coin-face) 47%,var(--coin-edge) 100%);box-shadow:inset 0 0 0 1px #fff2;flex:none}
-.coin-gold{--coin-light:#ffe89b;--coin-face:#e7af3e;--coin-edge:#976016}
-.coin-silver{--coin-light:#f4f6ff;--coin-face:#b6bdcc;--coin-edge:#6f7788}
-.coin-copper{--coin-light:#efb082;--coin-face:#c77a49;--coin-edge:#895133}
+.coin-gold{--coin-light:#fbd99b;--coin-face:#f9bf59;--coin-edge:#957335}
+.coin-silver{--coin-light:#f6f7fb;--coin-face:#b0bbc5;--coin-edge:#6c757d}
+.coin-copper{--coin-light:#fbd99b;--coin-face:#957335;--coin-edge:#957335}
 @media(max-width:760px){
   .market-scroll{max-block-size:min(60vh,31rem)}
   .guild-app .market-scroll .mobile-table :is(td,th){padding:4px 0;border:0}
@@ -378,19 +379,19 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
   .recipe-metric small{position:static;width:auto;height:auto;overflow:visible;clip-path:none;display:block;font-size:9px;text-transform:uppercase}
   .recipe-metric .coin-value{flex-wrap:wrap;column-gap:.3em}
 }
-.category-group{display:grid;gap:3px}.subcategory-list{display:grid;gap:3px;padding:2px 0 3px 12px}.subcategory-list button{font-size:12px;background:#1d1b19}
+.category-group{display:grid;gap:3px}.subcategory-list{display:grid;gap:3px;padding:2px 0 3px 12px}.subcategory-list button{font-size:12px;background:#1a1d20}
 .category-group[aria-expanded=false] .subcategory-list{display:none}
 @media(max-width:640px){.category-group{flex:none;align-content:start}.subcategory-list{padding-left:0}}
 .item-label{display:inline-flex;align-items:center;gap:7px;vertical-align:middle}
-.item-icon{display:inline-grid;place-items:center;position:relative;width:25px;height:25px;flex:none;border:1px solid #64533c;border-radius:4px;background:#28231c;color:#d8af53}
-.item-icon::before{content:"◇";font-size:14px}.item-icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px}
+.item-icon{display:inline-grid;place-items:center;position:relative;width:25px;height:25px;flex:none;border:1px solid #6c757d;border-radius:4px;background:#1a1d20;color:#f9bf59}
+.item-icon::before{content:"";font-size:14px}.item-icon img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:3px}
 
 .item-label[href]{text-decoration:none}.item-label[href]:hover,.item-label[href]:focus-visible{text-decoration:underline}
 
 [hidden]{display:none!important}
 .readiness-invite{display:flex;width:min(100%,560px);margin:0 0 14px;gap:0}.guild-app .readiness-invite input{flex:1;min-width:0;color:var(--muted);background:var(--field);border-radius:8px 0 0 8px}.guild-app .readiness-invite button{flex:none;min-width:76px;border-inline-start:0;border-radius:0 8px 8px 0}
-.raid-shell{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:580px;background:radial-gradient(at top right,#13232a,#0b1315 55%);color:#eef6f5}.raid-sidebar{padding:18px 10px;border-right:1px solid #253336;background:#091114}.raid-sidebar button{display:block;width:100%;text-align:left;margin:5px 0;background:transparent;border-color:transparent}.raid-sidebar button[aria-current=true]{background:#163338;color:#a1f2f1}.raid-content{padding:22px clamp(12px,3vw,36px);min-width:0}.raid-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.raid-heading h2{font-size:26px}.raid-primary{display:inline-block;background:#e6f3f2;color:#102225;border:0;font-weight:750;padding:8px 12px;border-radius:5px;text-decoration:none}.raid-card,.raid-stats>div{background:#111d21;border:1px solid #2d4145;border-radius:7px;padding:14px;margin:10px 0}.raid-card h3{margin:0 0 8px}.raid-form label{margin:9px 0}.raid-form label :is(input,select,textarea){display:block;width:100%;margin-top:4px;background:#0c1518;border-color:#42575b}.raid-form textarea{min-height:70px;color:inherit;font:inherit;padding:8px}.raid-form{max-width:740px}.raid-actions,.raid-steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.raid-actions input{flex:1;min-width:120px}.raid-steps span{flex:1;border-bottom:2px solid #42575b;padding:6px}.raid-steps span[aria-current=step]{border-color:#64d7d4;color:#a1f2f1}.raid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}.raid-stats strong{display:block;color:#a1f2f1}.raid-stats>div{margin:4px 0}.raid-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #2d4145;padding:9px 0}.raid-row button{background:transparent}.raid-row small{display:block}.raid-shell p{color:#aabdbf}.raid-content #raidMessage{margin:8px 0}
-@media(max-width:680px){.raid-shell{grid-template-columns:1fr}.raid-sidebar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;border-right:0;border-bottom:1px solid #253336}.raid-sidebar button{width:auto}.raid-sidebar .eyebrow{width:100%}}
+.raid-shell{display:grid;grid-template-columns:190px minmax(0,1fr);min-height:580px;background:radial-gradient(at top right,#1a1d20,#17181e 55%);color:#f6f7fb}.raid-sidebar{padding:18px 10px;border-right:1px solid #293036;background:#17181e}.raid-sidebar button{display:block;width:100%;text-align:left;margin:5px 0;background:transparent;border-color:transparent}.raid-sidebar button[aria-current=true]{background:#293036;color:#9ddbed}.raid-content{padding:22px clamp(12px,3vw,36px);min-width:0}.raid-heading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.raid-heading h2{font-size:26px}.raid-primary{display:inline-block;background:#e7e9eb;color:#1a1d20;border:0;font-weight:750;padding:8px 12px;border-radius:5px;text-decoration:none}.raid-card,.raid-stats>div{background:#1a1d20;border:1px solid #293036;border-radius:7px;padding:14px;margin:10px 0}.raid-card h3{margin:0 0 8px}.raid-form label{margin:9px 0}.raid-form label :is(input,select,textarea){display:block;width:100%;margin-top:4px;background:#17181e;border-color:#6c757d}.raid-form textarea{min-height:70px;color:inherit;font:inherit;padding:8px}.raid-form{max-width:740px}.raid-actions,.raid-steps{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}.raid-actions input{flex:1;min-width:120px}.raid-steps span{flex:1;border-bottom:2px solid #6c757d;padding:6px}.raid-steps span[aria-current=step]{border-color:#67d7c4;color:#9ddbed}.raid-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));gap:8px}.raid-stats strong{display:block;color:#9ddbed}.raid-stats>div{margin:4px 0}.raid-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;border-top:1px solid #293036;padding:9px 0}.raid-row button{background:transparent}.raid-row small{display:block}.raid-shell p{color:#b0bbc5}.raid-content #raidMessage{margin:8px 0}
+@media(max-width:680px){.raid-shell{grid-template-columns:1fr}.raid-sidebar{display:flex;flex-wrap:wrap;align-items:center;gap:5px;border-right:0;border-bottom:1px solid #293036}.raid-sidebar button{width:auto}.raid-sidebar .eyebrow{width:100%}}
 .raid-form .raid-check input{display:inline-block;width:auto;margin:0 6px 0 0}.raid-row .raid-actions{margin:0}.raid-row input{max-width:230px}.guild-account{margin-left:auto;display:flex;align-items:center;gap:8px;padding-right:8px}.guild-account form{margin:0}.guild-account button{white-space:nowrap}.guild-account span{max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap} .record-copy{white-space:pre-wrap;overflow-wrap:anywhere}
 .loot-history-graph{list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
 .loot-history-graph li{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:3px 10px;font-size:13px;overflow-wrap:anywhere}
@@ -406,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-banner-blend"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-google-sans"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -507,12 +508,12 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
 <aside class="raid-sidebar"><a class="brand guild-sidebar-brand" href="/?tool=raid&view=guildDashboard" aria-label="Solstice Guild Hall">${solsticeLockup}</a>
-<div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="guild-character-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
-<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-<span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-</button><nav id="raidMenu" aria-label="Guild Hall"><details class="guild-menu-group"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span>Guild Hall</span><svg class="guild-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary><div class="guild-menu-items"><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button></div></details><details class="guild-menu-group"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg><span>Raiding</span><svg class="guild-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary><div class="guild-menu-items"><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><a href="/gear-planner" class="guild-planner-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 8h8M8 12h8M8 16h5"/></svg>Gear Planner</a><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></details><button id="professionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v7L4 20h16l-6-10V3M8 15h8"/></svg>Professions</button><button id="auctionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 5-3 6 10-5 3z M3 18h15v3H3z M14 9l7 10"/></svg>Auction House</button></nav><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></aside>
+<div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="tabler-icon guild-character-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#chevron-down"></use></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
+<svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#menu-2"></use></svg>
+<span id="raidMenuLabel">Guild Hall menu</span><svg class="tabler-icon raid-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#chevron-down"></use></svg>
+</button><nav id="raidMenu" aria-label="Guild Hall"><details class="guild-menu-group"><summary><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#layout-dashboard"></use></svg><span>Guild Hall</span><svg class="tabler-icon guild-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#chevron-down"></use></svg></summary><div class="guild-menu-items"><button data-raid-view="guildDashboard"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#layout-dashboard"></use></svg>Guild Dashboard</button><button data-raid-view="calendar"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#calendar-event"></use></svg>Events</button></div></details><details class="guild-menu-group"><summary><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#home"></use></svg><span>Raiding</span><svg class="tabler-icon guild-menu-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#chevron-down"></use></svg></summary><div class="guild-menu-items"><button data-raid-view="readiness"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#home"></use></svg>Raid Dashboard</button><button data-raid-view="signups"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#clipboard-list"></use></svg>My sign-ups</button><a href="/gear-planner" class="guild-planner-link"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#book"></use></svg>Gear Planner</a><button data-raid-view="manage"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#adjustments-horizontal"></use></svg>Manage raids</button><button data-raid-view="discover"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#search"></use></svg>Find a raid</button></div></details><button id="professionTab" aria-pressed="false"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#flask"></use></svg>Professions</button><button id="auctionTab" aria-pressed="false"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#gavel"></use></svg>Auction House</button></nav><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="tabler-icon guild-discord-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#brand-discord"></use></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><button data-raid-view="characters"><svg class="tabler-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg#user-circle"></use></svg>My characters</button><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></aside>
 <div class="raid-content">
-<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
+<header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary"><svg class="tabler-icon" viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/tabler-icons.svg#plus"></use></svg> New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
 <div id="raidDashboardControls" class="raid-dashboard-controls raid-card" hidden>
 <label class="working-raid">Working Raid<select id="workingRaid" disabled><option>Loading raids…</option></select></label>
@@ -714,17 +715,8 @@ for (const [name, iconPath] of professionTiles) {
   const button = document.createElement('button');
   button.type = 'button';
   button.setAttribute('aria-pressed', String(name === selectedProfession));
-  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-  path.setAttribute('d', iconPath);
-  path.setAttribute('fill', 'none');
-  path.setAttribute('stroke', 'currentColor');
-  path.setAttribute('stroke-width', '1.8');
-  path.setAttribute('stroke-linejoin', 'round');
-  path.setAttribute('stroke-linecap', 'round');
-  svg.append(path);
+  const professionSymbols = {'Blacksmithing':'hammer','Enchanting':'wand','Leatherworking':'needle-thread','Alchemy':'flask','Mining':'pick','Tailoring':'needle-thread','Engineering':'settings','First Aid':'first-aid-kit','Cooking':'tools-kitchen-2'};
+  const svg = tablerIcon(professionSymbols[name] ?? 'tools-kitchen-2');
   button.append(svg, name);
   button.addEventListener('click', () => {
     selectedProfession = name;
@@ -1089,7 +1081,7 @@ function itemLabel(id, name, quality) {
   return label;
 }
 
-const qualityColors = { POOR:'#aaa', COMMON:'#fff', UNCOMMON:'#65de46', RARE:'#61a8ff', EPIC:'#c88aff', LEGENDARY:'#ff9a48', ARTIFACT:'#e6cc80', HEIRLOOM:'#57d5fa' };
+const qualityColors = { POOR:'var(--theme-secondary-color)', COMMON:'var(--theme-light-text-emphasis)', UNCOMMON:'var(--theme-success-text-emphasis)', RARE:'var(--theme-primary-text-emphasis)', EPIC:'var(--theme-purple-text-emphasis)', LEGENDARY:'var(--theme-warning-text-emphasis)', ARTIFACT:'var(--theme-warning-text-emphasis)', HEIRLOOM:'var(--theme-info-text-emphasis)' };
 function rarityColor(id, quality) {
   return qualityColors[String(itemQualities.get(Number(id)) ?? quality).toUpperCase()] || 'var(--ink)';
 }
@@ -1479,7 +1471,15 @@ const raidDate = value => new Date(value).toLocaleString([], { dateStyle: 'mediu
 function raidElement(tag, text, className) {
   const node = document.createElement(tag);
   if (text != null) node.textContent = text;
+  const glyphIcons = {'×':'x','›':'chevron-right','←':'arrow-left','→':'arrow-right'};
+  if (typeof text === 'string' && glyphIcons[text]) node.replaceChildren(tablerIcon(glyphIcons[text]));
+  else if (typeof text === 'string' && /[↓↗→›]$/.test(text)) { node.textContent=text.slice(0,-1).trim();node.append(tablerIcon(text.endsWith('↓') ? 'arrow-down' : text.endsWith('→') ? 'arrow-right' : text.endsWith('›') ? 'chevron-right' : 'external-link')); }
   if (className) node.className = className;
+  if (tag === 'button' && typeof text === 'string') {
+    if (/^(delete|remove|unlink|decline|cancel event|cancel raid)/i.test(text)) node.dataset.variant='danger';
+    else if (/^(activate|set active|confirm|join|approve)/i.test(text)) node.dataset.variant='success';
+    else if (/^(back|close|cancel$|previous|next)/i.test(text)) node.dataset.variant='secondary';
+  }
   return node;
 }
 function raidRequest(path = '', data) {
@@ -1737,7 +1737,7 @@ async function openRaidView(view, id, navigate = true) {
       let selectedProfession = null;
       let filterRoster;
       const tiles = raidElement('div',null,'guild-dashboard-tiles');
-      const roleIcons = {Tank:'⛨',Healer:'✚','Melee DPS':'⚔','Ranged DPS':'◎'};
+      const roleIcons = {Tank:'shield-check',Healer:'heart','Melee DPS':'swords','Ranged DPS':'target'};
       for (const [kind,title,entries,empty] of [
         ['class','Class Composition',data.classes,'No characters added yet.'],
         ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),'No roles assigned yet.'],
@@ -1750,7 +1750,7 @@ async function openRaidView(view, id, navigate = true) {
           const row = raidElement('div',null,'guild-dashboard-entry');
           if (kind === 'class') row.dataset.wowClass = name;
           const icon = kind === 'class' ? characterIcons(name) :
-            raidElement('span',roleIcons[name],'guild-dashboard-role-icon');
+            tablerIcon(roleIcons[name],'guild-dashboard-role-icon');
           icon.setAttribute('aria-hidden','true');
           const countBadge = raidElement('span',String(count),'guild-dashboard-count');
           countBadge.setAttribute('aria-label',count+(count === 1 ? ' character' : ' characters'));
@@ -1959,6 +1959,7 @@ ${renderCharacterTalents.toString()}
 ${renderCharacterAchievements.toString()}
 ${renderCharacterLifetime.toString()}
 ${renderCharacterReputations.toString()}
+${tablerIcon.toString()}
 ${characterSectionIcon.toString()}
 ${openCharacterSheet.toString()}
 

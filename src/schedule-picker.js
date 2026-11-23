@@ -1,3 +1,4 @@
+import { tablerIcon } from '../public/assets/icons.js';
 export function createSchedulePicker({ label, optional = false }) {
   function make(tag, text, className) {
     const node = document.createElement(tag);
@@ -7,6 +8,7 @@ export function createSchedulePicker({ label, optional = false }) {
   }
   function button(text, action, ariaLabel) {
     const node = make('button',text);
+    if (['‹','›'].includes(text)) node.replaceChildren(tablerIcon(text === '‹' ? 'chevron-left' : 'chevron-right'));
     node.type = 'button';
     if (ariaLabel) node.setAttribute('aria-label',ariaLabel);
     node.addEventListener('click',action);

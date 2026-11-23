@@ -25,9 +25,10 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-## Font Awesome Free icons
+## Tabler Icons
 
-Font Awesome Free 6.7.2 icons by Fonticons, Inc. Used under CC BY 4.0.
-https://fontawesome.com/license/free
-https://creativecommons.org/licenses/by/4.0/
-SVG paths from https://github.com/FortAwesome/Font-Awesome/tree/6.x/svgs/solid
+Interface icons use [Tabler Icons](https://tabler.io/icons), pinned to commit `85e870dbe8680c2d6deefd062122d30ef1544a41`. Copyright 2020–2026 Paweł Kuna, MIT license. The full license is included at `public/assets/tabler-LICENSE.txt`.
+
+## Google Sans
+
+Google Sans is loaded through the official Google Fonts stylesheet service.

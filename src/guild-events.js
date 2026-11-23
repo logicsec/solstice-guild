@@ -1,10 +1,10 @@
 import { sameOriginWrite } from './auth.js';
 
 export const eventTypes = {
-  Raid: '#b65f44',
-  Dungeon: '#6089bb',
-  Leveling: '#83a259',
-  Other: '#a48f64',
+  Raid: 'var(--theme-primary)' ,
+  Dungeon: 'var(--theme-purple)' ,
+  Leveling: 'var(--theme-success)' ,
+  Other: 'var(--theme-warning)' ,
 };
 
 export function eventSchedule(input) {
