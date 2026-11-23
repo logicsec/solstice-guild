@@ -41,12 +41,16 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const layout = make('div',undefined,'guild-events-layout');
   const agenda = make('section',undefined,'raid-card guild-events-agenda');
   const agendaHead = make('header',undefined,'guild-events-agenda-head');
-  const heading = make('h3','Coming Up');
-  agendaHead.append(heading,make('p','Times in '+zone,'guild-events-zone'));
+  const heading = make('h3','Upcoming Events');
+  const viewAll = button('View all',()=>{selected=null;drawAgenda();drawCalendar();},'Show all upcoming events');
+  agendaHead.append(heading,viewAll);
+  const weekStrip = make('div',undefined,'guild-agenda-week');
+  weekStrip.setAttribute('role','group');weekStrip.setAttribute('aria-label','Choose an agenda day');
+  const timezone = make('p','Times in '+zone,'guild-events-zone guild-agenda-timezone');
   const rows = make('div');
   const status = make('p',undefined,'guild-events-status');
   status.setAttribute('role','status');
-  agenda.append(agendaHead,status,rows);
+  agenda.append(agendaHead,weekStrip,status,rows,timezone);
 
   const side = make('aside',undefined,'guild-events-sidebar');
   const calendar = make('section',undefined,'raid-card guild-events-calendar');
@@ -224,17 +228,20 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
     return groups;
   }
 
-  const clear = button('Show upcoming',() => {
-    selected = null;
-    drawAgenda();
-    drawCalendar();
-    heading.focus();
-  });
   heading.tabIndex = -1;
   function drawAgenda() {
-    heading.textContent = selected === null ? 'Coming Up' : dayLabel.format(new Date(selected));
+    heading.textContent = 'Upcoming Events';
     rows.replaceChildren();
-    if (selected !== null) rows.append(clear);
+    weekStrip.replaceChildren();
+    const activeDay = selected === null ? today : new Date(selected);
+    const monday = addDays(activeDay,-((activeDay.getDay()+6)%7));
+    for (let index=0;index<7;index++) {
+      const date=addDays(monday,index);
+      const dayButton=button('',()=>{selected=+date;drawAgenda();drawCalendar();},dayLabel.format(date));
+      dayButton.setAttribute('aria-pressed',String(+date===+activeDay));
+      dayButton.append(make('strong',String(date.getDate()).padStart(2,'0')),make('small',new Intl.DateTimeFormat(undefined,{weekday:'short'}).format(date)));
+      weekStrip.append(dayButton);
+    }
     if (loading) return;
     const events = selected === null ? agendaEvents.filter(event => Date.parse(event.starts_at) >= +today)
       : monthEvents.filter(event => +dayAt(new Date(event.starts_at)) === selected);
@@ -242,16 +249,20 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
       const section = make('section',undefined,'guild-events-day');
       if (selected === null) section.append(make('h4',(day === +today ? 'Today · ' : '')+dayLabel.format(new Date(day))));
       for (const event of items) {
-        const time = make('time',timeLabel.format(new Date(event.starts_at)));
+        const time = make('time',undefined,'guild-event-time');
+        const range = timeLabel.format(new Date(event.starts_at))+(event.ends_at ? ' – '+timeLabel.format(new Date(event.ends_at)) : '');
+        time.append(tablerIcon('clock'),range);
         time.dateTime = event.starts_at;
         if (event.ends_at) time.title = 'Ends '+timeLabel.format(new Date(event.ends_at));
-        const name = make('div');
+        const name = make('div',undefined,'guild-event-copy');
         const type = make('small',event.type);
         type.style.color = eventTypes[event.type];
-        name.append(make('strong',event.title),type,
-          make('small','Created by '+(event.created_by || 'Unknown'),'guild-event-creator'));
+        name.append(make('strong',event.title));
+        const metadata=make('div',undefined,'guild-event-meta');
+        metadata.append(type,make('small','Created by '+(event.created_by || 'Unknown'),'guild-event-creator'));
+        name.append(metadata);
         if (event.description) name.append(make('p',event.description,'guild-event-description'));
-        const count = make('small',event.signups ? event.signups+' signed up' : 'Nobody yet','guild-event-count');
+        const count = make('small',event.signups ? event.signups+' signed up' : 'No sign-ups yet','guild-event-count');
         const action = event.type === 'Raid'
           ? button(event.state === 'Open' ? 'Sign up' : 'View raid',()=>openRaid(event.id))
           : Date.parse(event.starts_at) > Date.now() ? button(event.joined ? 'Leave' : 'Sign up',async () => {
@@ -261,7 +272,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
                 const result = await request('',{action:'signup',id:event.id,joined:!event.joined});
                 for (const item of [...agendaEvents,...monthEvents].filter(item => item.id === event.id)) Object.assign(item,result);
                 action.textContent = result.joined ? 'Leave' : 'Sign up';
-                count.textContent = result.signups ? result.signups+' signed up' : 'Nobody yet';
+                count.textContent = result.signups ? result.signups+' signed up' : 'No sign-ups yet';
               } catch (error) {
                 status.textContent = error.message;
               } finally {
@@ -270,7 +281,11 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
             }) : null;
         const row = make('article',undefined,'guild-event-row');
         row.style.setProperty('--event-color',eventTypes[event.type]);
-        row.append(time,name,count);
+        const main=make('div',undefined,'guild-event-main');
+        main.append(name,time);
+        const footer=make('div',undefined,'guild-event-footer');
+        footer.append(count);
+        row.append(main,footer);
         const actions = make('div',undefined,'guild-event-actions');
         if (action) actions.append(action);
         if (event.organizer) {
@@ -298,7 +313,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
           remove.className = 'raid-control-danger';
           actions.append(remove);
         }
-        if (actions.childNodes.length) row.append(actions);
+        if (actions.childNodes.length) footer.append(actions);
         section.append(row);
       }
       rows.append(section);

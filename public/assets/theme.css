@@ -306,3 +306,43 @@ body.guild-app #raidPanel > .raid-content {
  .guild-app #raidPanel .guild-page-heading,.guild-app #raidPanel #marketHero.guild-page-heading { min-height:160px; padding:24px 0; margin-bottom:20px; }
  .guild-app #raidPanel .raid-heading.guild-page-heading,.guild-app #raidPanel .planner-header.guild-page-heading { flex-wrap:wrap; gap:14px; }
 }
+
+/* Agenda follows the compact week-strip and event-list reference. */
+.guild-app #raidList .guild-events-agenda { padding:0; overflow:hidden; }
+.guild-app #raidList .guild-events-agenda-head { margin:0; padding:12px 16px; align-items:center; }
+.guild-app #raidList .guild-events-agenda-head h3 { font-size:14px; }
+.guild-app #raidList .guild-events-agenda-head button { min-height:26px; padding:4px 9px; font-size:11px; }
+.guild-app #raidList .guild-agenda-week { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:4px; padding:16px 16px 8px; }
+.guild-app #raidList .guild-agenda-week button {
+ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px;
+ min-width:0; min-height:48px; padding:5px 2px; border:0; border-radius:4px;
+ background:var(--theme-tertiary-bg); color:var(--theme-body-color); font-size:12px; box-shadow:none;
+}
+.guild-app #raidList .guild-agenda-week button small { color:var(--theme-secondary-color); font-size:10px; }
+.guild-app #raidList .guild-agenda-week button[aria-pressed="true"] { background:var(--theme-purple); color:var(--theme-light-text-emphasis); }
+.guild-app #raidList .guild-agenda-week button[aria-pressed="true"] small { color:var(--theme-light-text-emphasis); }
+.guild-app #raidList .guild-events-day { margin:0; padding:8px 16px; }
+.guild-app #raidList .guild-events-day h4 { margin:0 0 8px; font-size:10px; font-weight:500; letter-spacing:.04em; color:var(--theme-secondary-color); }
+.guild-app #raidList .guild-event-row { display:block; position:relative; margin:0 0 10px; padding:6px 0 10px 14px; min-height:0; border:0; border-radius:0; background:transparent; }
+.guild-app #raidList .guild-event-row::before { inset:6px auto 10px 0; width:3px; border-radius:2px; }
+.guild-event-main { display:grid; grid-template-columns:minmax(0,1fr) auto; align-items:start; gap:10px; }
+.guild-event-copy { min-width:0; }
+.guild-app #raidList .guild-event-copy > strong { display:block; color:var(--theme-emphasis-color); font-size:13px; font-weight:600; line-height:1.4; }
+.guild-app #raidList .guild-event-time { display:flex; align-items:center; gap:4px; grid-column:auto; white-space:nowrap; font-size:11px; font-weight:400; line-height:1.6; color:var(--theme-body-color); }
+.guild-app #raidList .guild-event-time .tabler-icon { width:12px; height:12px; }
+.guild-event-meta { display:flex; flex-wrap:wrap; gap:3px 8px; margin-top:3px; }
+.guild-app #raidList .guild-event-meta small { display:inline; font-size:10px; line-height:1.5; letter-spacing:0; text-transform:none; }
+.guild-app #raidList .guild-event-description { margin:3px 0 0; color:var(--theme-secondary-color); font-size:11px; }
+.guild-event-footer { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:6px 10px; margin-top:8px; }
+.guild-app #raidList .guild-event-count { font-size:10px; color:var(--theme-secondary-color); }
+.guild-app #raidList .guild-event-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:5px; margin:0; }
+.guild-app #raidList .guild-event-actions button { width:auto; min-height:24px; padding:3px 8px; font-size:10px; line-height:1.5; }
+.guild-app #raidList .guild-event-actions .raid-control-danger { background:var(--theme-danger-bg-subtle); color:var(--theme-danger-text-emphasis); }
+.guild-app #raidList .guild-agenda-timezone { margin:0; padding:10px 16px; border-top:1px solid var(--theme-border-color); font-size:10px; }
+.guild-app #raidList .guild-events-agenda > .guild-events-status:not(:empty) { padding:10px 16px; }
+.guild-app #raidList .guild-events-agenda > div > p { padding:8px 16px; font-size:12px; }
+.guild-app.planner-site-active #raidPanel .planner-page { background:transparent; }
+.guild-app.planner-site-active #raidPanel .planner-header { background:transparent; border:0; box-shadow:none; }
+@media(min-width:1001px) and (max-width:1250px) { .guild-event-main { grid-template-columns:minmax(0,1fr); gap:3px; } }
+
+.guild-app #raidList .guild-event-meta .guild-event-creator { margin-top:0; }
