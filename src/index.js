@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-9"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-10"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1534,7 +1534,7 @@ function raidReset(view, id) {
   const guildView = ['guildDashboard','guildChat','craftingDirectory'].includes(view);
   const createButton = byId('newRaid');
   createButton.hidden = view === 'new' || guildView;
-  createButton.textContent = view === 'calendar' ? '+ New Event' : '+ New Raid';
+  createButton.replaceChildren(tablerIcon('plus'),document.createTextNode(view === 'calendar' ? 'New Event' : 'New Raid'));
   createButton.classList.toggle('guild-new-event',view === 'calendar');
   byId('raidList').replaceChildren();
   byId('readinessInvite').hidden = true;
@@ -1859,7 +1859,6 @@ async function openRaidView(view, id, navigate = true) {
         createRaid: data => raidRequest('',data),
         openRaid: id => openRaidView('detail',id),
       });
-      list.prepend(guildOverviewBanner('Guild Calendar','Schedule raids, dungeon runs, and other guild events.'));
       return;
     }
     const { raids } = view === 'discover' ? await raidRequest('?discover=1') : await loadWorkingRaids(revision);
@@ -2469,6 +2468,7 @@ for (const node of document.querySelectorAll('[data-raid-tab]')) node.addEventLi
 byId('newRaid').addEventListener('click',()=>{
   if (raidView === 'calendar') {
     const form = byId('planGuildEvent');
+    form.hidden = false;
     form.scrollIntoView({block:'nearest'});
     form.querySelector('input').focus({preventScroll:true});
     return;

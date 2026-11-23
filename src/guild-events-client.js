@@ -52,18 +52,22 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const calendar = make('section',undefined,'raid-card guild-events-calendar');
   calendar.setAttribute('aria-label','Events calendar');
   const nav = make('div',undefined,'raid-calendar-month');
-  const monthTitle = make('strong');
+  const monthTitle = make('strong',undefined,'guild-calendar-month-title');
   monthTitle.setAttribute('aria-live','polite');
   function shift(offset) {
     month = monthAt(month,offset);
     selected = null;
     load(false);
   }
-  nav.append(button('←',()=>shift(-1),'Previous month'),monthTitle,button('→',()=>shift(1),'Next month'));
+  const monthActions = make('div',undefined,'guild-calendar-controls');
+  monthActions.append(button('←',()=>shift(-1),'Previous month'),button('Today',()=>{
+    month = monthAt(new Date()); selected = null; load(false);
+  },'Show current month'),button('→',()=>shift(1),'Next month'));
+  nav.append(monthTitle,monthActions);
   const weekdays = make('div',undefined,'raid-calendar-week');
   for (let index = 0; index < 7; index++) {
     const date = new Date(2024,0,1+index);
-    const weekday = make('span',new Intl.DateTimeFormat(undefined,{weekday:'narrow'}).format(date));
+    const weekday = make('span',new Intl.DateTimeFormat(undefined,{weekday:'short'}).format(date));
     weekday.title = new Intl.DateTimeFormat(undefined,{weekday:'long'}).format(date);
     weekdays.append(weekday);
   }
@@ -78,7 +82,12 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
 
   const form = make('form',undefined,'raid-card guild-events-plan');
   form.id = 'planGuildEvent';
-  form.append(make('h3','Plan an Event'));
+  form.hidden = true;
+  const formHeading = make('header',undefined,'guild-events-plan-head');
+  const closeForm = button('',()=>{form.hidden=true;document.getElementById('newRaid')?.focus();},'Close event form');
+  closeForm.append(tablerIcon('x'));
+  formHeading.append(make('h3','Plan an Event'),closeForm);
+  form.append(formHeading);
   function field(caption, control) {
     const label = make('label',caption);
     label.append(control);
@@ -145,8 +154,8 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   form.append(field('Title',title),types,raidField,start.element,localTime,
     field('Repeat',repeat),weeksField,details,submit,formStatus);
   updateRepeat();
-  side.append(calendar,form);
-  layout.append(agenda,side);
+  side.append(agenda,form);
+  layout.append(calendar,side);
   root.replaceChildren(layout);
 
   form.addEventListener('submit',async event => {
@@ -301,7 +310,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
     return addDays(month,-((month.getDay()+6)%7));
   }
   function drawCalendar() {
-    monthTitle.textContent = monthLabel.format(month);
+    monthTitle.replaceChildren(tablerIcon('calendar-event'),document.createTextNode(monthLabel.format(month)));
     days.replaceChildren();
     const first = firstVisibleDay();
     const groups = groupsFor(monthEvents);
@@ -313,13 +322,19 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         drawAgenda();
         drawCalendar();
         days.children[index].focus();
-      },dayLabel.format(date)+(events.length ? ', '+events.map(event => event.type).join(', ') : ''));
+      },dayLabel.format(date)+(events.length ? ', '+events.map(event => event.title).join(', ') : ''));
+      day.replaceChildren(make('span',String(date.getDate()),'guild-calendar-date'));
       day.classList.toggle('outside-month',date.getMonth() !== month.getMonth());
       day.setAttribute('aria-pressed',String(+date === selected));
       if (+date === +today) day.setAttribute('aria-current','date');
-      const markers = make('span',undefined,'guild-event-markers');
-      for (const event of events.slice(0,3)) markers.append(dot(event.type));
-      day.append(markers);
+      const previews = make('span',undefined,'guild-calendar-previews');
+      for (const event of events.slice(0,2)) {
+        const preview = make('span',event.title,'guild-calendar-preview');
+        preview.style.setProperty('--event-color',eventTypes[event.type]);
+        previews.append(preview);
+      }
+      if (events.length > 2) previews.append(make('span','+'+(events.length-2)+' more','guild-calendar-more'));
+      day.append(previews);
       days.append(day);
     }
   }

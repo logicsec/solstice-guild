@@ -3,7 +3,7 @@ export function renderGuildChat(root, isCurrent) {
   const header = raidElement('div', null, 'guild-chat-header');
   const refresh = raidElement('button', 'Refresh');
   refresh.type = 'button';
-  header.append(raidElement('h3', 'In-Game Guild Chat'), refresh);
+  header.append(raidElement('h3', 'Recent Messages'), refresh);
   const status = raidElement('p', 'Loading chat…', 'guild-chat-status');
   status.setAttribute('role', 'status');
   const feed = raidElement('ol', null, 'guild-chat-feed');

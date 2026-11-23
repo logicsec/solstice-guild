@@ -231,3 +231,45 @@ code { color:var(--theme-code-color); }
 }
 .guild-app #raidList .guild-dashboard-totals dt { color:var(--theme-secondary-color); font-size:13px; line-height:1.4; }
 .guild-app #raidList .guild-info-icon { position:absolute; top:50%; right:22px; width:36px; height:36px; transform:translateY(-50%); stroke-width:1.65; }
+
+/* Full month calendar with a compact agenda and an on-demand event form. */
+.guild-app #raidList .guild-events-layout { grid-template-columns:minmax(0,2fr) minmax(280px,1fr); gap:16px; margin-top:16px; }
+.guild-app #raidList .guild-events-calendar { padding:18px; }
+.guild-app #raidList .guild-events-sidebar { gap:16px; }
+.guild-app #raidList .guild-events-calendar .raid-calendar-month { margin:0 0 20px; }
+.guild-calendar-controls { display:flex; align-items:center; gap:6px; }
+.guild-app #raidList .guild-calendar-controls button { width:auto; min-width:30px; height:30px; min-height:30px; padding:5px 8px; border-radius:5px; background:transparent; border:1px solid var(--theme-border-color); color:var(--theme-body-color); }
+.guild-app #raidList .guild-events-calendar .raid-calendar-week { margin:0; padding:0 0 10px; font-size:12px; }
+.guild-app #raidList .guild-events-calendar .raid-calendar-days { gap:0; border-top:1px solid var(--theme-border-color); border-left:1px solid var(--theme-border-color); }
+.guild-app #raidList .guild-events-calendar .raid-calendar-days button {
+ display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:6px;
+ min-width:0; min-height:100px; margin:0; padding:7px; text-align:left;
+ border:0; border-right:1px solid var(--theme-border-color); border-bottom:1px solid var(--theme-border-color);
+ border-radius:0; background:transparent; color:var(--theme-body-color); box-shadow:none; font-weight:400;
+}
+.guild-app #raidList .guild-events-calendar .raid-calendar-days button.outside-month { opacity:1; color:var(--theme-secondary-color); background:var(--theme-body-bg); }
+.guild-app #raidList .guild-events-calendar .raid-calendar-days button:is(:hover,:focus-visible,[aria-pressed="true"]) { background:var(--theme-primary-bg-subtle); color:var(--theme-body-color); }
+.guild-app #raidList .guild-events-calendar .raid-calendar-days button[aria-pressed="true"] { box-shadow:inset 0 0 0 1px var(--theme-primary-text-emphasis); }
+.guild-calendar-date { display:grid; place-items:center; width:24px; height:24px; font-size:12px; }
+.guild-app #raidList .guild-events-calendar button[aria-current="date"] .guild-calendar-date { border-radius:50%; background:var(--theme-primary); color:var(--theme-light-text-emphasis); }
+.guild-calendar-previews { display:grid; gap:3px; min-width:0; }
+.guild-calendar-preview { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:10px; line-height:1.5; padding:2px 4px; border-left:2px solid var(--event-color); border-radius:2px; background:color-mix(in srgb,var(--event-color) 14%,transparent); }
+.guild-calendar-more { color:var(--theme-secondary-color); font-size:10px; padding-left:4px; }
+.guild-app #raidList .guild-events-agenda { padding:18px; }
+.guild-app #raidList .guild-events-agenda-head { gap:8px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--theme-border-color); }
+.guild-app #raidList .guild-events-agenda-head h3 { font-size:16px; }
+.guild-app #raidList .guild-events-zone { margin:0; color:var(--theme-secondary-color); font-size:11px; }
+.guild-app #raidList .guild-event-row { grid-template-columns:minmax(0,1fr) auto; gap:8px; padding:12px; }
+.guild-app #raidList .guild-event-row > time { grid-column:1/-1; font-size:12px; }
+.guild-app #raidList .guild-event-row strong { font-size:14px; }
+.guild-app #raidList .guild-event-actions { grid-column:1/-1; }
+.guild-events-plan-head { display:flex; align-items:center; justify-content:space-between; gap:10px; padding-bottom:12px; border-bottom:1px solid var(--theme-border-color); }
+.guild-app #raidList .guild-events-plan-head button { display:grid; place-items:center; width:28px; height:28px; min-height:28px; padding:4px; background:transparent; color:var(--theme-secondary-color); }
+/* Date pickers are calendar controls, not pill actions. */
+.guild-app .raid-schedule .raid-calendar-days button { border-radius:4px; background:transparent; color:var(--theme-body-color); box-shadow:none; }
+.guild-app .raid-schedule .raid-calendar-days button[aria-pressed="true"] { background:var(--theme-primary-bg-subtle); color:var(--theme-primary-text-emphasis); }
+@media(max-width:1000px) { .guild-app #raidList .guild-events-layout { grid-template-columns:minmax(0,1fr); } }
+@media(max-width:600px) { .guild-app #raidList .guild-events-calendar { padding:12px; } .guild-app #raidList .guild-events-calendar .raid-calendar-days button { min-height:72px; padding:3px; } .guild-calendar-preview { font-size:9px; padding:1px 2px; } }
+
+.guild-calendar-month-title { display:flex; align-items:center; gap:8px; }
+.guild-calendar-month-title .tabler-icon { color:var(--theme-warning-text-emphasis); }
