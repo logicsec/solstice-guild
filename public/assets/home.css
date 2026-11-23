@@ -1985,3 +1985,13 @@ body.character-page-active .character-page-root { min-width: 0; }
 /* Keep consistent spacing around grouped and standalone character cards. */
 .character-page-content { display: grid; gap: 20px; }
 .character-page-content > :is(.character-page-section,.character-profession-reputation-pair) { margin-top: 0; }
+
+/* Let Professions set the row height; scroll Reputation inside its card. */
+#character-reputation { display: flex; flex-direction: column; min-height: 0; }
+#character-reputation > .character-section-header { flex-shrink: 0; }
+#character-reputation > .character-page-panel { min-height: 0; overflow-y: auto; scrollbar-width: thin; }
+@media(min-width:701px) {
+ .character-profession-reputation-pair > #character-reputation { contain: size; }
+ #character-reputation > .character-page-panel { flex: 1; }
+}
+@media(max-width:700px) { #character-reputation > .character-page-panel { max-height: 300px; } }

@@ -440,6 +440,7 @@ export function openCharacterSheet(player, event, organizer) {
   const achievementsPanel = raidElement('div');
   const lifetimePanel = raidElement('div');
   const reputationPanel = raidElement('div');
+  reputationPanel.tabIndex = 0;
   for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel,reputationPanel]) panel.append(raidElement('p','Loading character data…'));
   const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Professions',professions,'Skills & trades'],['Reputation',reputationPanel,'Faction standings'],['Achievements',achievementsPanel,'Earned & in progress'],['Activity',lifetimePanel,'Statistics & boss kills'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
   const panels = sections.map(([label,panel])=>{
