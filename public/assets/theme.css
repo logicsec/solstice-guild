@@ -155,3 +155,6 @@ code { color:var(--theme-code-color); }
  padding:4px 12px; font-size:12px; line-height:18px;
 }
 .guild-app .raid-sidebar #discordAccountCard [data-raid-view="characters"] .tabler-icon { width:14px; height:14px; }
+
+.card-header-title { display:flex; align-items:center; gap:8px; }
+.card-header-title > .card-header-icon { width:18px; height:18px; flex:none; }

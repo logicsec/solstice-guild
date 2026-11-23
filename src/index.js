@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-4"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-5"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1966,6 +1966,34 @@ ${renderCharacterAchievements.toString()}
 ${renderCharacterLifetime.toString()}
 ${renderCharacterReputations.toString()}
 ${tablerIcon.toString()}
+// Keep card headers consistent as views and asynchronously loaded cards change.
+function decorateCardHeaders() {
+  const selector = '.raid-card > h3,.raid-card > header h3,.guild-upcoming-heading h3,.tool-card-heading h2,.planner-card-header h2,.planner-page .panel > h2,.planner-page .panel > h3,.character-section-header h2,.character-section-header h3,.market-deals-heading h2,.weekly-gold-panel h3';
+  for (const title of document.querySelectorAll(selector)) {
+    if (title.querySelector('svg,img')) continue;
+    const text = title.textContent.trim();
+    if (!text) continue;
+    const options = [
+      [/class composition/i,'users','info'], [/role composition/i,'shield-check','success'],
+      [/profession|craft|recipe/i,'flask','purple'], [/roster|character|group planner/i,'users','primary'],
+      [/event|schedule|calendar/i,'calendar-event','warning'], [/stat|analytic/i,'chart-line','success'],
+      [/equipment|gear|loot/i,'shield','primary'], [/talent/i,'wand','purple'],
+      [/reputation/i,'users','info'], [/achievement/i,'trophy','warning'],
+      [/activity|journey/i,'script','warning'], [/material|inventory/i,'package','info'],
+      [/market|auction|price|buy/i,'coin','warning'], [/invite|link/i,'external-link','info'],
+      [/rsvp|sign.up|attendance|readiness/i,'list-check','success'], [/setting|build/i,'settings','purple'],
+      [/armory|review/i,'shield-check','primary'],
+    ];
+    const [,symbol,color] = options.find(([pattern])=>pattern.test(text)) ?? [null,'clipboard-list','primary'];
+    const icon = tablerIcon(symbol,'card-header-icon');
+    icon.style.color = 'var(--theme-'+color+'-text-emphasis)';
+    title.classList.add('card-header-title');
+    title.prepend(icon);
+  }
+}
+decorateCardHeaders();
+new MutationObserver(decorateCardHeaders).observe(document.body,{childList:true,subtree:true});
+
 ${characterSectionIcon.toString()}
 ${openCharacterSheet.toString()}
 
