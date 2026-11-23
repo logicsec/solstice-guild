@@ -380,3 +380,7 @@ body.guild-app .wowhead-tooltip-screen { z-index:2147482999!important; }
 .guild-dashboard-layout > .guild-dashboard-hero::after,.guild-dashboard-layout > .guild-dashboard-hero .guild-dashboard-crest { display:none; }
 .guild-app #raidList .guild-dashboard-events > .guild-events-agenda { margin:0; min-width:0; }
 @media(max-width:650px) { .guild-app #raidList .guild-dashboard-layout > .guild-dashboard-hero { min-height:160px; padding:24px 0; } }
+
+/* Profession-filtered roster values need more room than a character level. */
+.guild-app #raidList .guild-character-row.guild-character-profession { grid-template-columns:minmax(84px,max-content) auto minmax(0,1fr) auto; }
+.guild-app #raidList .guild-character-profession .guild-character-level { white-space:nowrap; font-size:13px; justify-content:start; text-align:left; }
