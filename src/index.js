@@ -406,7 +406,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-fixed-sidebar"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-dashboard-widgets"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -507,7 +507,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
 <aside class="raid-sidebar">
-<label class="guild-character-switch"><span id="guildCharacterIcon" aria-hidden="true"></span><span>Playing as</span><select id="guildCharacter" aria-label="Active character" disabled><option value="">Loading characters…</option></select></label><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
+<div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="guild-character-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
 </button><nav id="raidMenu" aria-label="Guild Hall"><details class="guild-menu-group"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg><span>Guild Hall</span><svg class="guild-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary><div class="guild-menu-items"><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button></div></details><details class="guild-menu-group"><summary><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg><span>Raiding</span><svg class="guild-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary><div class="guild-menu-items"><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><a href="/gear-planner" class="guild-planner-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 8h8M8 12h8M8 16h5"/></svg>Gear Planner</a><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></details><button id="professionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v7L4 20h16l-6-10V3M8 15h8"/></svg>Professions</button><button id="auctionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 5-3 6 10-5 3z M3 18h15v3H3z M14 9l7 10"/></svg>Auction House</button></nav><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></aside>
@@ -1507,6 +1507,7 @@ function raidError(error) {
   }
 }
 function raidReset(view, id) {
+  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard';
   raidView = view;
   activeRaid = id || null;
   const dashboard = workspaceViews.includes(view);
@@ -1785,8 +1786,31 @@ async function openRaidView(view, id, navigate = true) {
         section.append(rows.children.length ? rows : raidElement('p','No '+category+' professions reported.'));
         coverage.append(section);
       }
-      tiles.append(coverage);
-      root.replaceChildren(hero,tiles,roster);
+      const eventsWidget = raidElement('section',null,'raid-card guild-upcoming-events');
+      eventsWidget.setAttribute('aria-labelledby','guildUpcomingEventsTitle');
+      const eventsHeading = raidElement('header',null,'guild-upcoming-heading');
+      const eventsTitle = raidElement('h3','Upcoming Events');eventsTitle.id='guildUpcomingEventsTitle';
+      const allEvents = raidElement('button','View all');allEvents.type='button';allEvents.addEventListener('click',()=>openRaidView('calendar'));
+      eventsHeading.append(eventsTitle,allEvents);
+      const eventRows = raidElement('div',null,'guild-upcoming-list');eventRows.append(raidElement('p','Loading events…'));
+      eventsWidget.append(eventsHeading,eventRows);
+      const top = raidElement('div',null,'guild-dashboard-top');top.append(hero,eventsWidget);
+      const lower = raidElement('div',null,'guild-dashboard-lower');lower.append(coverage,roster);
+      root.replaceChildren(top,tiles,lower);
+      const from = new Date();const to = new Date(from.getTime()+120*86400000);
+      guildRequest('/api/guild-events?'+new URLSearchParams({from:from.toISOString(),to:to.toISOString()})).then(result=>{
+        if (revision !== raidRevision) return;
+        const events = (result.events ?? []).filter(event=>Date.parse(event.starts_at)>=from.getTime()).sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at)).slice(0,5);
+        eventRows.replaceChildren();
+        for (const event of events) {
+          const row = raidElement('button',null,'guild-upcoming-event');row.type='button';
+          const date = new Date(event.starts_at);
+          const day = raidElement('time',new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'}).format(date));day.dateTime=event.starts_at;
+          const copy = raidElement('span');copy.append(raidElement('strong',event.title),raidElement('small',new Intl.DateTimeFormat(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).format(date)+' · '+event.type));
+          row.append(day,copy);row.addEventListener('click',()=>event.type === 'Raid' ? openRaidView('detail',event.id) : openRaidView('calendar'));eventRows.append(row);
+        }
+        if (!events.length) eventRows.append(raidElement('p','No events scheduled in the next 120 days.'));
+      }).catch(()=>{if(revision === raidRevision) eventRows.replaceChildren(raidElement('p','Events are temporarily unavailable.'));});
       if (showGuildRoster) jumpToRoster();
       try {
         const {characters} = await guildRequest('/api/raid-characters?guild=1');
@@ -2524,8 +2548,54 @@ function rememberGuildCharacter(name) {
   if (!character) return;
   byId('guildCharacterIcon').replaceChildren(characterIcons(character.class_name));
   byId('guildCharacter').value = name;
+  byId('guildCharacterName').textContent = name+(character.class_name ? ' · '+character.class_name : '');
+  byId('guildCharacterTrigger').setAttribute('aria-label','Active character: '+byId('guildCharacterName').textContent);
+  for (const option of byId('guildCharacterOptions').children) option.setAttribute('aria-selected',String(option.dataset.name === name));
   try { localStorage.setItem('solstice-active-character',name); } catch {}
 }
+function closeGuildCharacterMenu(focus = false) {
+  byId('guildCharacterOptions').hidden = true;
+  byId('guildCharacterTrigger').setAttribute('aria-expanded','false');
+  if (focus) byId('guildCharacterTrigger').focus();
+}
+function openGuildCharacterMenu() {
+  if (byId('guildCharacter').disabled) return;
+  byId('guildCharacterOptions').hidden = false;
+  byId('guildCharacterTrigger').setAttribute('aria-expanded','true');
+  const options = [...byId('guildCharacterOptions').children];
+  (options.find(option=>option.getAttribute('aria-selected') === 'true') ?? options[0])?.focus();
+}
+function buildGuildCharacterOptions() {
+  const list = byId('guildCharacterOptions');list.replaceChildren();
+  for (const character of guildCharacterChoices) {
+    const option = raidElement('button');option.type = 'button';option.tabIndex = -1;
+    option.setAttribute('role','option');option.setAttribute('aria-selected','false');option.dataset.name = character.name;
+    const icons = characterIcons(character.class_name);icons.setAttribute('aria-hidden','true');
+    option.append(icons,raidElement('span',character.name+(character.class_name ? ' · '+character.class_name : '')));
+    option.addEventListener('click',()=>{
+      byId('guildCharacter').value=character.name;closeGuildCharacterMenu(true);
+      byId('guildCharacter').dispatchEvent(new Event('change'));
+    });list.append(option);
+  }
+}
+byId('guildCharacterTrigger').addEventListener('click',()=>{
+  if (byId('guildCharacterOptions').hidden) openGuildCharacterMenu();else closeGuildCharacterMenu();
+});
+byId('guildCharacterTrigger').addEventListener('keydown',event=>{
+  if (['ArrowDown','ArrowUp'].includes(event.key)) { event.preventDefault();openGuildCharacterMenu(); }
+  if (event.key === 'Escape') closeGuildCharacterMenu();
+});
+byId('guildCharacterOptions').addEventListener('keydown',event=>{
+  const options=[...byId('guildCharacterOptions').children];
+  const index=options.indexOf(document.activeElement);
+  if (['ArrowDown','ArrowUp','Home','End'].includes(event.key)) {
+    event.preventDefault();
+    const next=event.key === 'Home' ? 0 : event.key === 'End' ? options.length-1 : (index+(event.key === 'ArrowDown' ? 1 : -1)+options.length)%options.length;
+    options[next]?.focus();
+  } else if (event.key === 'Escape') { event.preventDefault();event.stopPropagation();closeGuildCharacterMenu(true); }
+});
+document.addEventListener('click',event=>{if (!event.target.closest('.guild-character-control')) closeGuildCharacterMenu();});
+document.addEventListener('focusin',event=>{if (!event.target.closest('.guild-character-control')) closeGuildCharacterMenu();});
 function notifyGuildCharacter(name) {
   rememberGuildCharacter(name);
   const link = document.querySelector('.guild-planner-link');
@@ -2559,12 +2629,13 @@ async function loadGuildCharacterChoices() {
     guildCharacterChoices = data.signupCharacters ?? data.characters ?? [];
     picker.replaceChildren();
     for (const item of guildCharacterChoices) picker.add(new Option(item.name+(item.class_name ? ' · '+item.class_name : ''),item.name));
-    if (!guildCharacterChoices.length) { picker.add(new Option('Add a character',''));return; }
+    buildGuildCharacterOptions();
+    if (!guildCharacterChoices.length) { picker.add(new Option('Add a character',''));byId('guildCharacterName').textContent='Add a character';return; }
     let stored;try { stored=localStorage.getItem('solstice-active-character'); } catch {}
     const requested = new URLSearchParams(location.search).get('character');
     const selected = guildCharacterChoices.find(item=>item.name.toLowerCase() === requested?.toLowerCase())?.name || guildCharacterChoices.find(item=>item.name === stored)?.name || guildCharacterChoices[0].name;
-    picker.disabled = false;notifyGuildCharacter(selected);
-  } catch { picker.replaceChildren(new Option('Characters unavailable','')); }
+    picker.disabled = false;byId('guildCharacterTrigger').disabled=false;notifyGuildCharacter(selected);
+  } catch { picker.replaceChildren(new Option('Characters unavailable',''));byId('guildCharacterName').textContent='Characters unavailable'; }
 }
 loadGuildCharacterChoices();
 function route() {
