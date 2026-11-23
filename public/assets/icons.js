@@ -2,6 +2,7 @@
 export function tablerIcon(name, className = '') {
   const icon = document.createElementNS('http://www.w3.org/2000/svg','svg');
   icon.setAttribute('viewBox','0 0 24 24');
+  icon.setAttribute('width','18');icon.setAttribute('height','18');
   icon.setAttribute('class','tabler-icon'+(className ? ' '+className : ''));
   icon.setAttribute('fill','none');
   icon.setAttribute('stroke','currentColor');
@@ -10,7 +11,7 @@ export function tablerIcon(name, className = '') {
   icon.setAttribute('stroke-linejoin','round');
   icon.setAttribute('aria-hidden','true');
   const use = document.createElementNS(icon.namespaceURI,'use');
-  use.setAttribute('href','/assets/tabler-icons.svg#'+name);
+  use.setAttribute('href','/assets/tabler-icons.svg?v=theme-2#'+name);
   icon.append(use);
   return icon;
 }

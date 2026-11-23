@@ -106,4 +106,6 @@ code { color:var(--theme-code-color); }
 .guild-app .raid-sidebar #raidMenu :is(button,a),.guild-menu-group > summary { border-radius:4px; }
 .guild-app .raid-sidebar #raidMenu :is([aria-current="true"],[aria-current="page"]) { background:var(--theme-tertiary-bg); color:var(--theme-body-color); }
 .guild-menu-group[open] > summary { background:var(--theme-light-bg-subtle); color:var(--theme-body-color); border-radius:4px; }
-.guild-app .raid-sidebar #raidMenu .guild-menu-items [aria-current="true"] { background:transparent; color:var(--theme-emphasis-color); font-weight:600; }
+.guild-app .raid-sidebar #raidMenu .guild-menu-items :is([aria-current="true"],[aria-current="page"]) { background:transparent; color:var(--theme-primary-text-emphasis); font-weight:600; }
+
+.guild-menu-items { border-left:0; }

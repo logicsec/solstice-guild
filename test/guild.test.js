@@ -125,7 +125,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const tablerSprite = fs.readFileSync(new URL('../public/assets/tabler-icons.svg',import.meta.url),'utf8');
   assert.equal((tablerSprite.match(/<svg\b/g) ?? []).length,1,'sprite has only one SVG root');
   assert.equal((tablerSprite.match(/<symbol\b/g) ?? []).length,(tablerSprite.match(/<\/symbol>/g) ?? []).length);
-  for (const [,symbol] of plannerHtml.matchAll(/tabler-icons\.svg#([a-z0-9-]+)/g)) assert.ok(tablerSprite.includes('id="'+symbol+'"'),'missing Tabler symbol '+symbol);
+  for (const [,symbol] of plannerHtml.matchAll(/tabler-icons\.svg(?:\?[^#"]+)?#([a-z0-9-]+)/g)) assert.ok(tablerSprite.includes('id="'+symbol+'"'),'missing Tabler symbol '+symbol);
 
   assert.doesNotMatch(plannerHtml,/<div class="raid-nav-group">/);
   assert.equal((plannerHtml.match(/<details class="guild-menu-group">/g) ?? []).length,2);
