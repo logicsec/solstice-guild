@@ -1923,7 +1923,7 @@ body.character-page-active .character-page-root { min-width: 0; }
 .character-gear-stats .character-stat-table dl > div { padding: 4px 0; margin: 0; background: transparent; }
 .character-gear-stats .character-stat-more { border-color: #1d2730; }
 .character-gear-stats .character-stat-more summary { padding: 6px 0; }
-.character-page-root .character-profile-hero { padding: 12px 0 20px; border: 0; background: transparent !important; border-radius: 0; }
+.character-page-root .character-profile-hero { padding: 12px 16px 20px; border: 0; background: linear-gradient(90deg,#0c1218 0%,#0c1218f5 28%,#0c1218b3 58%,#0c12184d 100%),url('/assets/solstice-dawn.webp') right center / cover !important; border-radius: 0; }
 .character-page-root .character-profile-info { display: block; }
 .character-page-root .profile-overview { display: none; }
 .character-page-root .character-profile-hero .character-inspector-title { display: flex; align-items: center; gap: 22px; }
