@@ -406,8 +406,8 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-dashboard-widgets"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
-<div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-sidebar-brand"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Auction House</h1><p>US Normal Alliance · Prices and market deals</p></div>
@@ -506,7 +506,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar">
+<aside class="raid-sidebar"><a class="brand guild-sidebar-brand" href="/?tool=raid&view=guildDashboard" aria-label="Solstice Guild Hall">${solsticeLockup}</a>
 <div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="guild-character-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
@@ -814,6 +814,7 @@ function setView(view) {
   byId('marketFooter').hidden = view !== 'auction';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
+  if (!showRaids) document.body.classList.remove('guild-dashboard-active');
   byId('raidPanel').hidden = false;
   byId('sharedRaidContent').hidden = !showRaids;
   for (const [id,selected] of [['auctionTab',view === 'auction'],['professionTab',showProfessions]]) {
@@ -1507,6 +1508,7 @@ function raidError(error) {
   }
 }
 function raidReset(view, id) {
+  document.body.classList.toggle('guild-dashboard-active',view === 'guildDashboard');
   document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard';
   raidView = view;
   activeRaid = id || null;
