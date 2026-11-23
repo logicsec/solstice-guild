@@ -2104,3 +2104,36 @@ body.planner-site-active .raid-content > :not(.planner-page) { display: none !im
 .guild-menu-items { margin: 2px 0 8px 18px; padding-left: 8px; border-left: 1px solid #263644; }
 .guild-app .raid-sidebar #raidMenu .guild-menu-items :is(button,a) { font-size: 11px; min-height: 32px; padding: 7px 8px; }
 @media(pointer:coarse) { .guild-menu-group > summary,.guild-app .raid-sidebar #raidMenu .guild-menu-items :is(button,a) { min-height: 44px; } }
+
+/* Compact market tools, using the same cards and rhythm as character pages. */
+.guild-app #marketHero { min-height: 0; margin: 0 0 20px; padding: 0; border: 0; background: transparent; gap: 20px; }
+.guild-app #marketHero h1,.guild-app .tool-page-heading h1 { margin: 0 0 6px; font: 800 28px/1.2 var(--site-font); letter-spacing: -.025em; }
+.guild-app #marketHero .eyebrow { display: none; }
+.guild-app #marketHero p,.tool-page-heading p { margin: 0; font-size: 13px; color: #92a9bd; }
+.guild-app #marketHero .hero-stats div { padding: 8px 12px; min-width: 90px; background: #141b21; }
+.guild-app #marketHero .hero-stats strong { font-size: 14px; }
+.guild-app #auctionPanel { margin: 0; border: 1px solid #263644; border-radius: 10px; overflow: hidden; background: #141b21; }
+.guild-app #auctionPanel .auction-toolbar { background: #141b21; padding: 12px; gap: 8px; }
+.guild-app #auctionPanel .categories { background: #111920; }
+.guild-app #auctionPanel .status { padding: 10px 14px; margin: 0; max-width: 100%; font-size: 12px; overflow-wrap: anywhere; }
+.guild-app #marketFooter { margin-top: 16px; padding: 10px 0; border: 0; background: transparent; font-size: 11px; color: #718fa6; }
+.professions-page { display: grid; gap: 20px; min-width: 0; }
+.tool-page-heading { padding: 0; }
+.profession-card { min-width: 0; background: #141b21; border: 1px solid #263644; border-radius: 10px; overflow: hidden; }
+.tool-card-heading { padding: 14px 16px; border-bottom: 1px solid #263644; }
+.guild-app .tool-card-heading h2 { margin: 0; font: 700 16px/1.3 var(--site-font); }
+.tool-card-heading small { display: block; margin-top: 5px; color: #718fa6; font-size: 11px; }
+.tool-card-heading a { color: #92b9dc; }
+.guild-app #professionGrid { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 14px; }
+.guild-app #professionGrid button { display: inline-flex; align-items: center; justify-content: flex-start; gap: 8px; min-height: 36px; padding: 6px 10px; font-size: 12px; font-weight: 600; background: #101820; }
+.guild-app #professionGrid button[aria-pressed="true"] { border-color: #65a9ef; background: #1d3244; color: #8bc2f5; }
+.guild-app #professionGrid svg { width: 20px; height: 20px; padding: 0; border: 0; background: transparent; border-radius: 0; }
+.guild-app .profession-filters { display: flex; flex-wrap: wrap; align-items: end; gap: 10px; padding: 12px 16px; background: #141b21; border-bottom: 1px solid #263644; }
+.profession-filters .search { flex: 1; min-width: 200px; }
+.profession-filters label { font-size: 11px; color: #92a9bd; }
+.profession-filters input[type="search"],.profession-filters select { min-height: 34px; padding: 6px 9px; }
+.profession-filters .toggle { display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 0; white-space: nowrap; }
+.guild-app #craftStatus { padding: 10px 16px; margin: 0; font-size: 12px; }
+.guild-app .profession-card .recipe-columns,.guild-app .profession-card th { background: #101820; border-color: #263644; font-size: 10px; }
+.profession-card .market-scroll { max-height: min(60dvh,620px); border: 0; }
+@media(max-width:700px) { .guild-app #marketHero { grid-template-columns: minmax(0,1fr); } .guild-app #marketHero .hero-stats { justify-self: start; } .profession-filters .search { flex-basis: 100%; } }

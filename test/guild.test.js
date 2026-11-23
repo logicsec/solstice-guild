@@ -133,6 +133,21 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
 
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
+  const refreshSource = page.slice(page.indexOf('async function refresh() {'),page.indexOf('function setCatalogItem('));
+  const refreshFeedback = new Function('fetch','snapshot',`
+    let loading=false,lastFeedCheck=0,scan=snapshot,message='';
+    const render=()=>{};
+    const useTable=()=>{ throw new Error('<html>Invalid proxy response</html>'); };
+    ${refreshSource}
+    return refresh().then(()=>message);
+  `);
+  const gatewayFeedback = await refreshFeedback(async()=>new Response('<html>Cloudflare error details</html>',{status:502}),null);
+  assert.match(gatewayFeedback,/Auction prices are temporarily unavailable/);
+  assert.doesNotMatch(gatewayFeedback,/html|Cloudflare|error details/i);
+  const cachedFeedback = await refreshFeedback(async()=>new Response('<html>Unexpected success body</html>'),new Date());
+  assert.match(cachedFeedback,/Showing the previous snapshot/);
+  assert.doesNotMatch(cachedFeedback,/html|proxy/i);
+
   assert.equal((await (await send('/api/session', options)).json()).displayName, 'Raider');
   assert.equal((await (await send('/api/session', options)).json()).username,'raider_account');
   assert.deepEqual((await (await send('/api/session',options)).json()).discordProfile.server,{name:'Solstice',memberCount:50,onlineCount:10});

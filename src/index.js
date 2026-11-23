@@ -406,11 +406,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-menu-groups"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-market-cleanup"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
-<div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
+<div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Auction House</h1><p>US Normal Alliance · Prices and market deals</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
 </section>
 <section id="auctionPanel" class="board" aria-label="Market listings">
@@ -487,21 +487,19 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="pager"><button id="previous">Previous</button><small id="count"></small><button id="next">Next</button></div>
 </div></div>
 </section>
-<section id="professionPanel" class="board" aria-label="Professions" hidden>
-<div class="craft-section"><div class="eyebrow">Solstice crafting</div><h2>Crafting Professions</h2><p>Choose a profession to browse recipes, margins, and materials on the Auction House.</p>
-<div id="professionGrid" class="profession-grid" role="group" aria-label="Crafting professions"></div></div>
-<div class="craft-section"><h2 id="recipeHeading">Blacksmithing Recipes</h2><p>Estimated profit per craft after AHledger’s 5% Auction House cut.</p></div>
-<div class="toolbar">
-
-<div class="search"><label for="craftQuery">Filter recipes and materials</label><input id="craftQuery" type="search" placeholder="Recipe or material name"></div>
-<div><label for="craftSort">Sort recipes</label><select id="craftSort"><option value="profit">Profit</option><option value="cost">Cost</option><option value="name">Name</option><option value="skill">Skill</option></select></div>
-<label class="toggle"><input id="profitable" type="checkbox"> Profitable crafts only</label>
-<button id="refreshCraft">Refresh</button>
+<section id="professionPanel" class="professions-page" aria-label="Professions" hidden>
+<header class="tool-page-heading"><h1>Professions</h1><p>Recipes, crafting margins, and materials · US Normal Alliance</p></header>
+<section class="profession-card profession-picker"><header class="tool-card-heading"><h2>Choose a profession</h2></header><div id="professionGrid" class="profession-grid" role="group" aria-label="Crafting professions"></div></section>
+<section class="profession-card profession-recipes"><header class="tool-card-heading"><h2 id="recipeHeading">Blacksmithing Recipes</h2><small>Prices from <a href="https://ahledger.com" target="_blank" rel="noopener noreferrer">AHledger</a> · Net sale includes the 5% Auction House fee.</small></header>
+<div class="toolbar profession-filters">
+<div class="search"><label for="craftQuery">Search recipes and materials</label><input id="craftQuery" type="search" placeholder="Recipe or material name"></div>
+<div><label for="craftSort">Sort by</label><select id="craftSort"><option value="profit">Profit</option><option value="cost">Cost</option><option value="name">Name</option><option value="skill">Skill</option></select></div>
+<label class="toggle"><input id="profitable" type="checkbox"> Profitable only</label><button id="refreshCraft">Refresh</button>
 </div>
 <p id="craftStatus" class="status" role="status">Choose a profession to see prices.</p>
-<div class="market-scroll" tabindex="0" role="region" aria-labelledby="recipeHeading"><div class="recipe-columns" aria-hidden="true"><span>Recipe</span><span>Cost</span><span>Net sale</span><span>Profit</span><span>Skill</span></div><div id="craftRows" class="recipe-list"></div></div>
-<div class="craft-section"><h2 id="materialHeading">Materials on the Auction House</h2><p>Listed reagents used by recipes in the selected profession. Buyouts and quantities are from the latest price table.</p></div>
-<div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="materialHeading"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div>
+<div class="market-scroll" tabindex="0" role="region" aria-labelledby="recipeHeading"><div class="recipe-columns" aria-hidden="true"><span>Recipe</span><span>Cost</span><span>Net sale</span><span>Profit</span><span>Skill</span></div><div id="craftRows" class="recipe-list"></div></div></section>
+<section class="profession-card profession-materials"><header class="tool-card-heading"><h2 id="materialHeading">Materials on the Auction House</h2><small>Listed reagents used by the selected profession.</small></header>
+<div class="scroll market-scroll" tabindex="0" role="region" aria-labelledby="materialHeading"><table><thead><tr><th scope="col">Material</th><th scope="col">Lowest unit buyout</th><th scope="col">Units listed</th><th scope="col">Recipes using it</th></tr></thead><tbody id="materialRows"></tbody></table></div></section>
 </section>
 <section id="raidHero" class="hero" hidden aria-labelledby="raidPlannerTitle">
 <div><div class="eyebrow">Solstice Guild Tools</div><h1 id="raidPlannerTitle">Solstice Guild Hall</h1><p>Explore the guild roster, see profession coverage, and plan raids.</p></div>
@@ -777,7 +775,7 @@ async function refreshVendorFlips() {
       +' · '+coverage+unavailable+' · Auction scan '+time+' ET';
     if (data.complete) delay = 60000;
   } catch (error) {
-    status.textContent = error.message || 'Vendor prices are temporarily unavailable.';
+    status.textContent = 'Vendor prices are temporarily unavailable. Retrying shortly.';
     delay = 30000;
   } finally {
     vendorFlipPending = false;
@@ -813,7 +811,7 @@ byId('dealSort').addEventListener('change', () => {
 });
 
 function setView(view) {
-  byId('marketFooter').hidden = view === 'raid';
+  byId('marketFooter').hidden = view !== 'auction';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
   byId('raidPanel').hidden = false;
@@ -822,7 +820,7 @@ function setView(view) {
     if (selected) byId(id).setAttribute('aria-current','page');else byId(id).removeAttribute('aria-current');
   }
   if (!showRaids) for (const node of document.querySelectorAll('[data-raid-view]')) node.removeAttribute('aria-current');
-  byId('marketHero').hidden = showRaids;
+  byId('marketHero').hidden = view !== 'auction';
   byId('raidHero').hidden = true;
   byId('raidTab').setAttribute('aria-pressed', String(showRaids));
   byId('auctionPanel').hidden = view !== 'auction';
@@ -852,7 +850,7 @@ async function loadCrafts() {
     craftData = data;
     renderCrafts();
   } catch (error) {
-    if (request === craftRequest) byId('craftStatus').textContent = error.message + '. Use Refresh to try again.';
+    if (request === craftRequest) byId('craftStatus').textContent = 'Recipe prices are temporarily unavailable. Use Refresh to try again.';
   }
 }
 
@@ -1321,10 +1319,10 @@ async function refresh() {
   render();
   try {
     const response = await fetch('/prices');
-    if (!response.ok) throw new Error(await response.text());
+    if (!response.ok) throw new Error('Auction prices are temporarily unavailable.');
     useTable(await response.text(), 'AHledger feed');
   } catch (error) {
-    message = error.message + (scan ? '. Showing the previous snapshot.' : '. The feed will retry automatically.');
+    message = 'Auction prices are temporarily unavailable.' + (scan ? ' Showing the previous snapshot.' : ' Please try again shortly; the feed will retry automatically.');
   } finally {
     loading = false;
     render();
