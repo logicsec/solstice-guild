@@ -384,3 +384,29 @@ body.guild-app .wowhead-tooltip-screen { z-index:2147482999!important; }
 /* Profession-filtered roster values need more room than a character level. */
 .guild-app #raidList .guild-character-row.guild-character-profession { grid-template-columns:minmax(84px,max-content) auto minmax(0,1fr) auto; }
 .guild-app #raidList .guild-character-profession .guild-character-level { white-space:nowrap; font-size:13px; justify-content:start; text-align:left; }
+
+/* Shared action shape, including compact links styled as buttons. */
+body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.button,.raid-primary,[role="button"]) { border-radius:3px !important; }
+.guild-app .character-header-freshness { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+.guild-app .character-header-freshness .character-refresh { display:inline-flex; align-items:center; justify-content:center; gap:6px; width:auto; height:auto; min-height:30px; margin:0; padding:5px 10px; font-size:12px; line-height:1.4; flex:none; }
+.character-refresh .tabler-icon { width:15px; height:15px; }
+.guild-app .guild-character-dialog { width:min(520px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow-y:auto; box-sizing:border-box; padding:20px; border:1px solid var(--theme-border-color); border-radius:8px; background:var(--theme-secondary-bg); color:var(--theme-body-color); }
+.guild-character-dialog::backdrop { background:#000a; }
+.guild-character-dialog > header { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:14px; }
+.guild-character-dialog h3 { margin:0; }
+.guild-character-dialog #characterForm { float:none; width:100%; margin:0; padding:0; }
+.guild-character-dialog #characterFormMessage { color:var(--theme-danger-text-emphasis); }
+.guild-app .raid-sidebar #sidebarCollapse { display:inline-flex; align-items:center; justify-content:center; align-self:flex-end; width:30px; min-height:30px; padding:5px; margin:0 0 8px; color:var(--theme-secondary-color); }
+@media(min-width:901px) {
+ .guild-app.guild-sidebar-collapsed .raid-shell { grid-template-columns:60px minmax(0,1fr); }
+ .guild-app.guild-sidebar-collapsed #raidPanel > .raid-sidebar { width:60px; padding-inline:8px; }
+ .guild-sidebar-collapsed .guild-sidebar-brand { justify-content:center; padding-inline:0; }
+ .guild-sidebar-collapsed :is(.solstice-wordmark,.guild-character-control,.guild-nav-label,.guild-menu-group > summary > span,.guild-menu-chevron,#guildIdentity,.guild-discord-status) { display:none !important; }
+ .guild-app.guild-sidebar-collapsed #raidMenu :is(button,a),.guild-sidebar-collapsed .guild-menu-group > summary { justify-content:center; padding-inline:6px; }
+ .guild-sidebar-collapsed .guild-menu-items { padding:0; margin:0; }
+ .guild-sidebar-collapsed .guild-menu-group > .guild-menu-items { display:block; }
+ .guild-sidebar-collapsed .guild-menu-group > summary { display:none; }
+ .guild-app.guild-sidebar-collapsed .guild-discord-trigger { justify-content:center; padding:0; }
+ .guild-app.guild-sidebar-collapsed .guild-discord-card { left:48px; bottom:0; }
+}
+@media(max-width:900px) { .guild-app .raid-sidebar #sidebarCollapse { display:none; } }

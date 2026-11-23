@@ -340,19 +340,12 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.open = true;
   const backUrl = event?.id ? '/?tool=raid&view=detail&raid='+encodeURIComponent(event.id) : '/?tool=raid&view=guildDashboard';
   dialog.close = () => { location.href = backUrl; };
-  const back = raidElement('a','Back to Guild Hall','character-page-back');
-  back.href = backUrl;
-  dialog.append(back);
   const title = raidElement('h2',player.character);
   title.id = 'character-sheet-title';
   dialog.setAttribute('aria-labelledby',title.id);
   const heading = raidElement('div',null,'character-inspector-title');
   const identity = raidElement('div');
   identity.append(title,raidElement('p',[player.spec,player.class_name,player.role].filter(Boolean).join(' · '),'inspector-meta'));
-  const close = raidElement('a','Back to Guild Hall','character-banner-close');
-  close.href = backUrl;
-  close.type = 'button';
-  close.setAttribute('aria-label','Close character sheet');
 
   const level = raidElement('span',undefined,'character-banner-level');
   function setLevel(value) {
@@ -369,7 +362,7 @@ export function openCharacterSheet(player, event, organizer) {
   title.append(level);
   const freshness = raidElement('div',null,'character-header-freshness');
   const freshnessText = raidElement('span','Loading Armory…');
-  const refreshButton = raidElement('button','Refresh');refreshButton.type='button';refreshButton.addEventListener('click',()=>location.reload());
+  const refreshButton = raidElement('button',null,'character-refresh');refreshButton.append(tablerIcon('refresh'),document.createTextNode('Refresh'));refreshButton.type='button';refreshButton.addEventListener('click',()=>location.reload());
   freshness.append(freshnessText,refreshButton);identity.append(freshness);
   heading.append(headerModel,identity);
   const header = raidElement('header',null,'character-profile-hero guild-page-heading');
@@ -381,7 +374,7 @@ export function openCharacterSheet(player, event, organizer) {
   equipment.hidden = true;
   info.append(heading,overview);
   inner.append(info);
-  header.append(inner,close);
+  header.append(inner);
   const content = raidElement('div');
   const plannerLink = raidElement('a','Gear Planner','raid-primary character-planner-button');
   plannerLink.setAttribute('aria-label','Plan gear for '+player.character);
