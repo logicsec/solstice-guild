@@ -24,7 +24,7 @@ a:focus-visible, button:focus-visible, input:focus-visible, textarea:focus-visib
 nav, .actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 20px; }
 nav a:not(.button) { font-size: 14px; }
 nav a:hover, .text-link:hover { color: var(--gold); }
-.button { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 10px 16px; min-height: 42px; border: 1px solid var(--line); border-radius: 4px; font: 700 14px/1.25 var(--site-font); cursor: pointer; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 8px; padding: 7px 12px; min-height: 34px; border: 1px solid var(--line); border-radius: 4px; font: 700 13px/1.25 var(--site-font); cursor: pointer; }
 .button.discord, .button.outline { color: var(--ink); background: #111b17e8; }
 .button.discord:hover, .button.outline:hover { border-color: var(--gold); }
 .button.gold { color: #23190a; background: linear-gradient(110deg,#f6d58e,#d99e47); border-color: #f7db9f; }
@@ -322,8 +322,9 @@ body:has(> .guild-home) { background: var(--surface); }
 .guild-app .raid-shell { grid-template-columns: 248px minmax(0,1fr); min-height: calc(100dvh - 68px); background: radial-gradient(ellipse at 88% 0%,var(--container),transparent 55%),var(--night); }
 .guild-app .raid-actions { align-items: center; }
 .guild-app :where(.raid-shell) :is(button, a.raid-primary) {
-  min-height: 64px;
-  padding: 8px 12px;
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 13px;
   line-height: 1.35;
 }
 .guild-app :where(.raid-shell) button {
@@ -2066,3 +2067,29 @@ body.planner-site-active .raid-content > :not(.planner-page) { display: none !im
  .guild-app .raid-sidebar > .guild-account { margin-top: 12px; }
  .guild-app .raid-sidebar:has(#raidMenuToggle[aria-expanded="false"]) > .guild-account { display: none; }
 }
+
+.guild-character-switch { display: grid; grid-template-columns: 26px minmax(0,1fr); grid-template-rows: 10px 20px; column-gap: 8px; }
+.guild-character-switch > span:not(#guildCharacterIcon),.guild-character-switch > select { grid-column: 2; }
+.guild-character-switch > #guildCharacterIcon { grid-column: 1; grid-row: 1 / -1; display: grid; place-items: center; }
+#guildCharacterIcon .character-icons { display: flex; margin: 0; }
+#guildCharacterIcon img { display: block; width: 26px; height: 26px; margin: 0; border: 1px solid #344a5b; border-radius: 3px; object-fit: cover; }
+
+/* Compact account popover with a readable, persistent sign-out action. */
+.guild-app .raid-sidebar .guild-discord-card { width: min(260px,calc(100vw - 32px)); padding: 12px; border-radius: 8px; font-size: 12px; }
+.guild-app .raid-sidebar .guild-discord-card .eyebrow { padding: 0; font-size: 9px; }
+.guild-app .raid-sidebar .guild-discord-card > strong { font-size: 12px; }
+.guild-app .raid-sidebar .guild-discord-card p { margin: 4px 0 8px; font-size: 11px; }
+.guild-app .raid-sidebar .guild-discord-card dl { gap: 5px 10px; margin: 8px 0; font-size: 11px; }
+.guild-app .raid-sidebar .guild-discord-card small { font-size: 10px; }
+.guild-app .raid-sidebar .guild-discord-card > button { min-height: 30px; margin: 8px 0 0; padding: 6px 0; font-size: 12px; }
+.guild-app .raid-sidebar .guild-discord-card form { position: sticky; bottom: -12px; margin: 8px 0 0; padding: 8px 0 0; background: var(--container); }
+.guild-app .raid-sidebar .guild-discord-card .guild-signout { display: block; width: 100%; min-height: 32px; margin: 0; padding: 6px 10px; border: 1px solid #40596e; border-radius: 5px; background: #203446; color: #f1f5f9; font-size: 12px; text-align: center; }
+.guild-app .raid-sidebar .guild-discord-card .guild-signout:hover { background: #2c4860; color: #fff; }
+
+@media(pointer:coarse) {
+ .button,.guild-app :where(.raid-shell) :is(button,a.raid-primary) { min-height: 44px; }
+ .guild-app .raid-sidebar #raidMenu :is(button,a) { min-height: 44px; }
+}
+
+.planner-page .planner-return-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border: 1px solid #34495a; border-radius: 999px; background: #141f28; color: #c5d9eb; font-size: 11px; line-height: 16px; white-space: nowrap; text-decoration: none; }
+.planner-page .planner-return-pill:hover { background: #203446; border-color: var(--accent); }

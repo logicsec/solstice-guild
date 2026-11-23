@@ -1,14 +1,24 @@
 import { gearItems, itemFitsSlot } from './gear-items.js';
 const slots=['Head','Neck','Shoulder','Back','Chest','Wrist','Hands','Waist','Legs','Feet','Finger 1','Finger 2','Trinket 1','Trinket 2','Main Hand','Off Hand','Ranged'];
 const $=id=>document.getElementById(id);
-let builds=[],current=null,catalog=gearItems,draft=new Map(),editingSlot=null,loading=false,loadVersion=0;
+let plannerCharacters=[],builds=[],current=null,catalog=gearItems,draft=new Map(),editingSlot=null,loading=false,loadVersion=0;
 const colors={2:'#69bd75',3:'#78acf5',4:'#c89be9',5:'#efad60'};
 const statLabels={0:'Strength',1:'Agility',2:'Stamina',3:'Intellect',4:'Healing power',5:'Spell damage',13:'Spirit',14:'Attack power',17:'Hit rating',18:'Crit rating',19:'Haste rating',22:'Defense rating',27:'Armor',29:'Health',30:'Mana',31:'Mana per 5 sec'};
 const api=async(data,query='')=>{const r=await fetch('/api/gear-planner'+query,data?{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}:undefined);const j=await r.json();if(!r.ok)throw Error(j.error||'Request failed');return j};
 function element(tag,text,className){const node=document.createElement(tag);if(text!=null)node.textContent=text;if(className)node.className=className;return node}
 function message(s){$('status').textContent=s}
 function icon(item){const tile=element('span',item?.icon?'':'◇','gear-icon');if(item?.icon&&/^[a-z0-9_]+$/i.test(item.icon)){const img=element('img');img.src='https://wow.zamimg.com/images/wow/icons/medium/'+item.icon+'.jpg';img.alt='';img.className='gear-icon';img.loading='lazy';img.addEventListener('error',()=>img.replaceWith(tile),{once:true});return img}return tile}
+function updateCharacterReturn(){
+ const link=$('plannerCharacterReturn'),name=$('character').value;
+ if(!link)return;
+ link.hidden=!name;if(!name)return;
+ const character=plannerCharacters.find(item=>item.name===name);
+ const params=new URLSearchParams({character:name});
+ if(character?.armorySlug)params.set('name',character.armorySlug);
+ link.href='/character?'+params;link.textContent='Return to '+name;
+}
 function draw(){
+ updateCharacterReturn();
  $('slots').replaceChildren();
  const lookup=new Map(catalog.map(item=>[item.id,item]));
  for(const slot of slots){
@@ -73,7 +83,7 @@ $('save').addEventListener('click',async()=>{
 for(const action of ['activate','delete'])$(action).addEventListener('click',async()=>{if(!current)return message('Select a saved build first.');if(action==='delete'&&!confirm('Delete this build?'))return;try{await api({action,id:current.id});await load();message(action==='activate'?'Active build updated.':'Build deleted.')}catch(e){message(e.message)}});
 async function refreshCatalog(){try{const data=await api(null,'?catalog=1');if(!Array.isArray(data.items)||!data.items.length)throw Error('Empty catalog');catalog=data.items;$('catalogStatus').textContent=data.fresh?'WoWSims Forever · '+catalog.length.toLocaleString()+' items · Checked just now':data.source+' · Live refresh unavailable; using saved item data.';draw();if($('itemPicker').open)renderPicker()}catch{$('catalogStatus').textContent='WoWSims refresh unavailable · Using bundled item data.'}}
 refreshCatalog();
-(async()=>{try{draw();const r=await fetch('/api/raid-characters');if(!r.ok)throw Error('Could not load your characters');const data=await r.json();const names=new Set([...(data.characters||[]),...(data.signupCharacters||[])].map(x=>x.name).filter(Boolean));$('character').replaceChildren(new Option('Select character',''));for(const name of [...names].sort())$('character').add(new Option(name,name));if(names.size){const requested=new URLSearchParams(location.search).get('character')||document.getElementById('guildCharacter')?.value||(()=>{try{return localStorage.getItem('solstice-active-character')}catch{return null}})();$('character').value=[...names].find(n=>n.toLowerCase()===requested?.toLowerCase())||[...names].sort()[0];await load()}else{message('Add or link a character in Guild Hall first.');$('save').disabled=true}}catch(e){message(e.message)}})();
+(async()=>{try{draw();const r=await fetch('/api/raid-characters');if(!r.ok)throw Error('Could not load your characters');const data=await r.json();plannerCharacters=[...(data.signupCharacters||[]),...(data.characters||[])];const names=new Set(plannerCharacters.map(x=>x.name).filter(Boolean));$('character').replaceChildren(new Option('Select character',''));for(const name of [...names].sort())$('character').add(new Option(name,name));if(names.size){const requested=new URLSearchParams(location.search).get('character')||document.getElementById('guildCharacter')?.value||(()=>{try{return localStorage.getItem('solstice-active-character')}catch{return null}})();$('character').value=[...names].find(n=>n.toLowerCase()===requested?.toLowerCase())||[...names].sort()[0];await load()}else{message('Add or link a character in Guild Hall first.');$('save').disabled=true}}catch(e){message(e.message)}})();
 const raidId=new URLSearchParams(location.search).get('raid');
 if(raidId){
  $('raidPlanning').hidden=false;
