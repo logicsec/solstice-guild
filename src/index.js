@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-8"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-9"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1566,7 +1566,12 @@ function guildOverviewBanner(title, description, actionLabel, onAction, { stats 
   const totals = raidElement('dl',null,'guild-dashboard-totals');
   for (const [label,value] of stats) {
     const item = raidElement('div');
-    item.append(raidElement('dt',label),raidElement('dd',String(value)));
+    const quantity = raidElement('dd',String(value));
+    const [symbol,color] = {'Guild Characters':['users','primary'],'Armory Linked':['shield-check','success'],'Professions Represented':['flask','purple']}[label] ?? ['chart-line','info'];
+    const icon = tablerIcon(symbol,'guild-info-icon');
+    icon.style.color = 'var(--theme-'+color+'-text-emphasis)';
+    quantity.append(icon);
+    item.append(raidElement('dt',label),quantity);
     totals.append(item);
   }
   if (stats.length) hero.append(totals);

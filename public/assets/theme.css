@@ -216,3 +216,18 @@ code { color:var(--theme-code-color); }
 .guild-app.planner-site-active .planner-page .panel,.planner-page .panel {
  border-radius:var(--card-radius);
 }
+
+/* Summary cards: prominent value, supporting label, and right-aligned icon. */
+.guild-app #raidList .guild-dashboard-totals { gap:16px; }
+.guild-app #raidList .guild-dashboard-totals > div {
+ position:relative; display:flex; flex-direction:column; justify-content:center;
+ min-height:100px; box-sizing:border-box; padding:18px 68px 18px 22px;
+ border:1px solid var(--theme-border-color); border-radius:var(--card-radius);
+ background:var(--theme-secondary-bg);
+}
+.guild-app #raidList .guild-dashboard-totals dd {
+ order:-1; margin:0 0 4px; color:var(--theme-light-text-emphasis);
+ font-size:24px; line-height:1.2; font-weight:600; text-shadow:none;
+}
+.guild-app #raidList .guild-dashboard-totals dt { color:var(--theme-secondary-color); font-size:13px; line-height:1.4; }
+.guild-app #raidList .guild-info-icon { position:absolute; top:50%; right:22px; width:36px; height:36px; transform:translateY(-50%); stroke-width:1.65; }
