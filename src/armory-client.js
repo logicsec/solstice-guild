@@ -510,7 +510,24 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
-  document.querySelector('body > main').append(dialog);
+  const main = document.querySelector('body > main');
+  const sidebar = document.querySelector('.raid-sidebar');
+  let siteShell = document.querySelector('.character-site-shell');
+  if (!siteShell) siteShell = raidElement('div',null,'character-site-shell');
+  if (sidebar) {
+    if (!sidebar.dataset.characterNavigation) {
+      sidebar.dataset.characterNavigation = 'true';
+      sidebar.addEventListener('click',event=>{
+        const item = event.target.closest('[data-raid-view]');
+        if (!item) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        location.href = '/?tool=raid&view='+encodeURIComponent(item.dataset.raidView);
+      },true);
+    }
+    siteShell.replaceChildren(sidebar,dialog);
+  } else siteShell.replaceChildren(dialog);
+  main.append(siteShell);
   if (player.armorySlug) {
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries=>{

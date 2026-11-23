@@ -1836,3 +1836,15 @@ body,.guild-app { background: var(--surface); color: var(--ink); }
 .character-reputation-heading span { color: var(--accent); }
 .character-gear-stats .character-stat-table { background: var(--container); }
 .character-gear-stats .character-stat-table dl > div { background: var(--field); }
+
+body.character-page-active > main { width: min(97%,1600px); }
+body.character-page-active > main > .character-site-shell { display: grid !important; grid-template-columns: 220px minmax(0,1fr); gap: 22px; align-items: start; }
+.character-site-shell > .character-page-root { min-width: 0; }
+.character-site-shell > .raid-sidebar { display: block; position: sticky; top: 16px; max-height: calc(100dvh - 32px); overflow-y: auto; padding: 18px 10px; background: var(--container); border: 1px solid var(--line); border-radius: 10px; }
+@media(max-width:900px) {
+ body.character-page-active > main > .character-site-shell { grid-template-columns: minmax(0,1fr); gap: 14px; }
+ .character-site-shell > .raid-sidebar { position: static; max-height: none; padding: 8px; }
+ .character-site-shell #raidMenuToggle { display: flex; align-items: center; width: 100%; min-height: 44px; }
+ .character-site-shell #raidMenuToggle[aria-expanded=false] + nav { display: none; }
+ .character-site-shell #raidMenuToggle[aria-expanded=true] + nav { display: block; padding-top: 12px; }
+}
