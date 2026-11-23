@@ -23,7 +23,7 @@ test('calendar renders one month grid, event previews and selectable days with m
   const root=new Element('main');
   const now=new Date(Date.now()+86400000);
   const title='Guild dungeon night';
-  render(root,{eventTypes:{Raid:'#236dc9',Dungeon:'#7b70ef'},raidInstances:{},request:async(path,data)=>data?.action==='signup'?{joined:true,signups:1}:({events:[{id:'event-1',title,type:'Dungeon',starts_at:now.toISOString(),ends_at:new Date(+now+3600000).toISOString(),created_by:'Astra'}]}),createRaid(){},openRaid(){}});
+  render(root,{eventTypes:{Raid:'#236dc9',Dungeon:'#7b70ef'},raidInstances:{},request:async(path,data)=>data?.action==='signup'?{joined:true,signups:1}:({events:[{id:'event-1',organizer:1,title,type:'Dungeon',starts_at:now.toISOString(),ends_at:new Date(+now+3600000).toISOString(),created_by:'Astra'}]}),createRaid(){},openRaid(){}});
   await new Promise(resolve=>setImmediate(resolve));
   const calendar=find(root,e=>e.className==='raid-card guild-events-calendar');
   assert.equal(root.children[0].children[0],calendar,'month calendar is the primary panel');
@@ -40,6 +40,7 @@ test('calendar renders one month grid, event previews and selectable days with m
   const footer=find(eventRow,e=>e.className==='guild-event-footer');
   const signup=find(footer,e=>e.tagName==='button'&&e.textContent==='Sign up');
   assert.ok(signup,'sign-up action is separated into the footer');
+  assert.ok(find(footer,e=>e.tagName==='button'&&e.textContent==='Delete event'),'creator can delete from the Events page');
   await signup.listeners.click();
   assert.equal(find(footer,e=>e.className==='guild-event-count').textContent,'1 signed up');
   week.children[0].listeners.click();
@@ -69,7 +70,7 @@ test('dashboard uses the same agenda renderer, limits events and opens the full 
   const render=new Function('document','Option','createSchedulePicker','tablerIcon','return ('+renderGuildEvents.toString()+')')(document,Element,picker,()=>new Element('svg'));
   const events=Array.from({length:7},(_,i)=>({id:String(i),title:'Event '+i,type:'Dungeon',starts_at:new Date(Date.now()+(i+1)*3600000).toISOString()})).reverse();
   const root=new Element('div');let opened=0;
-  render(root,{eventTypes:{Dungeon:'#7b70ef'},raidInstances:{},request:async()=>({events}),createRaid(){},openRaid(){},agendaOnly:true,limit:5,onViewAll:()=>opened++});
+  render(root,{eventTypes:{Dungeon:'#7b70ef'},raidInstances:{},request:async()=>({events:events.map(event=>({...event,organizer:1}))}),createRaid(){},openRaid(){},agendaOnly:true,limit:5,onViewAll:()=>opened++});
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(root.children[0].className,'raid-card guild-events-agenda');
   assert.equal(find(root,e=>e.className==='guild-agenda-week').children.length,7);
@@ -78,6 +79,7 @@ test('dashboard uses the same agenda renderer, limits events and opens the full 
   assert.equal(find(root,e=>e.tagName==='strong'&&e.textContent==='Event 6'),undefined);
   assert.equal(find(root,e=>e.className==='raid-calendar-days'),undefined,'dashboard contains only the shared agenda');
   assert.equal(find(root,e=>e.id==='planGuildEvent'),undefined);
+  assert.equal(find(root,e=>e.tagName==='button'&&e.textContent==='Delete event'),undefined,'dashboard hides deletion even for event creators');
   find(root,e=>e.attributes['aria-label']==='View all upcoming events').listeners.click();
   assert.equal(opened,1);
 });

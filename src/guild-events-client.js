@@ -289,7 +289,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         row.append(main,footer);
         const actions = make('div',undefined,'guild-event-actions');
         if (action) actions.append(action);
-        if (event.organizer) {
+        if (!agendaOnly && event.organizer) {
           const remove = button('Delete event',async () => {
             if (!window.confirm('Delete “'+event.title+'” and its sign-ups for this occurrence?')) return;
             remove.disabled = true;
