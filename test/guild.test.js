@@ -114,7 +114,15 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.doesNotMatch(page,/<button data-raid-view="(?:guildChat|craftingDirectory)"/);
   const plannerPage = await send('/gear-planner',options);
   assert.equal(plannerPage.status,200);
-  assert.match(await plannerPage.text(),/itemPicker/);
+  const plannerHtml = await plannerPage.text();
+  assert.match(plannerHtml,/itemPicker/);
+  assert.match(plannerHtml,/<body class="guild-app planner-site-active">/);
+  assert.equal((plannerHtml.match(/id="guildCharacter"/g) ?? []).length,1);
+  assert.equal((plannerHtml.match(/id="save"/g) ?? []).length,1);
+  assert.match(plannerHtml,/class="panel planner-equipment"/);
+  assert.match(plannerHtml,/class="panel planner-stats"/);
+  assert.doesNotMatch(plannerHtml,/<div class="raid-nav-group">/);
+
 
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
@@ -265,6 +273,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const link = {action:'link',slug:'astra-mortis',spec:'Frost'};
   assert.equal((await post('/api/armory',{...link,spec:'Protection'},member)).status,400);
   assert.equal((await post('/api/armory',link,member)).status,200);
+  const selectorCharacters = await (await send('/api/raid-characters',{headers:{Cookie:member}})).json();
+  assert.equal(selectorCharacters.signupCharacters.find(item=>item.name === 'Astra Mortis').armorySlug,'astra-mortis');
   for (let visit = 0; visit < 2; visit++) {
     const {character} = await (await send('/api/armory?name=Astra+Mortis',options)).json();
     assert.equal(character.journey.length,1);

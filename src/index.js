@@ -99,7 +99,7 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
         return reply({ characters });
       }
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
-      const linked = await db.prepare('SELECT name, class_name, role, spec FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
+      const linked = await db.prepare('SELECT name, class_name, role, spec, slug AS armorySlug FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
       const names = new Set(linked.results.map(row=>row.name.toLowerCase()));
       return reply({ characters: result.results, signupCharacters: [...linked.results,
         ...result.results.filter(row=>!names.has(row.name.toLowerCase()))] });
@@ -406,9 +406,9 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-reputation-scroll"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-shared-navigation"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar"><header class="masthead"><a class="brand" href="/">${solsticeLockup}</a></header>
-<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items"><a href="/">Home</a><button id="raidTab" aria-pressed="false">Guild Hall</button><button id="auctionTab" aria-pressed="true">Auction House</button><button id="professionTab" aria-pressed="false">Professions</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
+<nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="guild-discord-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M20.3 4.4a19.8 19.8 0 0 0-4.9-1.5l-.6 1.2a18 18 0 0 0-5.6 0l-.6-1.2a20 20 0 0 0-4.9 1.5C.6 9 .1 13.5.4 18a20 20 0 0 0 6 3l1.2-2a13 13 0 0 1-1.8-.9l.4-.3a14 14 0 0 0 11.6 0l.4.3a13 13 0 0 1-1.8.9l1.2 2a20 20 0 0 0 6-3c.4-5.2-.9-9.7-3.3-13.6ZM8 15.4c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Zm8 0c-1.2 0-2.1-1.1-2.1-2.4s.9-2.4 2.1-2.4 2.2 1.1 2.1 2.4c0 1.3-.9 2.4-2.1 2.4Z"/></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
 <div><div class="eyebrow">Solstice guild tools</div><h1 id="marketTitle">Solstice Market Board</h1><p>US Normal Alliance Auction House and crafting prices</p></div>
 <div class="hero-stats" aria-label="Market snapshot"><div><span>Priced items</span><strong id="pricedItems">—</strong></div><div><span>Source scan</span><strong id="scanTime">—</strong></div><div><span>Refresh</span><strong>10 min</strong></div></div>
@@ -509,10 +509,10 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
 <aside class="raid-sidebar">
-<button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
+<label class="guild-character-switch"><span>Playing as</span><select id="guildCharacter" aria-label="Active character" disabled><option value="">Loading characters…</option></select></label><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="raid-menu-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
-</button><nav id="raidMenu" aria-label="Guild Hall"><div class="raid-nav-group"><div class="eyebrow">Guild</div><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Raid Planner</div><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button></div><div class="raid-nav-group"><div class="eyebrow">Personal</div><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button><a href="/gear-planner" class="guild-planner-link">Gear Planner</a><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button></div><div class="raid-nav-group"><div class="eyebrow">Organize</div><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></div></nav></aside>
+</button><nav id="raidMenu" aria-label="Guild Hall"><button data-raid-view="guildDashboard"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Guild Dashboard</button><button data-raid-view="readiness"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11l9-8 9 8v9H3z M9 20v-6h6v6"/></svg>Raid Dashboard</button><button data-raid-view="signups"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 9h8m-8 5h8"/></svg>My sign-ups</button><button data-raid-view="calendar"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 6h18v15H3z M7 3v6m10-6v6M3 11h18"/></svg>Events</button><a href="/gear-planner" class="guild-planner-link"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5z M8 8h8M8 12h8M8 16h5"/></svg>Gear Planner</a><button data-raid-view="characters"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm-7 9v-2a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v2"/></svg>My characters</button><button id="auctionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m5 6 5-3 6 10-5 3z M3 18h15v3H3z M14 9l7 10"/></svg>Auction House</button><button id="professionTab" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6M10 3v7L4 20h16l-6-10V3M8 15h8"/></svg>Professions</button><button data-raid-view="manage"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16m-16 5h16m-16 5h16 M8 4v6m8-1v6m-6-1v6"/></svg>Manage raids</button><button data-raid-view="discover"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M16 10a6 6 0 1 1-12 0 6 6 0 0 1 12 0zm-2 4 6 6"/></svg>Find a raid</button></nav></aside>
 <div class="raid-content">
 <header class="raid-heading"><div><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary">+ New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -564,6 +564,11 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <footer id="marketFooter"><a href="https://ahledger.com">Prices from AHledger</a> · Player-submitted scans · Feed checked every 10 minutes while open</footer>
 <dialog id="detail"><form method="dialog"><button aria-label="Close details">Close</button></form><h2 id="detailTitle"></h2><div id="detailBody"></div></dialog>
 <script>
+const sharedToolMain = document.querySelector('#raidPanel > .raid-content');
+const sharedRaidContent = document.createElement('div');sharedRaidContent.id = 'sharedRaidContent';
+sharedRaidContent.append(...[...sharedToolMain.children].filter(node=>!node.classList.contains('planner-page')));
+sharedToolMain.append(sharedRaidContent);
+for (const id of ['marketHero','auctionPanel','professionPanel','marketFooter']) sharedToolMain.append(document.getElementById(id));
 const byId = id => document.getElementById(id);
 const rows = byId('rows');
 const status = byId('status');
@@ -811,9 +816,14 @@ function setView(view) {
   byId('marketFooter').hidden = view === 'raid';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
-  byId('raidPanel').hidden = !showRaids;
+  byId('raidPanel').hidden = false;
+  byId('sharedRaidContent').hidden = !showRaids;
+  for (const [id,selected] of [['auctionTab',view === 'auction'],['professionTab',showProfessions]]) {
+    if (selected) byId(id).setAttribute('aria-current','page');else byId(id).removeAttribute('aria-current');
+  }
+  if (!showRaids) for (const node of document.querySelectorAll('[data-raid-view]')) node.removeAttribute('aria-current');
   byId('marketHero').hidden = showRaids;
-  byId('raidHero').hidden = !showRaids;
+  byId('raidHero').hidden = true;
   byId('raidTab').setAttribute('aria-pressed', String(showRaids));
   byId('auctionPanel').hidden = view !== 'auction';
   byId('professionPanel').hidden = !showProfessions;
@@ -2272,6 +2282,11 @@ function renderRaid(data) {
   picker.replaceChildren(new Option('Enter manually',''));
   savedCharacters.forEach((item,index) => picker.add(new Option(item.name+' · '+item.class_name,String(index))));
   signupForm.reset();
+  if (!mine) {
+    const preferred = byId('guildCharacter').value;
+    const index = savedCharacters.findIndex(item=>item.name === preferred);
+    if (index >= 0) { picker.value = String(index);picker.dispatchEvent(new Event('change')); }
+  }
   if (mine) {
     signupForm.elements.character.value = mine.character;
     signupForm.elements.className.value = mine.class_name;
@@ -2503,8 +2518,74 @@ function writeRoute(tool, view, raid) {
   }
   if (url.href !== location.href) history.pushState(null,'',url);
 }
+let guildCharacterChoices = [];
+function rememberGuildCharacter(name) {
+  if (!guildCharacterChoices.some(item=>item.name === name)) return;
+  byId('guildCharacter').value = name;
+  try { localStorage.setItem('solstice-active-character',name); } catch {}
+}
+function notifyGuildCharacter(name) {
+  rememberGuildCharacter(name);
+  const link = document.querySelector('.guild-planner-link');
+  if (link) link.href = '/gear-planner?character='+encodeURIComponent(name);
+  if (location.pathname === '/gear-planner') {
+    const url = new URL(location.href);url.searchParams.set('character',name);history.replaceState(null,'',url);
+  }
+  document.dispatchEvent(new CustomEvent('guild-character-change',{detail:{name}}));
+  if (activeRaid && !signupForm.elements.character.value) {
+    const index = savedCharacters.findIndex(item=>item.name === name);
+    if (index >= 0) { byId('signupCharacter').value=String(index);byId('signupCharacter').dispatchEvent(new Event('change')); }
+  }
+}
+byId('guildCharacter').addEventListener('change',event=>{
+  const name = event.target.value;
+  notifyGuildCharacter(name);
+  if (location.pathname === '/character') {
+    const item = guildCharacterChoices.find(item=>item.name === name);
+    if (item?.armorySlug) location.href='/character?character='+encodeURIComponent(name)+'&name='+encodeURIComponent(item.armorySlug);
+    else location.href='/?tool=raid&view=characters';
+  } else if (activeRaid) {
+    const index = savedCharacters.findIndex(item=>item.name === name);
+    if (index >= 0) { byId('signupCharacter').value=String(index);byId('signupCharacter').dispatchEvent(new Event('change')); }
+  }
+});
+document.addEventListener('guild-character-selected',event=>notifyGuildCharacter(event.detail.name));
+async function loadGuildCharacterChoices() {
+  const picker = byId('guildCharacter');
+  try {
+    const data = await raidRequest('characters');
+    guildCharacterChoices = data.signupCharacters ?? data.characters ?? [];
+    picker.replaceChildren();
+    for (const item of guildCharacterChoices) picker.add(new Option(item.name+(item.class_name ? ' · '+item.class_name : ''),item.name));
+    if (!guildCharacterChoices.length) { picker.add(new Option('Add a character',''));return; }
+    let stored;try { stored=localStorage.getItem('solstice-active-character'); } catch {}
+    const requested = new URLSearchParams(location.search).get('character');
+    const selected = guildCharacterChoices.find(item=>item.name.toLowerCase() === requested?.toLowerCase())?.name || guildCharacterChoices.find(item=>item.name === stored)?.name || guildCharacterChoices[0].name;
+    picker.disabled = false;notifyGuildCharacter(selected);
+  } catch { picker.replaceChildren(new Option('Characters unavailable','')); }
+}
+loadGuildCharacterChoices();
 function route() {
   const params = new URLSearchParams(location.search);
+  if (location.pathname === '/gear-planner') {
+    byId('raidPanel').hidden = false;
+    byId('raidTab').setAttribute('aria-pressed','true');
+    byId('auctionTab').setAttribute('aria-pressed','false');
+    document.querySelector('.raid-sidebar').addEventListener('click',event=>{
+      const item = event.target.closest('[data-raid-view]');
+      if (!item) return;
+      event.preventDefault();event.stopImmediatePropagation();
+      location.href = '/?tool=raid&view='+encodeURIComponent(item.dataset.raidView);
+    },true);
+    document.querySelector('.guild-topbar').addEventListener('click',event=>{
+      const item = event.target.closest('#raidTab,#auctionTab,#professionTab');
+      if (!item) return;
+      event.preventDefault();event.stopImmediatePropagation();
+      location.href = '/?tool='+({raidTab:'raid',auctionTab:'auction',professionTab:'profession'})[item.id];
+    },true);
+    document.querySelector('.guild-planner-link').setAttribute('aria-current','page');
+    return;
+  }
   if (location.pathname === '/character') {
     const player = {character:params.get('character') || params.get('name') || 'Character',armorySlug:params.get('name')};
     const raid = params.get('raid');
@@ -2529,7 +2610,11 @@ function route() {
 }
 window.addEventListener('popstate',route);
 for (const [id, tool] of [['auctionTab','auction'],['professionTab','profession']]) {
-  byId(id).addEventListener('click',() => { writeRoute(tool); route(); });
+  byId(id).addEventListener('click',() => {
+    if (['/character','/gear-planner'].includes(location.pathname)) { location.href='/?tool='+tool;return; }
+    writeRoute(tool);route();
+    byId('raidMenuToggle').setAttribute('aria-expanded','false');
+  });
 }
 route();
 let lastSessionRenewal = 0;
@@ -2614,11 +2699,11 @@ function refreshFeeds() {
   if (weeklyGoldVisible()) refreshWeeklyGold();
 }
 
-if (location.pathname !== '/character') { refreshFeeds(); setInterval(refreshFeeds, refreshInterval); }
+if (!['/character','/gear-planner'].includes(location.pathname)) { refreshFeeds(); setInterval(refreshFeeds, refreshInterval); }
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && Date.now() - lastFeedCheck >= refreshInterval) refreshFeeds();
+  if (!['/character','/gear-planner'].includes(location.pathname) && !document.hidden && Date.now() - lastFeedCheck >= refreshInterval) refreshFeeds();
 });
-if (location.pathname !== '/character') loadNames();
+if (!['/character','/gear-planner'].includes(location.pathname)) loadNames();
 </script></main></body></html>`;
 
 const market = 'forever.normal.alliance.us';
@@ -2668,7 +2753,7 @@ export default {
     }
     if (!session && request.method === 'GET' && ['/character','/gear-planner'].includes(pathname)) return Response.redirect(url.origin+'/auth/discord?next='+encodeURIComponent(pathname+url.search),303);
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
-    if (pathname === '/gear-planner' && request.method === 'GET') return new Response(gearPlannerPage(),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
+    if (pathname === '/gear-planner' && request.method === 'GET') return new Response(gearPlannerPage(page),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
     if (pathname === '/api/gear-planner') {
       try { return await gearPlannerApi(request,env,url,session); }
       catch { return Response.json({error:'Gear planner unavailable.'},{status:503}); }
