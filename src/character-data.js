@@ -106,3 +106,8 @@ export async function characterAchievements(token,profile,summary) {
  items.sort((a,b)=>categoryOrder.indexOf(a.category)-categoryOrder.indexOf(b.category)||a.group.localeCompare(b.group)||a.order-b.order||a.name.localeCompare(b.name));
  return {items:deduplicateAchievements(items),partial:categoryResults.some(category=>!category) || definitions.some(definition=>!definition),accountWide:true};
 }
+
+export function sortedReputations(data) {
+ if (!Array.isArray(data?.reputations)) return null;
+ return data.reputations.filter(row=>row.faction?.name).map(row=>({id:row.faction.id,name:typeof row.faction.name === 'string' ? row.faction.name : row.faction.name.en_US,standing:row.standing?.name ?? 'Unknown',tier:Number.isFinite(row.standing?.tier) ? row.standing.tier : -1,value:Number.isFinite(row.standing?.value) ? row.standing.value : null,max:Number.isFinite(row.standing?.max) ? row.standing.max : null})).filter(row=>row.name).sort((a,b)=>b.tier-a.tier || a.name.localeCompare(b.name));
+}

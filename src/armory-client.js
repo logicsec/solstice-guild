@@ -442,28 +442,32 @@ export function openCharacterSheet(player, event, organizer) {
   content.replaceChildren(plannerLink,equipmentLayout);
   const achievementsPanel = raidElement('div');
   const lifetimePanel = raidElement('div');
-  for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel]) panel.append(raidElement('p','Loading character data…'));
-  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Achievements',achievementsPanel,'Earned & in progress'],['Lifetime',lifetimePanel,'Quests, kills & deaths'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
+  const reputationPanel = raidElement('div');
+  for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel,reputationPanel]) panel.append(raidElement('p','Loading character data…'));
+  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Professions',professions,'Skills & trades'],['Reputation',reputationPanel,'Faction standings'],['Achievements',achievementsPanel,'Earned & in progress'],['Activity',lifetimePanel,'Statistics & boss kills'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
   const panels = sections.map(([label,panel,description])=>{
-    const button = raidElement('button');
-    button.append(raidElement('strong',label),raidElement('small',description));
+    const button = raidElement('a',label);
+    const section = raidElement('section',null,'character-page-section');
+    section.id = 'character-'+label.toLowerCase().replace(/ /g,'-');
+    section.append(raidElement('h2',label === 'Gear' ? 'Equipment & Stats' : label,'character-section-heading'),panel);
+    button.href = '#'+section.id;
+    button.title = description;
     panel.classList.add('character-page-panel');
     panel.setAttribute('aria-label',label);
     panel.setAttribute('role','region');
-    button.type = 'button';
     tabs.append(button);
-    return {button,panel};
+    return {button,panel,section};
   });
   const loadedSections = new Set();
   async function loadSection(selected) {
-    const section = selected === achievementsPanel ? 'achievements' : selected === lifetimePanel ? 'lifetime' : null;
+    const section = selected === achievementsPanel ? 'achievements' : selected === lifetimePanel ? 'lifetime' : selected === reputationPanel ? 'reputations' : null;
     if (!section || loadedSections.has(section)) return;
     loadedSections.add(section);
     selected.replaceChildren(raidElement('p','Loading '+section+' from Blizzard…','character-data-note'));
     try {
       const data = await armoryRequest('?name='+encodeURIComponent(player.armorySlug)+'&section='+section);
       if (!dialog.isConnected) return;
-      selected.replaceChildren(section === 'achievements' ? renderCharacterAchievements(data.achievements) : renderCharacterLifetime(data.lifetime));
+      selected.replaceChildren(section === 'achievements' ? renderCharacterAchievements(data.achievements) : section === 'reputations' ? renderCharacterReputations(data.reputations) : renderCharacterLifetime(data.lifetime));
     } catch (error) {
       loadedSections.delete(section);
       const retry = raidElement('button','Retry');
@@ -474,39 +478,30 @@ export function openCharacterSheet(player, event, organizer) {
   }
   function selectPanel(selected) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
-    overview.hidden = false;
     loadSection(selected);
-    equipment.hidden = selected !== content || !equipment.hasChildNodes();
     for (const {button,panel} of panels) {
-      button.setAttribute('aria-pressed',String(panel === selected));
-      panel.hidden = panel !== selected;
+      if (panel === selected) button.setAttribute('aria-current','location');
+      else button.removeAttribute('aria-current');
     }
-    requestAnimationFrame(()=>{
-      if (!matchMedia('(max-width: 600px)').matches) return;
-      const active = panels.find(({panel})=>panel === selected)?.button;
-      if (!active) return;
-      const bounds = tabs.getBoundingClientRect();
-      const item = active.getBoundingClientRect();
-      if (item.left < bounds.left || item.right > bounds.right) {
-        tabs.scrollLeft += item.left-bounds.left-(tabs.clientWidth-item.width)/2;
-      }
-    });
   }
-  for (const {button,panel} of panels) button.addEventListener('click',()=>{
+  for (const {button,panel,section} of panels) button.addEventListener('click',event=>{
+    event.preventDefault();
     selectPanel(panel);
     const url = new URL(location.href);
-    url.searchParams.set('tab',panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-'));
+    url.searchParams.delete('tab');
+    url.hash = section.id;
     history.replaceState(null,'',url);
+    section.scrollIntoView({behavior:matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',block:'start'});
   });
   dialog.append(header);
   if (player.armorySlug) {
     const pageLayout = raidElement('div',null,'character-page-layout');
     const pageContent = raidElement('div',null,'character-page-content');
-    pageContent.append(...panels.map(({panel})=>panel));
+    pageContent.append(...panels.map(({section})=>section));
     pageLayout.append(tabs,pageContent);
     dialog.append(pageLayout);
     const requestedTab = new URLSearchParams(location.search).get('tab');
-    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (requestedTab === 'journey' ? 'lifetime' : requestedTab === 'stats' ? 'gear' : requestedTab))?.panel;
+    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (['journey','lifetime'].includes(requestedTab) ? 'activity' : requestedTab === 'stats' ? 'gear' : requestedTab))?.panel;
     selectPanel(requestedPanel ?? content);
   } else {
     overview.replaceChildren();
@@ -516,6 +511,24 @@ export function openCharacterSheet(player, event, organizer) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
   document.querySelector('body > main').append(dialog);
+  if (player.armorySlug) {
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(entries=>{
+        if (!dialog.isConnected) { observer.disconnect(); return; }
+        for (const entry of entries) if (entry.isIntersecting) {
+          const item = panels.find(item=>item.section === entry.target);
+          if (item) loadSection(item.panel);
+        }
+      },{rootMargin:'300px 0px'});
+      for (const item of panels) observer.observe(item.section);
+      window.addEventListener('pagehide',()=>observer.disconnect(),{once:true});
+    } else {
+      loadSection(achievementsPanel);
+      loadSection(lifetimePanel);
+      loadSection(reputationPanel);
+    }
+  }
+
   if (!player.armorySlug) return;
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
     if (!dialog.open) return;
@@ -528,6 +541,10 @@ export function openCharacterSheet(player, event, organizer) {
 
     professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
+    const params = new URLSearchParams(location.search);
+    const requested = params.get('tab');
+    const target = panels.find(({section,panel})=>location.hash === '#'+section.id || requested && panel.getAttribute('aria-label').toLowerCase() === (requested === 'stats' ? 'gear' : ['journey','lifetime'].includes(requested) ? 'activity' : requested));
+    if (target) requestAnimationFrame(()=>target.section.scrollIntoView({block:'start'}));
     const meta = identity.querySelector('.inspector-meta');
     meta.textContent = [player.spec,[character.race,character.className || player.class_name].filter(Boolean).join(' '),
       character.guild && '<'+character.guild+'>'].filter(Boolean).join(' · ');
@@ -552,7 +569,7 @@ export function openCharacterSheet(player, event, organizer) {
       raidElement('p','These figures come from Blizzard. Organizers set readiness for the selected raid.'));
   }).catch(error=>{
     overview.replaceChildren(raidElement('p',error.message));
-    for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel]) panel.replaceChildren(raidElement('p','Character data is unavailable. Return to Guild Hall and try again.'));
+    for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel,reputationPanel]) panel.replaceChildren(raidElement('p','Character data is unavailable. Return to Guild Hall and try again.'));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
     talents.replaceChildren(raidElement('p','Talents are unavailable.'));
     evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
@@ -794,66 +811,95 @@ export function renderCharacterAchievements(data) {
 }
 
 export function renderCharacterLifetime(data) {
-  const root = raidElement('section',null,'character-lifetime');
-  if (!Array.isArray(data)) {
-    root.append(raidElement('p','Lifetime statistics are unavailable from Blizzard.','character-data-note'));
-    return root;
+  const root=raidElement('section',null,'character-activity');
+  const header=raidElement('header',null,'activity-header');
+  header.append(raidElement('span','▣','activity-title-icon'),raidElement('h3','Activity'));
+  root.append(header);
+  if (!Array.isArray(data)) { root.append(raidElement('p','Activity statistics are unavailable from Blizzard.','character-data-note'));return root; }
+  const rows=data.filter(row=>row.id != null);
+  const number=value=>value == null ? '—' : new Intl.NumberFormat(undefined,{maximumFractionDigits:1}).format(value);
+  const find=id=>rows.find(row=>row.id===id);
+  const body=raidElement('div',null,'activity-body');
+  const summary=raidElement('div',null,'activity-summary');
+  for(const [label,id,tone] of [['Total kills',1197,''],['Killing blows',1487,''],['Deaths',60,'red'],['Quests completed',98,'gold'],['Dungeons entered',932,'purple'],['Flight paths',349,'blue'],['Hearthstones',353,'blue']]) {
+    const card=raidElement('div',null,'activity-summary-card');
+    const title=raidElement('span',label);title.title=label;
+    const value=raidElement('strong',number(find(id)?.value));
+    if(tone)value.className='activity-value-'+tone;
+    card.append(title,value);summary.append(card);
   }
-  const format = value => value == null ? '—' : new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value);
-  const find = (id,pattern) => (id == null ? undefined : data.find(row=>row.id === id)?.value) ?? data.find(row=>pattern?.test(row.name))?.value ?? null;
-  const metricCards = raidElement('div',null,'character-lifetime-metrics');
-  const bosses = data.filter(row=>/boss kills/i.test(row.group));
-  for (const [label,value] of [['Quests completed',find(98,/^quests completed$/i)],['Kills',find(1197,/^total kills$/i)],['Bosses killed',bosses.length ? bosses.reduce((sum,row)=>sum+row.value,0) : null],['Exalted reputations',find(null,/^total (?:factions|reputations) at exalted$/i)],['Need rolls',find(1044,/need rolls made/i)],['Duels won',find(null,/^duels won$/i)]]) {
-    const card = raidElement('div',null,'character-lifetime-card');
-    card.append(raidElement('span',label),raidElement('strong',format(value)));
-    metricCards.append(card);
+  body.append(summary);
+  const highlights=raidElement('div',null,'activity-highlights');
+  for(const [label,value] of [['Most killed',find(1336)?.description],['Most killing blows in',find(1489)?.description],['Kills per death',find(1197)?.value != null && find(60)?.value > 0 ? number(find(1197).value/find(60).value) : null]]) {
+    const entry=raidElement('span',label+': ');entry.append(raidElement('strong',value || '—'));highlights.append(entry);
   }
-  root.append(metricCards);
-  const total = find(60,/^total deaths$/i);
-  const deathSection = raidElement('section',null,'character-lifetime-section');
-  const heading = raidElement('header');
-  heading.append(raidElement('h3','Deaths'),raidElement('span',format(total)+' in total'));
-  deathSection.append(heading);
-  const deathTypes = [['Other players',find(1501,/^total deaths from other players$/i),'#dc6947'],['Dungeons and raids',find(321,/^total raid and dungeon deaths$/i),'#239e83'],['Falling',find(114,/deaths from falling/i),'#d8a328'],['Fire and lava',find(null,/deaths from (?:fire|lava)/i),'#ce5688'],['Drowning',find(112,/deaths from drowning/i),'#65a65b'],['Fatigue',find(null,/deaths from (?:fatigue|exhaustion)/i),'#9282cf']];
-  const known = deathTypes.reduce((sum,[,value])=>sum+(value ?? 0),0);
-  const causes = [['Monsters & other',total == null ? null : Math.max(0,total-known),'#4a8ed8'],...deathTypes];
-  const bar = raidElement('div',null,'character-death-bar');
-  bar.setAttribute('role','img');
-  bar.setAttribute('aria-label',total == null ? 'Death statistics unavailable' : causes.map(([label,value])=>label+': '+format(value)).join(', '));
-  for (const [label,value,color] of causes) if (total > 0 && value > 0) {
-    const segment = raidElement('span');segment.style.width = Math.min(100,value/total*100)+'%';segment.style.background = color;segment.title=label+': '+format(value);bar.append(segment);
+  body.append(highlights);
+  const bosses=rows.filter(row=>/boss kills/i.test(row.group) && row.value>0);
+  const bossSection=raidElement('section',null,'activity-boss-section');
+  bossSection.append(raidElement('h4','Dungeon boss kills'));
+  const badges=raidElement('div',null,'activity-boss-badges');
+  for(const boss of bosses) {
+    const match=boss.name.match(/^(.*?)(?: kills)?\s*\((.*?)\)$/i);
+    const badge=raidElement('div',null,'activity-boss-badge');
+    const skull=raidElement('span','☠︎','activity-boss-skull');skull.setAttribute('aria-hidden','true');
+    badge.append(skull,raidElement('strong',match?.[1] ?? boss.name),...(match ? [raidElement('span',match[2])] : []),raidElement('b','×'+number(boss.value)));
+    badges.append(badge);
   }
-  const legend = raidElement('dl',null,'character-death-legend');
-  for (const [label,value,color] of causes) {
-    const row = raidElement('div');const dot = raidElement('span',null,'character-death-dot');dot.style.background=color;
-    const term = raidElement('dt');term.append(dot,document.createTextNode(label));
-    row.append(term,raidElement('dd',format(value)+(total > 0 && value != null ? ' · '+(value/total*100).toFixed(value/total<.01 ? 1 : 0)+'%' : '')));legend.append(row);
+  if(!bosses.length)badges.append(raidElement('p','No boss kills reported.','activity-empty'));
+  bossSection.append(badges);body.append(bossSection);
+  const all=raidElement('section',null,'activity-all');
+  all.append(raidElement('h4','All statistics'));
+  const controls=raidElement('div',null,'activity-controls');
+  const categories=raidElement('nav',null,'activity-categories');categories.setAttribute('aria-label','Activity categories');
+  const search=raidElement('input');search.type='search';search.placeholder='Filter statistics…';search.setAttribute('aria-label','Filter activity statistics');
+  const results=raidElement('div',null,'activity-stat-groups');
+  const categoryOf=row=>row.group.split(' / ')[0];
+  const names=[...new Set(rows.map(categoryOf))];
+  const order=['Character','Player vs. Player','Dungeons & Raids','Kills','Deaths','Quests','Skills','Travel','Social'];
+  names.sort((a,b)=>(order.indexOf(a)<0 ? 99 : order.indexOf(a))-(order.indexOf(b)<0 ? 99 : order.indexOf(b)));
+  let selected=names.includes('Character') ? 'Character' : names[0];
+  const live=raidElement('span',null,'activity-result-status');live.setAttribute('role','status');
+  function draw() {
+    for(const button of categories.children)button.setAttribute('aria-pressed',String(button.dataset.category===selected));
+    const query=search.value.trim().toLowerCase();
+    const matching=rows.filter(row=>categoryOf(row)===selected && (!query || [row.name,row.group,row.description].filter(Boolean).join(' ').toLowerCase().includes(query)));
+    const groups=new Map();
+    for(const row of matching) {if(!groups.has(row.group))groups.set(row.group,[]);groups.get(row.group).push(row);}
+    results.replaceChildren();
+    for(const [name,values] of groups) {
+      const section=raidElement('section',null,'activity-stat-group');
+      if(name.includes(' / '))section.append(raidElement('h4',name.split(' / ').at(-1)));
+      const list=raidElement('dl');
+      for(const row of values) {const entry=raidElement('div');entry.append(raidElement('dt',row.name),raidElement('dd',row.description || number(row.value)));list.append(entry);}
+      section.append(list);results.append(section);
+    }
+    live.textContent=matching.length+' statistics';
+    if(!matching.length)results.append(raidElement('p','No matching statistics.','activity-empty'));
   }
-  deathSection.append(bar,legend);
-  root.append(deathSection);
-  const table = (label,rows) => {
-    const section = raidElement('section',null,'character-lifetime-section');
-    if (label) section.append(raidElement('h3',label));
-    const list = raidElement('dl',null,'character-lifetime-table');
-    for (const [name,value] of rows) {const row = raidElement('div');row.append(raidElement('dt',name),raidElement('dd',typeof value === 'string' ? value : format(value)));list.append(row);}
-    section.append(list);return section;
-  };
-  const played=find(839,/^battlegrounds played$/i),won=find(840,/^battlegrounds won$/i);
-  const bgDeathCounters=data.filter(row=>/deaths.*battlegrounds/i.test(row.group) && /^deaths in /i.test(row.name));
-  const bgKills=find(382,/^battleground honorable kills$/i),bgDeaths=find(null,/^battleground deaths$/i) ?? (bgDeathCounters.length ? bgDeathCounters.reduce((sum,row)=>sum+row.value,0) : played === 0 ? 0 : null);
-  const worldKills=find(381,/^world (?:pvp )?honorable kills$/i),playerDeaths=find(1501,/^total deaths from other players$/i);
-  const worldDeaths=playerDeaths != null && bgDeaths != null ? Math.max(0,playerDeaths-bgDeaths) : null;
-  const pvp=raidElement('section',null,'character-lifetime-section');pvp.append(raidElement('h3','PvP'));
-  const pvpCards=raidElement('div',null,'character-lifetime-pvp');
-  for (const [label,kills,deaths] of [['Battlegrounds K/D',bgKills,bgDeaths],['World PvP K/D',worldKills,worldDeaths]]) {
-    const card=raidElement('div',null,'character-lifetime-card');
-    const ratio=kills == null || deaths == null || deaths === 0 ? '—' : (kills/deaths).toFixed(2);
-    card.append(raidElement('span',label),raidElement('strong',ratio),raidElement('small',format(kills)+' honorable kills / '+format(deaths)+' deaths'));pvpCards.append(card);
+  for(const name of names) {
+    const button=raidElement('button');button.type='button';button.dataset.category=name;
+    button.append(raidElement('span',name),raidElement('span',String(rows.filter(row=>categoryOf(row)===name).length),'activity-category-count'));
+    button.addEventListener('click',()=>{selected=name;draw();});categories.append(button);
   }
-  pvp.append(pvpCards,table('',[['Battlegrounds played',played],['Battlegrounds won',won],['Win rate',played > 0 && won != null ? (won/played*100).toFixed(1)+'%' : null]]));
-  root.append(pvp);
-  const columns=raidElement('div',null,'character-lifetime-columns');
-  columns.append(table('Travel',[['Flight paths taken',find(349,/flight paths taken/i)],['Times hearthed',find(353,/times hearthed/i)],['Mage portals taken',find(null,/^mage portals taken$/i)],['Summons accepted',find(2277,/summons accepted/i)],['Times camped',find(64222,/times camped/i)]]),table('Consumables',[['Food eaten',find(347,/food eaten/i)],['Beverages drunk',find(346,/beverages consumed/i)],['Health potions',find(345,/health potions consumed/i)],['Mana potions',find(922,/mana potions consumed/i)],['Elixirs',find(923,/elixirs consumed/i)],['Bandages used',find(344,/bandages used/i)],['Healthstones used',find(812,/healthstones used/i)]]));
-  root.append(columns,raidElement('p','Lifetime counters come from Blizzard. — indicates a value not reported.','character-data-note'));
+  search.addEventListener('input',draw);
+  controls.append(categories,search);all.append(controls,results,live);body.append(all);root.append(body);draw();
   return root;
+}
+
+export function renderCharacterReputations(data) {
+ const root=raidElement('div',null,'character-reputations');
+ if(!Array.isArray(data) || !data.length) {root.append(raidElement('p',data ? 'No faction reputations reported.' : 'Reputation data is unavailable.','character-data-note'));return root;}
+ for(const item of data) {
+  const row=raidElement('div',null,'character-reputation-row');
+  row.dataset.tier=String(item.tier);
+  const heading=raidElement('div',null,'character-reputation-heading');
+  heading.append(raidElement('strong',item.name),raidElement('span',item.standing));
+  row.append(heading);
+  if(item.max>0 && item.value!=null) {
+   const bar=raidElement('progress');bar.max=item.max;bar.value=Math.min(item.max,Math.max(0,item.value));bar.setAttribute('aria-label',item.name+': '+item.standing+', '+item.value+' of '+item.max);
+   row.append(bar,raidElement('small',item.value.toLocaleString()+' / '+item.max.toLocaleString()));
+  }
+  root.append(row);
+ }
+ return root;
 }

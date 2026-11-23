@@ -1,4 +1,4 @@
-import { characterStatGroups, flattenLifetime, characterAchievements } from './character-data.js';
+import { characterStatGroups, flattenLifetime, characterAchievements, sortedReputations } from './character-data.js';
 import { sameOriginWrite } from './auth.js';
 
 const roles = ['Tank', 'Healer', 'Melee DPS', 'Ranged DPS'];
@@ -221,12 +221,13 @@ export async function armoryApi(request, env, url, member) {
       const slug = profileSlug(query);
       if (!slug) return reply({ error: 'Enter your character’s first and last name.' }, 400);
       const section = url.searchParams.get('section');
-      if (section === 'achievements' || section === 'lifetime') {
+      if (['achievements','lifetime','reputations'].includes(section)) {
         const token = await battleNetToken(env);
-        const suffix = section === 'achievements' ? '/achievements' : '/achievements/statistics';
+        const suffix = section === 'reputations' ? '/reputations' : section === 'achievements' ? '/achievements' : '/achievements/statistics';
         const response = await requestCharacterProfile(token,slug,suffix);
         if (!response.ok) return reply({error:'This character’s '+section+' data is unavailable from Blizzard.'},response.status === 404 ? 404 : 502);
         const data = await response.json();
+        if (section === 'reputations') return reply({reputations:sortedReputations(data)});
         if (section === 'lifetime') {
           const lifetime = flattenLifetime(data);
           if (lifetime) {

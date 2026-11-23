@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { deduplicateAchievements, achievementProgress, characterAchievements, characterStatGroups, flattenLifetime } from '../src/character-data.js';
+import { sortedReputations, deduplicateAchievements, achievementProgress, characterAchievements, characterStatGroups, flattenLifetime } from '../src/character-data.js';
 
 test('stat groups preserve real zero values and distinguish missing data',()=>{
  const groups=characterStatGroups({health:1917,power:4095,power_type:{id:0},intellect:{effective:214},melee_crit:{value:3},main_hand_damage_min:97.88,main_hand_damage_max:145.88,ranged_attack_power:0});
@@ -48,4 +48,11 @@ test('equivalent achievement variants appear once and retain earned progress',()
  assert.equal(result.length,2);
  assert.equal(result[0].id,2);
  assert.equal(result[0].completedAt,123);
+});
+
+test('reputations sort by standing then faction name and retain progress',()=>{
+ const row=(name,tier)=>({faction:{name},standing:{name:'Standing',tier,value:50,max:100}});
+ const result=sortedReputations({reputations:[row('Zandalar',5),row('Stormwind',7),row('Argent Dawn',7)]});
+ assert.deepEqual(result.map(row=>row.name),['Argent Dawn','Stormwind','Zandalar']);
+ assert.equal(result[0].value,50);assert.equal(sortedReputations(null),null);
 });
