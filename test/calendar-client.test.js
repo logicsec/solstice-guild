@@ -32,7 +32,7 @@ test('calendar renders one month grid, event previews and selectable days with m
   assert.ok(find(days,e=>e.className==='guild-calendar-preview'&&e.textContent===title),'month grid shows event names');
   const week=find(root,e=>e.className==='guild-agenda-week');
   assert.equal(week.children.length,7,'agenda has a compact week strip');
-  assert.equal(find(root,e=>e.attributes['aria-label']==='Reset date filter').hidden,true,'no reset action when all dates are already visible');
+  assert.equal(find(root,e=>e.attributes['aria-label']==='View all upcoming events').textContent,'View all');
   const eventRow=find(root,e=>e.className==='guild-event-row');
   const main=find(eventRow,e=>e.className==='guild-event-main');
   assert.ok(find(main,e=>e.tagName==='strong'&&e.textContent===title),'event title belongs in the main line');
@@ -44,8 +44,8 @@ test('calendar renders one month grid, event previews and selectable days with m
   assert.equal(find(footer,e=>e.className==='guild-event-count').textContent,'1 signed up');
   week.children[0].listeners.click();
   assert.equal(week.children[0].attributes['aria-pressed'],'true');
-  assert.equal(find(root,e=>e.attributes['aria-label']==='Reset date filter').hidden,false,'selected date can be cleared');
-  find(root,e=>e.attributes['aria-label']==='Reset date filter').listeners.click();
+
+  find(root,e=>e.attributes['aria-label']==='View all upcoming events').listeners.click();
   assert.ok(find(root,e=>e.className==='guild-event-row'),'View all restores the upcoming list');
   const form=find(root,e=>e.id==='planGuildEvent');
   assert.equal(form.hidden,true,'event form is closed until requested');
@@ -61,4 +61,23 @@ test('calendar renders one month grid, event previews and selectable days with m
   await new Promise(resolve=>setImmediate(resolve));
   assert.equal(heading.children.at(-1).textContent,initial);
   form.hidden=false;find(form,e=>e.attributes['aria-label']==='Close event form').listeners.click();assert.equal(form.hidden,true);
+});
+
+test('dashboard uses the same agenda renderer, limits events and opens the full calendar',async()=>{
+  const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text),getElementById:()=>null};
+  const picker=()=>({element:new Element('details'),reset(){},focus(){},hasDate:()=>false,value:()=>null});
+  const render=new Function('document','Option','createSchedulePicker','tablerIcon','return ('+renderGuildEvents.toString()+')')(document,Element,picker,()=>new Element('svg'));
+  const events=Array.from({length:7},(_,i)=>({id:String(i),title:'Event '+i,type:'Dungeon',starts_at:new Date(Date.now()+(i+1)*3600000).toISOString()})).reverse();
+  const root=new Element('div');let opened=0;
+  render(root,{eventTypes:{Dungeon:'#7b70ef'},raidInstances:{},request:async()=>({events}),createRaid(){},openRaid(){},agendaOnly:true,limit:5,onViewAll:()=>opened++});
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.equal(root.children[0].className,'raid-card guild-events-agenda');
+  assert.equal(find(root,e=>e.className==='guild-agenda-week').children.length,7);
+  assert.equal(all(root).filter(e=>e.className==='guild-event-row').length,5);
+  assert.ok(find(root,e=>e.tagName==='strong'&&e.textContent==='Event 0'),'earliest events are kept');
+  assert.equal(find(root,e=>e.tagName==='strong'&&e.textContent==='Event 6'),undefined);
+  assert.equal(find(root,e=>e.className==='raid-calendar-days'),undefined,'dashboard contains only the shared agenda');
+  assert.equal(find(root,e=>e.id==='planGuildEvent'),undefined);
+  find(root,e=>e.attributes['aria-label']==='View all upcoming events').listeners.click();
+  assert.equal(opened,1);
 });

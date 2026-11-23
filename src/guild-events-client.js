@@ -1,7 +1,7 @@
 import { tablerIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 
-export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid }) {
+export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid, agendaOnly = false, limit = Infinity, onViewAll }) {
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -42,7 +42,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const agenda = make('section',undefined,'raid-card guild-events-agenda');
   const agendaHead = make('header',undefined,'guild-events-agenda-head');
   const heading = make('h3','Upcoming Events');
-  const viewAll = button('Reset',()=>{selected=null;drawAgenda();drawCalendar();},'Reset date filter');
+  const viewAll = button('View all',()=>{if(onViewAll){onViewAll();return;}selected=null;drawAgenda();drawCalendar();},'View all upcoming events');
   agendaHead.append(heading,viewAll);
   const weekStrip = make('div',undefined,'guild-agenda-week');
   weekStrip.setAttribute('role','group');weekStrip.setAttribute('aria-label','Choose an agenda day');
@@ -160,7 +160,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   updateRepeat();
   side.append(agenda,form);
   layout.append(calendar,side);
-  root.replaceChildren(layout);
+  root.replaceChildren(agendaOnly ? agenda : layout);
 
   form.addEventListener('submit',async event => {
     event.preventDefault();
@@ -231,7 +231,6 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   heading.tabIndex = -1;
   function drawAgenda() {
     heading.textContent = 'Upcoming Events';
-    viewAll.hidden = selected === null;
     rows.replaceChildren();
     weekStrip.replaceChildren();
     const activeDay = selected === null ? today : new Date(selected);
@@ -244,8 +243,9 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
       weekStrip.append(dayButton);
     }
     if (loading) return;
-    const events = selected === null ? agendaEvents.filter(event => Date.parse(event.starts_at) >= +today)
+    const available = selected === null ? agendaEvents.filter(event => Date.parse(event.starts_at) >= +today)
       : monthEvents.filter(event => +dayAt(new Date(event.starts_at)) === selected);
+    const events = [...available].sort((a,b)=>a.starts_at.localeCompare(b.starts_at)).slice(0,limit);
     for (const [day, items] of groupsFor(events)) {
       const section = make('section',undefined,'guild-events-day');
       if (selected === null) section.append(make('h4',(day === +today ? 'Today · ' : '')+dayLabel.format(new Date(day))));

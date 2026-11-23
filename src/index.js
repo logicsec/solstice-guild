@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-14" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-14&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-15" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-15&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1551,7 +1551,7 @@ function raidStats(target, values) {
   }
 }
 function guildOverviewBanner(title, description, actionLabel, onAction, { stats = [] } = {}) {
-  const hero = raidElement('section',null,'guild-dashboard-hero character-banner');
+  const hero = raidElement('section',null,'guild-dashboard-hero character-banner guild-page-heading');
   const intro = raidElement('div');
   intro.append(raidElement('p','Alliance Guild','eyebrow'),raidElement('h2',title),
     raidElement('p',description));
@@ -1733,10 +1733,7 @@ async function openRaidView(view, id, navigate = true) {
         heading.focus({preventScroll:true});
         roster.scrollIntoView({block:'start'});
       };
-      const hero = guildOverviewBanner('Life In Solstice','Meet the characters and trades that make up the guild.',
-        'Jump To Guild Roster ↓',jumpToRoster,{stats:[
-          ['Guild Characters',data.total],['Armory Linked',data.linked],['Professions Represented',data.professions.length],
-        ]});
+      const hero = guildOverviewBanner('Life In Solstice','Meet the characters and trades that make up the guild.');
       let selectedProfession = null;
       let filterRoster;
       const compositionCards = new Map();
@@ -1792,35 +1789,20 @@ async function openRaidView(view, id, navigate = true) {
         section.append(rows.children.length ? rows : raidElement('p','No '+category+' professions reported.'));
         coverage.append(section);
       }
-      const eventsWidget = raidElement('section',null,'raid-card guild-upcoming-events');
-      eventsWidget.setAttribute('aria-labelledby','guildUpcomingEventsTitle');
-      const eventsHeading = raidElement('header',null,'guild-upcoming-heading');
-      const eventsTitle = raidElement('h3','Upcoming Events');eventsTitle.id='guildUpcomingEventsTitle';
-      const allEvents = raidElement('button','View all');allEvents.type='button';allEvents.addEventListener('click',()=>openRaidView('calendar'));
-      eventsHeading.append(eventsTitle,allEvents);
-      const eventRows = raidElement('div',null,'guild-upcoming-list');eventRows.append(raidElement('p','Loading events…'));
-      eventsWidget.append(eventsHeading,eventRows);
+      const eventsWidget = raidElement('div',null,'guild-dashboard-events');
       const layout = raidElement('div',null,'guild-dashboard-layout');
-      const main = raidElement('div',null,'guild-dashboard-main');main.append(hero,roster);
+      const main = raidElement('div',null,'guild-dashboard-main');main.append(roster);
       const sidebar = raidElement('aside',null,'guild-dashboard-sidebar');
       sidebar.setAttribute('aria-label','Guild overview');
       sidebar.append(eventsWidget,compositionCards.get('role'),compositionCards.get('class'),coverage);
-      layout.append(main,sidebar);
+      layout.append(hero,main,sidebar);
       root.replaceChildren(layout);
-      const from = new Date();const to = new Date(from.getTime()+120*86400000);
-      guildRequest('/api/guild-events?'+new URLSearchParams({from:from.toISOString(),to:to.toISOString()})).then(result=>{
-        if (revision !== raidRevision) return;
-        const events = (result.events ?? []).filter(event=>Date.parse(event.starts_at)>=from.getTime()).sort((a,b)=>Date.parse(a.starts_at)-Date.parse(b.starts_at)).slice(0,5);
-        eventRows.replaceChildren();
-        for (const event of events) {
-          const row = raidElement('button',null,'guild-upcoming-event');row.type='button';
-          const date = new Date(event.starts_at);
-          const day = raidElement('time',new Intl.DateTimeFormat(undefined,{month:'short',day:'numeric'}).format(date));day.dateTime=event.starts_at;
-          const copy = raidElement('span');copy.append(raidElement('strong',event.title),raidElement('small',new Intl.DateTimeFormat(undefined,{weekday:'short',hour:'numeric',minute:'2-digit'}).format(date)+' · '+event.type));
-          row.append(day,copy);row.addEventListener('click',()=>event.type === 'Raid' ? openRaidView('detail',event.id) : openRaidView('calendar'));eventRows.append(row);
-        }
-        if (!events.length) eventRows.append(raidElement('p','No events scheduled in the next 120 days.'));
-      }).catch(()=>{if(revision === raidRevision) eventRows.replaceChildren(raidElement('p','Events are temporarily unavailable.'));});
+      renderGuildEvents(eventsWidget,{
+        eventTypes: ${JSON.stringify(eventTypes)}, raidInstances,
+        request:(path,data)=>guildRequest('/api/guild-events'+path,data),
+        createRaid:data=>raidRequest('',data), openRaid:id=>openRaidView('detail',id),
+        agendaOnly:true, limit:5, onViewAll:()=>openRaidView('calendar'),
+      });
       if (showGuildRoster) jumpToRoster();
       try {
         const {characters} = await guildRequest('/api/raid-characters?guild=1');

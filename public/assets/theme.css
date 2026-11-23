@@ -374,3 +374,9 @@ body.guild-app .wowhead-tooltip table { width:auto!important; max-width:100%; bo
 body.guild-app .wowhead-tooltip :is(tbody,tr,td,th) { background-color:transparent!important; border:0; }
 body.guild-app .wowhead-tooltip :is(td,th) { position:static; padding:0; white-space:normal; text-align:left; }
 body.guild-app .wowhead-tooltip-screen { z-index:2147482999!important; }
+
+/* Full-width welcome heading; roster and overview start together below it. */
+.guild-app #raidList .guild-dashboard-layout > .guild-dashboard-hero { grid-column:1/-1; grid-template-columns:minmax(0,1fr); min-height:190px; padding:28px 0; margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.guild-dashboard-layout > .guild-dashboard-hero::after,.guild-dashboard-layout > .guild-dashboard-hero .guild-dashboard-crest { display:none; }
+.guild-app #raidList .guild-dashboard-events > .guild-events-agenda { margin:0; min-width:0; }
+@media(max-width:650px) { .guild-app #raidList .guild-dashboard-layout > .guild-dashboard-hero { min-height:160px; padding:24px 0; } }
