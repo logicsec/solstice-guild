@@ -435,11 +435,15 @@ export function openCharacterSheet(player, event, organizer) {
   tabs.setAttribute('aria-label','Character Sheet Sections');
   const talents = raidElement('div');
   talents.append(raidElement('p','Loading talents…'));
-  const statisticsPanel = raidElement('div');
+  const statisticsPanel = raidElement('aside',null,'character-gear-stats');
+  statisticsPanel.setAttribute('aria-label','Character stats');
+  const equipmentLayout = raidElement('div',null,'character-equipment-layout');
+  equipmentLayout.append(equipment,statisticsPanel);
+  content.replaceChildren(plannerLink,equipmentLayout);
   const achievementsPanel = raidElement('div');
   const lifetimePanel = raidElement('div');
   for (const panel of [statisticsPanel,achievementsPanel,lifetimePanel]) panel.append(raidElement('p','Loading character data…'));
-  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Stats',statisticsPanel,'Attributes & combat'],['Achievements',achievementsPanel,'Earned & in progress'],['Lifetime',lifetimePanel,'Quests, kills & deaths'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
+  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Achievements',achievementsPanel,'Earned & in progress'],['Lifetime',lifetimePanel,'Quests, kills & deaths'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
   const panels = sections.map(([label,panel,description])=>{
     const button = raidElement('button');
     button.append(raidElement('strong',label),raidElement('small',description));
@@ -502,7 +506,7 @@ export function openCharacterSheet(player, event, organizer) {
     pageLayout.append(tabs,pageContent);
     dialog.append(pageLayout);
     const requestedTab = new URLSearchParams(location.search).get('tab');
-    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (requestedTab === 'journey' ? 'lifetime' : requestedTab))?.panel;
+    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === (requestedTab === 'journey' ? 'lifetime' : requestedTab === 'stats' ? 'gear' : requestedTab))?.panel;
     selectPanel(requestedPanel ?? content);
   } else {
     overview.replaceChildren();
@@ -519,7 +523,7 @@ export function openCharacterSheet(player, event, organizer) {
     overview.replaceChildren(profile.overview);
     equipment.replaceChildren(profile.equipment);
     equipment.hidden = content.hidden;
-    content.replaceChildren(plannerLink,equipment);
+    content.replaceChildren(plannerLink,equipmentLayout);
     statisticsPanel.replaceChildren(profile.statistics);
 
     professions.replaceChildren(profile.professions);

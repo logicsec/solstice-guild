@@ -1699,3 +1699,24 @@ body.character-page-active > main > :not(.character-page-root) { display: none !
  .character-page-root .character-weapons :is(.character-slot-copy,.character-slot-empty > span + span) { display: none; }
  .character-page-root .character-sheet .character-weapons :is(.character-slot-button,.character-slot-empty) { justify-content: center; }
 }
+
+/* Keep equipment and its live statistics together. */
+.character-equipment-layout { display: grid; grid-template-columns: minmax(0,1fr) 230px; align-items: start; gap: 18px; }
+.character-equipment-layout > * { min-width: 0; }
+.character-gear-stats .character-stats-tables { display: flex; flex-direction: column; gap: 10px; }
+.character-gear-stats .character-stat-column { width: 100%; gap: 10px; }
+.character-gear-stats .character-stat-table { background: var(--container); }
+.character-gear-stats .character-stat-table h3 { padding: 9px 12px; text-align: center; text-transform: uppercase; letter-spacing: .04em; font-size: 12px; font-weight: 400; color: var(--muted); }
+.character-gear-stats .character-stat-table dl { padding: 6px; }
+.character-gear-stats .character-stat-table dl > div { gap: 10px; padding: 7px; margin-bottom: 3px; border: 0; border-radius: 3px; background: var(--field); }
+.character-gear-stats .character-stat-table dt { font-size: 12px; }
+.character-gear-stats .character-stat-table dd { font-size: 12px; font-weight: 400; }
+.character-gear-stats .character-data-note { margin: 0; font-size: 12px; }
+@media(max-width:1100px) {
+ .character-equipment-layout { grid-template-columns: minmax(0,1fr); }
+ .character-gear-stats .character-stats-tables { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); align-items: start; }
+}
+@media(max-width:600px) {
+ .character-gear-stats .character-stats-tables { grid-template-columns: minmax(0,1fr); }
+ .character-gear-stats .character-stat-table :is(dt,dd) { font-size: 14px; }
+}
