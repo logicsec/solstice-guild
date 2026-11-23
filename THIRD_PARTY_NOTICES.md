@@ -23,3 +23,11 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+
+
+## Font Awesome Free icons
+
+Font Awesome Free 6.7.2 icons by Fonticons, Inc. Used under CC BY 4.0.
+https://fontawesome.com/license/free
+https://creativecommons.org/licenses/by/4.0/
+SVG paths from https://github.com/FortAwesome/Font-Awesome/tree/6.x/svgs/solid

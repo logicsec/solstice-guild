@@ -179,6 +179,7 @@ async function loadCharacter(env, slug) {
   ].map(([group,values])=>[group,values.filter(([,value])=>Number.isFinite(value))]).filter(([,values])=>values.length);
   return {
     slug, name, level: profile.level ?? null,
+    lastLogin:Number.isFinite(profile.last_login_timestamp) ? profile.last_login_timestamp : null,
     className: localized(profile.character_class?.name),
     race: localized(profile.race?.name),
     faction: localized(profile.faction?.name),

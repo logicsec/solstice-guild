@@ -154,42 +154,20 @@ export function renderArmoryProfile(character) {
   const facts = raidElement('div',null,'raid-stats');
   raidStats(facts,[['Achievements',character.achievementCount ?? '—'],['Item Level',character.itemLevel ?? 'Unavailable'],['Equipped Items',character.gear?.length ?? 'Unavailable']]);
   overview.append(facts);
-  const professions = raidElement('div',null,'character-profession-sections');
-  const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
+  const professions = raidElement('div',null,'character-profession-list');
   for (const entry of character.professions ?? []) {
-    const card = raidElement('div',null,'guild-dashboard-entry guild-profession-tile');
-    const icon = professionIcon(entry.name,card);
-    const details = raidElement('div',null,'character-profession-name');
-    details.append(raidElement('strong',entry.name));
-    const ranks = entry.skill == null ? entry.tiers.filter(tier=>tier.skill != null) : [entry];
-    const skillCap = Math.max(0,...ranks.map(rank=>rank.maxSkill ?? 0));
-    const professionRanks = {75:'Apprentice',150:'Journeyman',225:'Expert',300:'Artisan'};
-    const professionRank = professionRanks[skillCap];
-    if (professionRank) {
-      const nextRank = professionRanks[skillCap+75];
-      details.append(raidElement('small',professionRank+' · '+(nextRank ? 'Next Rank: '+nextRank : 'Highest Rank')));
+    const rank = entry.skill != null ? entry : (entry.tiers ?? []).find(tier=>tier.skill != null);
+    const secondary = entry.category === 'secondary' || ['Cooking','Fishing','First Aid'].includes(entry.name);
+    const row = raidElement('div',null,'character-profession-row'+(secondary ? ' is-secondary' : ''));
+    const heading = raidElement('div');
+    heading.append(raidElement('strong',entry.name),raidElement('span',rank ? rank.skill+' / '+(rank.maxSkill ?? '—') : 'Not reported'));
+    row.append(heading);
+    if (rank?.maxSkill > 0) {
+      const bar = raidElement('progress');bar.max=rank.maxSkill;bar.value=Math.max(0,Math.min(rank.skill,rank.maxSkill));bar.setAttribute('aria-label',entry.name+': '+rank.skill+' of '+rank.maxSkill);row.append(bar);
     }
-    const badges = raidElement('div',null,'character-profession-skills');
-    for (const rank of ranks) {
-      const badge = raidElement('span',rank.maxSkill > 0 ? rank.skill+' / '+rank.maxSkill : String(rank.skill),'guild-dashboard-count');
-      badge.setAttribute('aria-label',(rank.name || entry.name)+' skill '+badge.textContent);
-      badges.append(badge);
-    }
-    if (!ranks.length) badges.append(raidElement('span','—','guild-dashboard-count'));
-    card.append(icon,details,badges);
-    const category = entry.category ?? (['cooking','fishing','first aid'].includes(entry.name.toLowerCase()) ? 'secondary' : 'primary');
-    groups[category].append(card);
+    professions.append(row);
   }
-  if (!character.professions?.length) professions.append(raidElement('p','No profession data available.','raid-card'));
-  else {
-    for (const [category,label] of [['primary','Primary Professions'],['secondary','Secondary Professions']]) {
-      const section = raidElement('section',null,'guild-profession-group character-profession-section');
-      section.append(raidElement('h4',label));
-      const cards = groups[category];
-      section.append(cards.children.length ? cards : raidElement('p','No '+category+' professions reported.'));
-      professions.append(section);
-    }
-  }
+  if (!character.professions?.length) professions.append(raidElement('p','No profession data available.','character-data-note'));
   const statistics = raidElement('section',null,'character-stats-tables');
   const columns = Array.from({length:4},()=>raidElement('div',null,'character-stat-column'));
   for (const group of character.statGroups ?? []) {
@@ -386,12 +364,22 @@ export function openCharacterSheet(player, event, organizer) {
 
   const level = raidElement('span',undefined,'character-banner-level');
   function setLevel(value) {
-    level.textContent = value == null ? '' : String(value);
+    level.textContent = value == null ? '' : 'Lvl '+value;
     level.hidden = value == null;
     if (value != null) level.setAttribute('aria-label','Level '+value);
   }
   setLevel(player.level);
-  heading.append(level,identity);
+  const headerModel = raidElement('div',null,'character-header-model');
+  const badges = raidElement('div',null,'character-header-badges');
+  const rulesetBadge = raidElement('span',player.ruleset || 'Normal');
+  badges.append(raidElement('span','Warcraft Forever'),rulesetBadge);
+  identity.prepend(badges);
+  title.append(level);
+  const freshness = raidElement('div',null,'character-header-freshness');
+  const freshnessText = raidElement('span','Loading Armory…');
+  const refreshButton = raidElement('button','Refresh');refreshButton.type='button';refreshButton.addEventListener('click',()=>location.reload());
+  freshness.append(freshnessText,refreshButton);identity.append(freshness);
+  heading.append(headerModel,identity);
   const header = raidElement('header',null,'character-profile-hero');
   const inner = raidElement('div',null,'character-profile-grid');
   const info = raidElement('div',null,'character-profile-info');
@@ -403,11 +391,11 @@ export function openCharacterSheet(player, event, organizer) {
   inner.append(info);
   header.append(inner,close);
   const content = raidElement('div');
-  const plannerLink = raidElement('a','Plan Gear for '+player.character,'raid-primary');
+  const plannerLink = raidElement('a','Gear Planner','raid-primary character-planner-button');
+  plannerLink.setAttribute('aria-label','Plan gear for '+player.character);
   plannerLink.href = '/gear-planner?character='+encodeURIComponent(player.character);
-  plannerLink.style.display='inline-block';
-  plannerLink.style.margin='12px 0';
-  content.append(plannerLink,equipment);
+
+  content.append(equipment);
   const review = event ? raidElement('div',null,'character-raid-review') : null;
   const evidence = event ? raidElement('section',null,'raid-card raid-review-evidence') : null;
   if (event) {
@@ -439,7 +427,7 @@ export function openCharacterSheet(player, event, organizer) {
   statisticsPanel.setAttribute('aria-label','Character stats');
   const equipmentLayout = raidElement('div',null,'character-equipment-layout');
   equipmentLayout.append(equipment,statisticsPanel);
-  content.replaceChildren(plannerLink,equipmentLayout);
+  content.replaceChildren(equipmentLayout);
   const achievementsPanel = raidElement('div');
   const lifetimePanel = raidElement('div');
   const reputationPanel = raidElement('div');
@@ -449,7 +437,10 @@ export function openCharacterSheet(player, event, organizer) {
     const button = raidElement('a',label);
     const section = raidElement('section',null,'character-page-section');
     section.id = 'character-'+label.toLowerCase().replace(/ /g,'-');
-    section.append(raidElement('h2',label === 'Gear' ? 'Equipment & Stats' : label,'character-section-heading'),panel);
+    const cardHeader = raidElement('header',null,'character-section-header');
+    cardHeader.append(characterSectionIcon(label),raidElement('h2',label === 'Gear' ? 'Equipment & Stats' : label,'character-section-heading'));
+    if (label === 'Gear') cardHeader.append(plannerLink);
+    section.append(cardHeader,panel);
     button.href = '#'+section.id;
     button.title = description;
     panel.classList.add('character-page-panel');
@@ -498,6 +489,11 @@ export function openCharacterSheet(player, event, organizer) {
     const pageLayout = raidElement('div',null,'character-page-layout');
     const pageContent = raidElement('div',null,'character-page-content');
     pageContent.append(...panels.map(({section})=>section));
+    const paired = raidElement('div',null,'character-profession-reputation-pair');
+    const professionSection = panels.find(item=>item.panel === professions).section;
+    const reputationSection = panels.find(item=>item.panel === reputationPanel).section;
+    pageContent.insertBefore(paired,professionSection);
+    paired.append(professionSection,reputationSection);
     pageLayout.append(tabs,pageContent);
     dialog.append(pageLayout);
     const requestedTab = new URLSearchParams(location.search).get('tab');
@@ -565,8 +561,10 @@ export function openCharacterSheet(player, event, organizer) {
     overview.replaceChildren(profile.overview);
     equipment.replaceChildren(profile.equipment);
     equipment.hidden = content.hidden;
-    content.replaceChildren(plannerLink,equipmentLayout);
-    statisticsPanel.replaceChildren(profile.statistics);
+    content.replaceChildren(equipmentLayout);
+    const statsHeader = raidElement('header',null,'character-section-header');
+    statsHeader.append(characterSectionIcon('Stats'),raidElement('h3','Stats'));
+    statisticsPanel.replaceChildren(statsHeader,profile.statistics);
 
     professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
@@ -577,14 +575,13 @@ export function openCharacterSheet(player, event, organizer) {
     const meta = identity.querySelector('.inspector-meta');
     meta.textContent = [player.spec,[character.race,character.className || player.class_name].filter(Boolean).join(' '),
       character.guild && '<'+character.guild+'>'].filter(Boolean).join(' · ');
-    if (character.ruleset) identity.append(raidElement('p',character.ruleset,'character-profile-realm'));
+    rulesetBadge.textContent = character.ruleset || 'Normal';
+    freshnessText.textContent = ['Item level '+(character.itemLevel ?? '—'),character.lastLogin ? 'Last seen '+new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short'}).format(new Date(character.lastLogin)) : null,'Updated just now'].filter(Boolean).join(' · ');
     if (character.level != null) setLevel(character.level);
-    if (character.portrait) {
-      const portrait = raidElement('img',null,'character-page-portrait');
-      portrait.src = character.portrait;
-      portrait.alt = '';
-      portrait.addEventListener('error',()=>portrait.remove(),{once:true});
-      heading.prepend(portrait);
+    const thumbnail = character.render || character.portrait;
+    if (thumbnail) {
+      const image = raidElement('img');image.src=thumbnail;image.alt=character.name+' character render';
+      image.addEventListener('error',()=>{image.remove();headerModel.textContent=character.className || '';},{once:true});headerModel.replaceChildren(image);
     }
     if (!evidence) return;
     const gear = character.gear;
@@ -842,7 +839,7 @@ export function renderCharacterAchievements(data) {
 export function renderCharacterLifetime(data) {
   const root=raidElement('section',null,'character-activity');
   const header=raidElement('header',null,'activity-header');
-  header.append(raidElement('span','▣','activity-title-icon'),raidElement('h3','Activity'));
+  header.append(characterSectionIcon('Activity'),raidElement('h3','Activity'));
   root.append(header);
   if (!Array.isArray(data)) { root.append(raidElement('p','Activity statistics are unavailable from Blizzard.','character-data-note'));return root; }
   const rows=data.filter(row=>row.id != null);
@@ -931,4 +928,13 @@ export function renderCharacterReputations(data) {
   root.append(row);
  }
  return root;
+}
+
+// Font Awesome Free 6.7.2 by Fonticons, Inc. Icons: CC BY 4.0. See THIRD_PARTY_NOTICES.md.
+export function characterSectionIcon(name) {
+ const icons = {"Stats":["0 0 512 512",["M64 64c0-17.7-14.3-32-32-32S0 46.3 0 64L0 400c0 44.2 35.8 80 80 80l400 0c17.7 0 32-14.3 32-32s-14.3-32-32-32L80 416c-8.8 0-16-7.2-16-16L64 64zm406.6 86.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0L320 210.7l-57.4-57.4c-12.5-12.5-32.8-12.5-45.3 0l-112 112c-12.5 12.5-12.5 32.8 0 45.3s32.8 12.5 45.3 0L240 221.3l57.4 57.4c12.5 12.5 32.8 12.5 45.3 0l128-128z"],"#39c77a"],"Gear":["0 0 512 512",["M256 0c4.6 0 9.2 1 13.4 2.9L457.7 82.8c22 9.3 38.4 31 38.3 57.2c-.5 99.2-41.3 280.7-213.6 363.2c-16.7 8-36.1 8-52.8 0C57.3 420.7 16.5 239.2 16 140c-.1-26.2 16.3-47.9 38.3-57.2L242.7 2.9C246.8 1 251.4 0 256 0zm0 66.8l0 378.1C394 378 431.1 230.1 432 141.4L256 66.8s0 0 0 0z"],"#439cff"],"Talents":["0 0 576 512",["M234.7 42.7L197 56.8c-3 1.1-5 4-5 7.2s2 6.1 5 7.2l37.7 14.1L248.8 123c1.1 3 4 5 7.2 5s6.1-2 7.2-5l14.1-37.7L315 71.2c3-1.1 5-4 5-7.2s-2-6.1-5-7.2L277.3 42.7 263.2 5c-1.1-3-4-5-7.2-5s-6.1 2-7.2 5L234.7 42.7zM46.1 395.4c-18.7 18.7-18.7 49.1 0 67.9l34.6 34.6c18.7 18.7 49.1 18.7 67.9 0L529.9 116.5c18.7-18.7 18.7-49.1 0-67.9L495.3 14.1c-18.7-18.7-49.1-18.7-67.9 0L46.1 395.4zM484.6 82.6l-105 105-23.3-23.3 105-105 23.3 23.3zM7.5 117.2C3 118.9 0 123.2 0 128s3 9.1 7.5 10.8L64 160l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L128 160l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L128 96 106.8 39.5C105.1 35 100.8 32 96 32s-9.1 3-10.8 7.5L64 96 7.5 117.2zm352 256c-4.5 1.7-7.5 6-7.5 10.8s3 9.1 7.5 10.8L416 416l21.2 56.5c1.7 4.5 6 7.5 10.8 7.5s9.1-3 10.8-7.5L480 416l56.5-21.2c4.5-1.7 7.5-6 7.5-10.8s-3-9.1-7.5-10.8L480 352l-21.2-56.5c-1.7-4.5-6-7.5-10.8-7.5s-9.1 3-10.8 7.5L416 352l-56.5 21.2z"],"#a886ef"],"Professions":["0 0 448 512",["M288 0L160 0 128 0C110.3 0 96 14.3 96 32s14.3 32 32 32l0 132.8c0 11.8-3.3 23.5-9.5 33.5L10.3 406.2C3.6 417.2 0 429.7 0 442.6C0 480.9 31.1 512 69.4 512l309.2 0c38.3 0 69.4-31.1 69.4-69.4c0-12.8-3.6-25.4-10.3-36.4L329.5 230.4c-6.2-10.1-9.5-21.7-9.5-33.5L320 64c17.7 0 32-14.3 32-32s-14.3-32-32-32L288 0zM192 196.8L192 64l64 0 0 132.8c0 23.7 6.6 46.9 19 67.1L309.5 320l-171 0L173 263.9c12.4-20.2 19-43.4 19-67.1z"],"#ac88f4"],"Reputation":["0 0 640 512",["M144 0a80 80 0 1 1 0 160A80 80 0 1 1 144 0zM512 0a80 80 0 1 1 0 160A80 80 0 1 1 512 0zM0 298.7C0 239.8 47.8 192 106.7 192l42.7 0c15.9 0 31 3.5 44.6 9.7c-1.3 7.2-1.9 14.7-1.9 22.3c0 38.2 16.8 72.5 43.3 96c-.2 0-.4 0-.7 0L21.3 320C9.6 320 0 310.4 0 298.7zM405.3 320c-.2 0-.4 0-.7 0c26.6-23.5 43.3-57.8 43.3-96c0-7.6-.7-15-1.9-22.3c13.6-6.3 28.7-9.7 44.6-9.7l42.7 0C592.2 192 640 239.8 640 298.7c0 11.8-9.6 21.3-21.3 21.3l-213.3 0zM224 224a96 96 0 1 1 192 0 96 96 0 1 1 -192 0zM128 485.3C128 411.7 187.7 352 261.3 352l117.3 0C452.3 352 512 411.7 512 485.3c0 14.7-11.9 26.7-26.7 26.7l-330.7 0c-14.7 0-26.7-11.9-26.7-26.7z"],"#419aff"],"Achievements":["0 0 576 512",["M400 0L176 0c-26.5 0-48.1 21.8-47.1 48.2c.2 5.3 .4 10.6 .7 15.8L24 64C10.7 64 0 74.7 0 88c0 92.6 33.5 157 78.5 200.7c44.3 43.1 98.3 64.8 138.1 75.8c23.4 6.5 39.4 26 39.4 45.6c0 20.9-17 37.9-37.9 37.9L192 448c-17.7 0-32 14.3-32 32s14.3 32 32 32l192 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-26.1 0C337 448 320 431 320 410.1c0-19.6 15.9-39.2 39.4-45.6c39.9-11 93.9-32.7 138.2-75.8C542.5 245 576 180.6 576 88c0-13.3-10.7-24-24-24L446.4 64c.3-5.2 .5-10.4 .7-15.8C448.1 21.8 426.5 0 400 0zM48.9 112l84.4 0c9.1 90.1 29.2 150.3 51.9 190.6c-24.9-11-50.8-26.5-73.2-48.3c-32-31.1-58-76-63-142.3zM464.1 254.3c-22.4 21.8-48.3 37.3-73.2 48.3c22.7-40.3 42.8-100.5 51.9-190.6l84.4 0c-5.1 66.3-31.1 111.2-63 142.3z"],"#edbe39"],"Activity":["0 0 576 512",["M0 80l0 48c0 17.7 14.3 32 32 32l16 0 48 0 0-80c0-26.5-21.5-48-48-48S0 53.5 0 80zM112 32c10 13.4 16 30 16 48l0 304c0 35.3 28.7 64 64 64s64-28.7 64-64l0-5.3c0-32.4 26.3-58.7 58.7-58.7L480 320l0-192c0-53-43-96-96-96L112 32zM464 480c61.9 0 112-50.1 112-112c0-8.8-7.2-16-16-16l-245.3 0c-14.7 0-26.7 11.9-26.7 26.7l0 5.3c0 53-43 96-96 96l176 0 96 0z"],"#efbf39"],"Raid Review":["0 0 448 512",["M64 32C64 14.3 49.7 0 32 0S0 14.3 0 32L0 64 0 368 0 480c0 17.7 14.3 32 32 32s32-14.3 32-32l0-128 64.3-16.1c41.1-10.3 84.6-5.5 122.5 13.4c44.2 22.1 95.5 24.8 141.7 7.4l34.7-13c12.5-4.7 20.8-16.6 20.8-30l0-247.7c0-23-24.2-38-44.8-27.7l-9.6 4.8c-46.3 23.2-100.8 23.2-147.1 0c-35.1-17.6-75.4-22-113.5-12.5L64 48l0-16z"],"#ef6269"]};
+ const [box,paths,color]=icons[name] ?? icons.Gear;
+ const icon=document.createElementNS('http://www.w3.org/2000/svg','svg');icon.setAttribute('viewBox',box);icon.setAttribute('class','character-section-icon');icon.setAttribute('aria-hidden','true');icon.style.color=color;
+ for(const shape of paths){const path=document.createElementNS(icon.namespaceURI,'path');path.setAttribute('d',shape);path.setAttribute('fill','currentColor');icon.append(path);}
+ return icon;
 }
