@@ -1848,3 +1848,34 @@ body.character-page-active > main > .character-site-shell { display: grid !impor
  .character-site-shell #raidMenuToggle[aria-expanded=false] + nav { display: none; }
  .character-site-shell #raidMenuToggle[aria-expanded=true] + nav { display: block; padding-top: 12px; }
 }
+
+/* The same compact site shell hosts Guild Hall and character content. */
+.guild-app .raid-shell { grid-template-columns: 220px minmax(0,1fr); }
+.guild-app .masthead { flex-basis: 220px; padding: 10px 20px; }
+.guild-app .raid-sidebar { padding: 14px 10px; background: #0e171f; border-inline-end: 1px solid var(--line); }
+.guild-app .raid-sidebar nav button,.guild-app .raid-sidebar .guild-planner-link { width: 100%; min-height: 34px; margin: 2px 0; padding: 7px 10px; gap: 8px; font-size: 13px; line-height: 1.35; }
+.guild-app .raid-sidebar svg { width: 16px; height: 16px; }
+.guild-app .raid-sidebar .raid-nav-group + .raid-nav-group { margin-top: 16px; }
+.guild-app .raid-sidebar .eyebrow { padding: 0 10px 4px; font-size: 10px; }
+body.character-page-active > main { width: 100%; max-width: none; margin: 0; padding: 0; }
+body.character-page-active > main > .guild-topbar { display: flex !important; }
+body.character-page-active > main > #raidPanel { display: grid !important; }
+body.character-page-active #raidPanel > .raid-content { min-width: 0; padding: 24px; }
+body.character-page-active #raidPanel > .raid-content > :not(.character-page-root) { display: none !important; }
+body.character-page-active .character-page-root { min-width: 0; }
+@media(min-width:901px) { .guild-app .raid-sidebar > nav { position: sticky; top: 12px; } }
+@media(max-width:900px) {
+ .guild-app .raid-shell { grid-template-columns: minmax(0,1fr); }
+ .guild-app .raid-sidebar { padding: 8px 12px; border-inline-end: 0; border-bottom: 1px solid var(--line); }
+ .guild-app .raid-sidebar nav button,.guild-app .raid-sidebar .guild-planner-link { min-height: 44px; }
+ body.character-page-active #raidPanel > .raid-content { padding: 16px; }
+}
+
+/* Reputation standing: hostile red, neutral yellow, friendly and above green. */
+.character-reputation-row { --standing-color: #e6bd4b; }
+.character-reputation-row:is([data-tier="0"],[data-tier="1"],[data-tier="2"]) { --standing-color: #ef6269; }
+.character-reputation-row:is([data-tier="4"],[data-tier="5"],[data-tier="6"],[data-tier="7"],[data-tier="8"]) { --standing-color: #61c98b; }
+.character-reputation-row .character-reputation-heading span { color: var(--standing-color); }
+.character-reputation-row progress { accent-color: var(--standing-color); }
+.character-reputation-row progress::-webkit-progress-value { background: var(--standing-color); }
+.character-reputation-row progress::-moz-progress-bar { background: var(--standing-color); }

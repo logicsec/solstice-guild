@@ -511,11 +511,12 @@ export function openCharacterSheet(player, event, organizer) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
   const main = document.querySelector('body > main');
-  const sidebar = document.querySelector('.raid-sidebar');
-  let siteShell = document.querySelector('.character-site-shell');
-  if (!siteShell) siteShell = raidElement('div',null,'character-site-shell');
-  if (sidebar) {
-    if (!sidebar.dataset.characterNavigation) {
+  const siteShell = document.getElementById('raidPanel');
+  const sidebar = siteShell?.querySelector('.raid-sidebar');
+  if (siteShell) {
+    siteShell.hidden = false;
+    siteShell.querySelector('.raid-content').append(dialog);
+    if (sidebar && !sidebar.dataset.characterNavigation) {
       sidebar.dataset.characterNavigation = 'true';
       sidebar.addEventListener('click',event=>{
         const item = event.target.closest('[data-raid-view]');
@@ -525,9 +526,20 @@ export function openCharacterSheet(player, event, organizer) {
         location.href = '/?tool=raid&view='+encodeURIComponent(item.dataset.raidView);
       },true);
     }
-    siteShell.replaceChildren(sidebar,dialog);
-  } else siteShell.replaceChildren(dialog);
-  main.append(siteShell);
+    const topbar = document.querySelector('.guild-topbar');
+    if (topbar && !topbar.dataset.characterNavigation) {
+      topbar.dataset.characterNavigation = 'true';
+      topbar.addEventListener('click',event=>{
+        const item = event.target.closest('#raidTab,#auctionTab,#professionTab');
+        if (!item) return;
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        location.href = '/?tool='+({raidTab:'raid',auctionTab:'auction',professionTab:'profession'})[item.id];
+      },true);
+    }
+    document.getElementById('raidTab').setAttribute('aria-pressed','true');
+    document.getElementById('auctionTab').setAttribute('aria-pressed','false');
+  } else main.append(dialog);
   if (player.armorySlug) {
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries=>{
