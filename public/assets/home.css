@@ -2093,3 +2093,14 @@ body.planner-site-active .raid-content > :not(.planner-page) { display: none !im
 
 .planner-page .planner-return-pill { display: inline-flex; align-items: center; min-height: 24px; padding: 3px 9px; border: 1px solid #34495a; border-radius: 999px; background: #141f28; color: #c5d9eb; font-size: 11px; line-height: 16px; white-space: nowrap; text-decoration: none; }
 .planner-page .planner-return-pill:hover { background: #203446; border-color: var(--accent); }
+
+/* Four clear destinations with expandable Guild Hall and Raiding links. */
+.guild-menu-group { margin: 0 0 3px; border: 0; }
+.guild-menu-group > summary { display: flex; align-items: center; gap: 8px; padding: 8px 10px; min-height: 36px; border-radius: 6px; color: #92a9bd; font-size: 12px; line-height: 1.35; list-style: none; cursor: pointer; }
+.guild-menu-group > summary::-webkit-details-marker { display: none; }
+.guild-menu-group > summary:hover,.guild-menu-group[open] > summary { background: #141e27; color: #e7edf3; }
+.guild-menu-group .guild-menu-chevron { margin-inline-start: auto; width: 12px; height: 12px; transition: transform .15s ease; }
+.guild-menu-group[open] .guild-menu-chevron { transform: rotate(180deg); }
+.guild-menu-items { margin: 2px 0 8px 18px; padding-left: 8px; border-left: 1px solid #263644; }
+.guild-app .raid-sidebar #raidMenu .guild-menu-items :is(button,a) { font-size: 11px; min-height: 32px; padding: 7px 8px; }
+@media(pointer:coarse) { .guild-menu-group > summary,.guild-app .raid-sidebar #raidMenu .guild-menu-items :is(button,a) { min-height: 44px; } }
