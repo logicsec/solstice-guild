@@ -1266,6 +1266,20 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .profile-progress { display: grid; grid-template-columns: minmax(0,1.45fr) minmax(0,1fr); gap: 22px; align-items: start; }
 .profile-section h3 { margin: 0 0 18px; color: var(--ink); font: 700 24px/1.2 Georgia, serif; font-variant: small-caps; }
 .profile-section h4 { margin: 24px 0 11px; color: var(--muted); font: 12px/1.4 Georgia, serif; letter-spacing: .12em; text-transform: uppercase; }
+.profile-progress > .profile-section { min-width: 0; }
+.profile-journey-scroll { max-height: 32rem; overflow-y: auto; scrollbar-gutter: stable; padding-inline-end: 12px; }
+.profile-journey-scroll > h4:first-child { margin-top: 0; }
+.profile-journey-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; }
+.profile-achievement-layout { display: grid; grid-template-columns: minmax(110px,.75fr) minmax(0,2fr); border: 1px solid var(--line); border-radius: 5px; background: var(--container); }
+.profile-achievement-categories { display: flex; flex-direction: column; gap: 4px; padding: 10px; border-inline-end: 1px solid var(--line); }
+.profile-achievement-categories button { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 8px; width: 100%; min-height: 44px; padding: 8px; border: 1px solid transparent; border-radius: 4px; background: transparent; color: var(--muted); text-align: start; font: inherit; font-size: 14px; cursor: pointer; }
+.profile-achievement-categories button[aria-pressed="true"] { border-color: var(--accent); background: var(--hover); color: var(--ink); }
+.profile-achievement-categories button:hover { background: var(--hover); }
+.profile-achievement-categories button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.profile-achievement-categories .profile-achievement-subcategory { padding-inline-start: 16px; }
+.profile-achievement-content { max-height: 32rem; overflow-y: auto; padding: 16px; scrollbar-gutter: stable; }
+.profile-achievement-content h4 { margin: 0 0 8px; color: var(--ink); font-size: 14px; }
+.profile-achievement-summary { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
 .profile-timeline { list-style: none; margin: 0 0 12px 16px; padding: 0 0 0 24px; border-inline-start: 1px solid var(--line); }
 .profile-timeline li { position: relative; padding-bottom: 16px; }
 .profile-timeline li::before { position: absolute; inset: 7px auto auto -28px; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); content: ''; }
@@ -1273,16 +1287,15 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
 .profile-timeline time,.profile-achievements small { display: block; color: var(--muted); font-size: 11px; }
 .profile-achievements {
   display: grid;
-  grid-template-columns: repeat(2,minmax(0,1fr));
+  grid-template-columns: minmax(0,1fr);
   gap: 13px 10px;
   margin: 0;
-  padding: 16px;
-  border: 1px solid var(--line);
-  border-radius: 5px;
-  background: var(--container);
+  padding: 0;
   list-style: none;
 }
 .profile-achievements li { display: flex; align-items: flex-start; gap: 9px; color: var(--muted); }
+.profile-achievements li[hidden] { display: none; }
+.profile-achievements small { font-size: 14px; }
 .profile-achievements .is-earned { color: var(--ink); }
 .profile-achievement-icon {
   display: grid;
@@ -1501,4 +1514,90 @@ body:has(> :is(.editor,.chronicle-article)) .site-header .discord { background: 
   .guild-event-row > div:not(.guild-event-actions) { grid-column: 2 / -1; }
   .guild-event-count { grid-row: 2; grid-column: 1 / 3; }
   .guild-event-actions { grid-row: 2; grid-column: 3; }
+}
+
+/* Full character pages share the Guild Hall palette. */
+body.character-page-active { background: var(--surface); }
+body.character-page-active > main { width: min(96%,1320px); max-width: none; margin: 0 auto; padding: 22px 0 48px; background: transparent; border: 0; }
+body.character-page-active > main > :not(.character-page-root) { display: none !important; }
+.character-page-root { color: var(--ink); }
+.character-page-back { display: inline-block; margin-bottom: 18px; color: var(--accent); font-size: 14px; }
+.character-page-root .character-profile-hero { padding: 24px; background: var(--field); border: 1px solid var(--line); border-radius: 12px; }
+.character-page-root .character-profile-grid { grid-template-columns: 1fr; }
+.character-page-root .character-profile-info { display: flex; align-items: center; justify-content: space-between; gap: 30px; padding-right: 0; }
+.character-page-root .character-inspector-title { align-items: center; margin: 0; gap: 14px; }
+.guild-app .character-page-root h2 { font: 700 clamp(24px,3vw,34px)/1.15 var(--site-font); text-transform: none; letter-spacing: -.03em; margin: 0 0 6px; }
+.character-page-root .inspector-meta { font-size: 14px; }
+.character-page-root .character-profile-hero .character-banner-close { display: none; }
+.character-page-root .character-banner-level { display: flex; align-items: center; flex: 0 0 48px; min-height: 48px; margin: 0; clip-path: none; border: 1px solid var(--line); border-radius: 50%; background: var(--container); font-size: 20px; }
+.character-page-root .character-banner-level::before { display: none; }
+.character-page-portrait { width: 56px; height: 56px; object-fit: cover; border-radius: 50%; border: 1px solid var(--line); }
+.character-page-root .profile-overview .raid-stats { display: flex; gap: 22px; }
+.guild-app .character-page-root .profile-overview .raid-stats > div { min-height: 0; padding: 0; border: 0; background: transparent; text-align: left; }
+.character-page-root .profile-level-history { display: none; }
+.character-page-root .profile-overview .raid-stats small { font: 13px/1.4 var(--site-font); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.character-page-root .profile-overview .raid-stats strong { font: 700 23px/1.5 var(--site-font); color: var(--accent); }
+.character-page-layout { display: grid; grid-template-columns: 180px minmax(0,1fr); margin-top: 20px; border: 1px solid var(--line); border-radius: 12px; overflow: hidden; background: var(--container); min-height: 580px; }
+.character-page-root .character-review-tabs { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; gap: 6px; padding: 16px 10px; background: var(--field); border: 0; border-inline-end: 1px solid var(--line); border-radius: 0; }
+.character-page-root .character-review-tabs button { width: 100%; min-height: 58px; padding: 10px; margin: 0; text-align: left; background: transparent; border: 1px solid transparent; border-radius: 7px; color: var(--muted); cursor: pointer; }
+.character-page-root .character-review-tabs button[aria-pressed=true] { background: var(--hover); color: var(--accent); border-color: var(--line); }
+.character-page-root .character-review-tabs strong,.character-page-root .character-review-tabs small { display: block; }
+.character-page-root .character-review-tabs strong { font: 700 14px/1.5 var(--site-font); }
+.character-page-root .character-review-tabs small { font: 12px/1.4 var(--site-font); margin-top: 2px; color: var(--muted); }
+.character-page-content { padding: 24px; min-width: 0; }
+.character-page-panel[hidden] { display: none; }
+.character-page-root .profile-section h3 { font: 700 22px/1.3 var(--site-font); }
+.character-page-root .profile-achievement-layout { display: flex; flex-direction: column; border: 0; background: transparent; }
+.character-page-root .profile-achievement-categories { flex-direction: row; flex-wrap: wrap; border: 0; padding: 0 0 16px; gap: 8px; }
+.character-page-root .profile-achievement-categories button { width: auto; min-height: 36px; border-radius: 20px; border-color: var(--line); padding: 6px 14px; }
+.character-page-root .profile-achievement-content { max-height: none; overflow: visible; padding: 0; }
+.character-page-root .profile-achievements { gap: 0; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.character-page-root .profile-achievements li { padding: 16px; border-bottom: 1px solid var(--line); }
+.character-page-root .profile-achievements li:last-child { border-bottom: 0; }
+.character-page-root .profile-achievements strong { font: 700 15px/1.5 var(--site-font); }
+.character-page-root .profile-achievement-icon { border-radius: 6px; }
+.character-page-root .profile-achievement-state { margin-top: 4px; }
+.character-page-root .profile-journey-scroll { max-height: min(65dvh,36rem); }
+.character-page-root .character-sheet.has-character-render { grid-template-columns: minmax(0,1fr) minmax(180px,1.3fr) minmax(0,1fr); align-items: start; }
+.character-page-root .character-sheet.has-character-render :is(.character-slot-button,.character-slot-empty) { width: 100%; justify-content: flex-start; }
+.character-page-root .character-sheet.has-character-render .character-slot-copy { display: block; }
+.character-page-root .character-slot-button { gap: 8px; }
+.character-page-root .character-showcase { min-height: 410px; height: 100%; }
+.character-page-root .character-weapons { grid-column: 1/-1; }
+.character-stat-strip { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 24px; border-block: 2px solid var(--accent); background: linear-gradient(110deg,var(--hover),var(--field)); }
+.character-stat-spec { padding: 12px 18px; border: 1px solid var(--accent); border-radius: 5px; background: var(--container); }
+.character-stat-spec strong,.character-stat-spec small { display: block; }
+.character-stat-spec small { color: var(--muted); font-size: 14px; }
+.character-key-stats { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 24px; text-align: center; }
+.character-key-stats strong { display: block; font: 700 clamp(22px,3vw,34px)/1.2 var(--site-font); }
+.character-key-stats small { display: block; margin-top: 10px; color: var(--accent); font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+.character-key-stats small::before { content: ''; display: block; width: 22px; height: 3px; background: var(--sage); margin: 0 auto 8px; }
+.character-key-stats > :nth-child(2) small::before { background: #7eb4d1; }
+.character-key-stats > :nth-child(3) small::before { background: #86c8bc; }
+.character-key-stats > :nth-child(4) small::before { background: #d6a36c; }
+.character-detailed-stats { padding: 32px 0; }
+.character-detailed-stats h3 { font: 700 28px/1.3 var(--site-font); margin: 4px 0 24px; }
+.character-stat-rows { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px 48px; }
+.character-stat-rows > div { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.character-stat-rows dt { font-size: 14px; color: var(--muted); }
+.character-stat-rows dd { margin: 0; font-size: 20px; font-weight: 700; }
+.stat-leader { flex: 1; min-width: 12px; border-bottom: 2px dotted var(--line); }
+.guild-planner-link { display: block; padding: 10px 14px; color: var(--accent); }
+@media(max-width:850px) {
+ .character-page-root .character-profile-info { flex-direction: column; align-items: flex-start; gap: 20px; }
+ .character-page-root .profile-overview .raid-stats { flex-wrap: wrap; }
+ .character-stat-strip { flex-direction: column; align-items: stretch; }
+ .character-page-root .character-sheet.has-character-render { grid-template-columns: 44px minmax(150px,1fr) 44px; }
+ .character-page-root .character-sheet.has-character-render .character-slot-copy { display: none; }
+ .character-page-root .character-sheet.has-character-render :is(.character-slot-button,.character-slot-empty) { width: 40px; }
+}
+@media(max-width:600px) {
+ .character-page-layout { grid-template-columns: minmax(0,1fr); }
+ .character-page-root .character-review-tabs { flex-direction: row; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--line); padding: 8px; }
+ .character-page-root .character-review-tabs button { width: auto; flex: 0 0 auto; min-height: 44px; }
+ .character-page-root .character-review-tabs small { display: none; }
+ .character-page-content { padding: 16px; }
+ .character-key-stats { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
+ .character-stat-rows { grid-template-columns: minmax(0,1fr); }
+ .character-page-root .character-profile-hero { padding: 18px; }
 }

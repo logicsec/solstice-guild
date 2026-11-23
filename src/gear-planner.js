@@ -1,3 +1,4 @@
+import { refreshGearCatalog } from './gear-catalog.js';
 import { sameOriginWrite } from './auth.js';
 
 const slots = new Set(['Head','Neck','Shoulder','Back','Chest','Wrist','Hands','Waist','Legs','Feet','Finger 1','Finger 2','Trinket 1','Trinket 2','Main Hand','Off Hand','Ranged']);
@@ -22,6 +23,7 @@ export async function gearPlannerApi(request,env,url,session){
  const db=env.DB,member=session.discord_id;
  if(!db||!member)return reply({error:'Guild sign-in and storage required.'},401);
  if(request.method==='GET'){
+  if(url.searchParams.get('catalog')==='1')return reply(await refreshGearCatalog());
   const search=clean(url.searchParams.get('search'),80);
   if(search){
    if(search.length<2)return reply({items:[]});

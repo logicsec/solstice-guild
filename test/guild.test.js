@@ -102,6 +102,17 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   const options = { headers: { Cookie: cookie } };
   const page = await (await send('/?tool=raid&view=detail&raid=00000000-0000-4000-8000-000000000001', options)).text();
   assert.match(page, /Guild tools/);
+  const characterPage = await send('/character?name=astra-mortis&tab=stats',options);
+  assert.equal(characterPage.status,200);
+  assert.match(await characterPage.text(),/character-page-root/);
+  const loggedOutCharacter = await send('/character?name=astra-mortis');
+  assert.equal(loggedOutCharacter.status,303);
+  assert.match(loggedOutCharacter.headers.get('location'),/auth\/discord\?next=/);
+  assert.doesNotMatch(page,/<button data-raid-view="(?:guildChat|craftingDirectory)"/);
+  const plannerPage = await send('/gear-planner',options);
+  assert.equal(plannerPage.status,200);
+  assert.match(await plannerPage.text(),/itemPicker/);
+
   assert.match(page, /Invite link/);
   new Function(page.split('<script>').at(-1).split('</script>')[0]);
   assert.equal((await (await send('/api/session', options)).json()).displayName, 'Raider');

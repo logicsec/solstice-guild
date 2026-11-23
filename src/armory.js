@@ -173,8 +173,8 @@ async function loadCharacter(env, slug) {
     ['Primary stats',[['Strength',statistics?.strength?.effective],['Agility',statistics?.agility?.effective],
       ['Intellect',statistics?.intellect?.effective],['Stamina',statistics?.stamina?.effective],
       ['Spirit',statistics?.spirit?.effective]]],
-    ['Defense',[['Health',statistics?.health],['Armor',statistics?.armor?.effective]]],
-    ['Offense',[['Attack power',statistics?.attack_power],['Spell power',statistics?.spell_power]]],
+    ['Defense',[['Health',statistics?.health],['Mana',statistics?.power_type?.name === 'Mana' ? statistics?.power : statistics?.mana],['Armor',statistics?.armor?.effective]]],
+    ['Offense',[['Attack power',statistics?.attack_power],['Spell power',statistics?.spell_power],['Spell crit',statistics?.spell_crit?.value],['Spell haste',statistics?.spell_haste?.value],['Mana regen',statistics?.mana_regen],['Spell penetration',statistics?.spell_penetration],['Defense',statistics?.defense?.effective ?? statistics?.defense]]],
   ].map(([group,values])=>[group,values.filter(([,value])=>Number.isFinite(value))]).filter(([,values])=>values.length);
   return {
     slug, name, level: profile.level ?? null,

@@ -150,16 +150,6 @@ export function renderArmoryProfile(character) {
     }
     sheet.append(left,showcase,right,weapons);
   } else sheet.append(raidElement('p','No equipment data available.'));
-  const attributes = raidElement('aside',null,'character-attributes');
-  attributes.setAttribute('aria-label','Character Stats');
-  for (const [group,values] of character.attributes ?? []) {
-    const list = raidElement('dl');
-    const groupPanel = raidElement('section',null,'character-stat-card');
-    groupPanel.append(raidElement('h3',group),list);
-    attributes.append(groupPanel);
-    for (const [label,value] of values) list.append(raidElement('dt',label),raidElement('dd',new Intl.NumberFormat().format(value)));
-  }
-  if (!character.attributes?.length) attributes.append(raidElement('p','No attributes reported by the Armory.','character-stat-card'));
   const history = character.journey ?? [];
   const overview = raidElement('section',null,'profile-overview');
   const facts = raidElement('div',null,'raid-stats');
@@ -181,6 +171,11 @@ export function renderArmoryProfile(character) {
   const progress = raidElement('div',null,'profile-progress');
   const journey = raidElement('section',null,'profile-section');
   journey.append(raidElement('h3','The Journey'));
+  const journeyHistory = raidElement('div',null,'profile-journey-scroll');
+  journeyHistory.tabIndex = 0;
+  journeyHistory.setAttribute('role','region');
+  journeyHistory.setAttribute('aria-label','Journey history');
+  journey.append(journeyHistory);
   const levels = history.filter(day => Number.isFinite(day.level));
   if (levels.length > 1) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
@@ -226,11 +221,11 @@ export function renderArmoryProfile(character) {
   const timelineMonth = new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric',timeZone:'UTC'});
   const timelineDay = new Intl.DateTimeFormat(undefined,{day:'numeric',month:'long',timeZone:'UTC'});
   let monthKey, timeline;
-  for (const [day,description] of changes.reverse().slice(0,40)) {
+  for (const [day,description] of changes.reverse()) {
     if (monthKey !== day.slice(0,7)) {
       monthKey = day.slice(0,7);
       timeline = raidElement('ol',null,'profile-timeline');
-      journey.append(raidElement('h4',timelineMonth.format(new Date(day))),timeline);
+      journeyHistory.append(raidElement('h4',timelineMonth.format(new Date(day))),timeline);
     }
     const entry = raidElement('li');
     const date = raidElement('time',timelineDay.format(new Date(day)));
@@ -238,11 +233,20 @@ export function renderArmoryProfile(character) {
     entry.append(raidElement('strong',description),date);
     timeline.append(entry);
   }
-  if (!changes.length) journey.append(raidElement('p','No journey history recorded yet.'));
+  if (!changes.length) journeyHistory.append(raidElement('p','No journey history recorded yet.'));
 
   const achievements = raidElement('section',null,'profile-section');
-  achievements.append(raidElement('h3','Achievements'));
+  achievements.append(raidElement('h3','Achievements'),raidElement('p','Milestones recorded from your Armory profile and journey history.','profile-achievement-summary'));
+  const achievementLayout = raidElement('div',null,'profile-achievement-layout');
+  const categories = raidElement('nav',null,'profile-achievement-categories');
+  categories.setAttribute('aria-label','Achievement categories');
+  const achievementContent = raidElement('div',null,'profile-achievement-content');
+  const categoryHeading = raidElement('h4');
   const badges = raidElement('ul',null,'profile-achievements');
+  badges.setAttribute('aria-label','Character achievements');
+  const categorySummary = raidElement('p',null,'profile-achievement-summary');
+  categorySummary.setAttribute('aria-live','polite');
+  const achievementRows = [];
   for (const [title,description,earned] of milestones) {
     const badge = raidElement('li',null,earned ? 'is-earned' : '');
     const icon = raidElement('span',title.startsWith('Level ') ? '⚑' : '◇','profile-achievement-icon');
@@ -251,14 +255,31 @@ export function renderArmoryProfile(character) {
     copy.append(raidElement('strong',title),raidElement('small',description),raidElement('small',earned ? 'Earned' : 'Not recorded','profile-achievement-state'));
     badge.append(icon,copy);
     badges.append(badge);
+    achievementRows.push({badge,earned,category:title.startsWith('Level ') ? 'Leveling' : 'Equipment'});
   }
-  achievements.append(badges);
+  const categoryButtons = [];
+  function selectCategory(category) {
+    for (const [label,button] of categoryButtons) button.setAttribute('aria-pressed',String(label === category));
+    const visible = achievementRows.filter(row => category === 'General' || row.category === category);
+    for (const row of achievementRows) row.badge.hidden = !visible.includes(row);
+    categoryHeading.textContent = category;
+    categorySummary.textContent = visible.filter(row => row.earned).length+' / '+visible.length+' earned';
+    achievementContent.scrollTop = 0;
+  }
+  for (const category of ['General','Leveling','Equipment']) {
+    const rows = achievementRows.filter(row => category === 'General' || row.category === category);
+    const button = raidElement('button',null,category === 'General' ? '' : 'profile-achievement-subcategory');
+    button.type = 'button';
+    button.append(raidElement('span',category),raidElement('small',rows.filter(row => row.earned).length+' / '+rows.length));
+    button.addEventListener('click',()=>selectCategory(category));
+    categoryButtons.push([category,button]);
+    categories.append(button);
+  }
+  selectCategory('General');
+  achievementContent.append(categoryHeading,categorySummary,badges);
+  achievementLayout.append(categories,achievementContent);
+  achievements.append(achievementLayout);
   progress.append(journey,achievements);
-  if (character.attributes?.length) {
-    const stats = raidElement('details',null,'profile-attribute-details');
-    stats.append(raidElement('summary','Character Stats'),attributes);
-    overview.append(stats);
-  }
   const professions = raidElement('div',null,'character-profession-sections');
   const groups = {primary:raidElement('div',null,'guild-dashboard-rows character-professions'),secondary:raidElement('div',null,'guild-dashboard-rows character-professions')};
   for (const entry of character.professions ?? []) {
@@ -295,7 +316,35 @@ export function renderArmoryProfile(character) {
       professions.append(section);
     }
   }
-  return { overview, equipment:sheet, progress, professions };
+  const statistics = raidElement('section',null,'character-statistics');
+  const statStrip = raidElement('div',null,'character-stat-strip');
+  const activeBuild = character.talents?.find(build=>build.active) ?? character.talents?.[0];
+  const spec = activeBuild?.trees?.reduce((best,tree)=>(tree.points ?? 0) > (best?.points ?? -1) ? tree : best,null);
+  const specLabel = raidElement('div',null,'character-stat-spec');
+  specLabel.append(raidElement('strong',spec?.name || 'Specialization'),raidElement('small',activeBuild?.trees?.map(tree=>tree.points ?? 0).join(' / ') || 'Not reported'));
+  statStrip.append(specLabel);
+  const statValues = new Map((character.attributes ?? []).flatMap(([,values])=>values));
+  const keyStats = raidElement('div',null,'character-key-stats');
+  for (const label of ['Health','Mana','Intellect','Stamina']) {
+    const tile = raidElement('div');
+    tile.append(raidElement('strong',statValues.has(label) ? new Intl.NumberFormat().format(statValues.get(label)) : '—'),raidElement('small',label));
+    keyStats.append(tile);
+  }
+  statStrip.append(keyStats);
+  const detailed = raidElement('div',null,'character-detailed-stats');
+  detailed.append(raidElement('p','Character Sheet','eyebrow'),raidElement('h3','Detailed statistics'));
+  const rows = raidElement('dl',null,'character-stat-rows');
+  for (const [label,value] of statValues) {
+    if (['Health','Mana','Intellect','Stamina'].includes(label)) continue;
+    const row = raidElement('div');
+    row.append(raidElement('dt',label),raidElement('span',null,'stat-leader'),raidElement('dd',new Intl.NumberFormat(undefined,{maximumFractionDigits:2}).format(value)+(/crit|haste|dodge|parry|block chance/i.test(label) ? '%' : '')));
+    row.children[1].setAttribute('aria-hidden','true');
+    rows.append(row);
+  }
+  if (!rows.children.length) detailed.append(raidElement('p','No detailed statistics reported by the Armory.'));
+  detailed.append(rows);
+  statistics.append(statStrip,detailed);
+  return { overview, equipment:sheet, progress, professions, statistics, journey, achievements };
 }
 
 export function renderCharacterTalents(character) {
@@ -420,17 +469,34 @@ export function renderCharacterTalents(character) {
 }
 
 export function openCharacterSheet(player, event, organizer) {
-  const dialog = raidElement('dialog',null,'workspace-drawer character-drawer');
+  if (location.pathname !== '/character') {
+    const params = new URLSearchParams({character:player.character});
+    if (player.armorySlug) params.set('name',player.armorySlug);
+    if (event?.id) params.set('raid',event.id);
+    location.href = '/character?'+params;
+    return;
+  }
+  document.body.classList.add('character-page-active');
+  document.title = player.character+' · Solstice';
+  document.querySelector('.character-page-root')?.remove();
+  const dialog = raidElement('section',null,'character-page-root');
+  dialog.open = true;
+  const backUrl = event?.id ? '/?tool=raid&view=detail&raid='+encodeURIComponent(event.id) : '/?tool=raid&view=guildDashboard';
+  dialog.close = () => { location.href = backUrl; };
+  const back = raidElement('a','Back to Guild Hall','character-page-back');
+  back.href = backUrl;
+  dialog.append(back);
   const title = raidElement('h2',player.character);
   title.id = 'character-sheet-title';
   dialog.setAttribute('aria-labelledby',title.id);
   const heading = raidElement('div',null,'character-inspector-title');
   const identity = raidElement('div');
   identity.append(title,raidElement('p',[player.spec,player.class_name,player.role].filter(Boolean).join(' · '),'inspector-meta'));
-  const close = raidElement('button','×','character-banner-close');
+  const close = raidElement('a','Back to Guild Hall','character-banner-close');
+  close.href = backUrl;
   close.type = 'button';
   close.setAttribute('aria-label','Close character sheet');
-  close.addEventListener('click',()=>dialog.close());
+
   const level = raidElement('span',undefined,'character-banner-level');
   function setLevel(value) {
     level.textContent = value == null ? '' : String(value);
@@ -447,14 +513,14 @@ export function openCharacterSheet(player, event, organizer) {
   const equipment = raidElement('div');
   equipment.hidden = true;
   info.append(heading,overview);
-  inner.append(info,equipment);
+  inner.append(info);
   header.append(inner,close);
   const content = raidElement('div');
   const plannerLink = raidElement('a','Plan Gear for '+player.character,'raid-primary');
   plannerLink.href = '/gear-planner?character='+encodeURIComponent(player.character);
   plannerLink.style.display='inline-block';
   plannerLink.style.margin='12px 0';
-  content.append(plannerLink);
+  content.append(plannerLink,equipment);
   const review = event ? raidElement('div',null,'character-raid-review') : null;
   const evidence = event ? raidElement('section',null,'raid-card raid-review-evidence') : null;
   if (event) {
@@ -482,27 +548,46 @@ export function openCharacterSheet(player, event, organizer) {
   tabs.setAttribute('aria-label','Character Sheet Sections');
   const talents = raidElement('div');
   talents.append(raidElement('p','Loading talents…'));
-  const sections = [['Character',content],['Talents',talents],...(review ? [['Raid Review',review]] : []),['Professions',professions]];
-  const panels = sections.map(([label,panel])=>{
-    const button = raidElement('button',label);
+  const statisticsPanel = raidElement('div');
+  const achievementsPanel = raidElement('div');
+  const journeyPanel = raidElement('div');
+  for (const panel of [statisticsPanel,achievementsPanel,journeyPanel]) panel.append(raidElement('p','Loading character data…'));
+  const sections = [['Gear',content,'Equipped items'],['Talents',talents,'Spec builds'],['Stats',statisticsPanel,'Attributes & combat'],['Achievements',achievementsPanel,'Earned & in progress'],['Journey',journeyPanel,'Recorded progression'],['Professions',professions,'Skills & trades'],...(review ? [['Raid Review',review,'Readiness & evidence']] : [])];
+  const panels = sections.map(([label,panel,description])=>{
+    const button = raidElement('button');
+    button.append(raidElement('strong',label),raidElement('small',description));
+    panel.classList.add('character-page-panel');
+    panel.setAttribute('aria-label',label);
+    panel.setAttribute('role','region');
     button.type = 'button';
     tabs.append(button);
     return {button,panel};
   });
   function selectPanel(selected) {
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
-    overview.hidden = selected !== content;
+    overview.hidden = false;
     equipment.hidden = selected !== content || !equipment.hasChildNodes();
     for (const {button,panel} of panels) {
       button.setAttribute('aria-pressed',String(panel === selected));
       panel.hidden = panel !== selected;
     }
   }
-  for (const {button,panel} of panels) button.addEventListener('click',()=>selectPanel(panel));
+  for (const {button,panel} of panels) button.addEventListener('click',()=>{
+    selectPanel(panel);
+    const url = new URL(location.href);
+    url.searchParams.set('tab',panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-'));
+    history.replaceState(null,'',url);
+  });
   dialog.append(header);
   if (player.armorySlug) {
-    dialog.append(tabs,...panels.map(({panel})=>panel));
-    selectPanel(content);
+    const pageLayout = raidElement('div',null,'character-page-layout');
+    const pageContent = raidElement('div',null,'character-page-content');
+    pageContent.append(...panels.map(({panel})=>panel));
+    pageLayout.append(tabs,pageContent);
+    dialog.append(pageLayout);
+    const requestedTab = new URLSearchParams(location.search).get('tab');
+    const requestedPanel = panels.find(({panel})=>panel.getAttribute('aria-label').toLowerCase().replace(/ /g,'-') === requestedTab)?.panel;
+    selectPanel(requestedPanel ?? content);
   } else {
     overview.replaceChildren();
     dialog.append(review ?? raidElement('p','This character was added manually and has no linked Armory profile.','raid-card'));
@@ -510,24 +595,7 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
-  document.body.append(dialog);
-  dialog.addEventListener('close',()=>dialog.remove(),{once:true});
-  dialog.setAttribute('closedby','any');
-  function onBackdrop(event) {
-    if (event.target !== dialog) return false;
-    const bounds = dialog.getBoundingClientRect();
-    return event.clientX < bounds.left || event.clientX >= bounds.right ||
-      event.clientY < bounds.top || event.clientY >= bounds.bottom;
-  }
-  if (!('closedBy' in dialog)) {
-    let pressedBackdrop = false;
-    dialog.addEventListener('pointerdown',event=>{ pressedBackdrop = onBackdrop(event); });
-    dialog.addEventListener('click',event=>{
-      if (pressedBackdrop && onBackdrop(event)) dialog.close();
-      pressedBackdrop = false;
-    });
-  }
-  dialog.showModal();
+  document.querySelector('body > main').append(dialog);
   if (!player.armorySlug) return;
   armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
     if (!dialog.open) return;
@@ -535,7 +603,10 @@ export function openCharacterSheet(player, event, organizer) {
     overview.replaceChildren(profile.overview);
     equipment.replaceChildren(profile.equipment);
     equipment.hidden = content.hidden;
-    content.replaceChildren(plannerLink,profile.progress);
+    content.replaceChildren(plannerLink,equipment);
+    statisticsPanel.replaceChildren(profile.statistics);
+    achievementsPanel.replaceChildren(profile.achievements);
+    journeyPanel.replaceChildren(profile.journey);
     professions.replaceChildren(profile.professions);
     talents.replaceChildren(renderCharacterTalents(character));
     const meta = identity.querySelector('.inspector-meta');
@@ -543,6 +614,13 @@ export function openCharacterSheet(player, event, organizer) {
       character.guild && '<'+character.guild+'>'].filter(Boolean).join(' · ');
     if (character.ruleset) identity.append(raidElement('p',character.ruleset,'character-profile-realm'));
     if (character.level != null) setLevel(character.level);
+    if (character.portrait) {
+      const portrait = raidElement('img',null,'character-page-portrait');
+      portrait.src = character.portrait;
+      portrait.alt = '';
+      portrait.addEventListener('error',()=>portrait.remove(),{once:true});
+      heading.prepend(portrait);
+    }
     if (!evidence) return;
     const gear = character.gear;
     const stats = raidElement('div',null,'raid-stats');
@@ -555,6 +633,7 @@ export function openCharacterSheet(player, event, organizer) {
       raidElement('p','These figures come from Blizzard. Organizers set readiness for the selected raid.'));
   }).catch(error=>{
     overview.replaceChildren(raidElement('p',error.message));
+    for (const panel of [statisticsPanel,achievementsPanel,journeyPanel]) panel.replaceChildren(raidElement('p','Character data is unavailable. Return to Guild Hall and try again.'));
     professions.replaceChildren(raidElement('p','Professions are unavailable.'));
     talents.replaceChildren(raidElement('p','Talents are unavailable.'));
     evidence?.replaceChildren(raidElement('h3','Armory Evidence'),raidElement('p','Armory data is unavailable. You can still complete the review.'));
@@ -631,7 +710,7 @@ export function renderArmoryConfirmation(card,character,search) {
   const close = raidElement('button','×','armory-confirm-close');
   close.type = 'button';
   close.setAttribute('aria-label','Close character confirmation');
-  close.addEventListener('click',()=>dialog.close());
+
   const facts = raidElement('dl',null,'character-banner-facts');
   header.append(heading,close,facts);
 
