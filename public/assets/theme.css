@@ -129,7 +129,7 @@ code { color:var(--theme-code-color); }
 /* Profession artwork and individual color bands, following the traffic-source rows. */
 .guild-app #raidList .guild-profession-link {
  --profession-color:var(--theme-primary); border-radius:4px;
- background:linear-gradient(to right,color-mix(in srgb,var(--profession-color) 23%,transparent) 78%,color-mix(in srgb,var(--profession-color) 9%,transparent) 78%);
+ background:color-mix(in srgb,var(--profession-color) 23%,transparent);
  border-color:transparent;
 }
 .guild-app #raidList .guild-profession-link[data-profession="mining"] { --profession-color:var(--theme-warning); }
@@ -148,3 +148,10 @@ code { color:var(--theme-code-color); }
 .guild-profession-link .guild-profession-watermark { display:none; }
 .guild-profession-link .guild-dashboard-count { background:transparent; border:0; }
 .guild-app #professionGrid .profession-progress-icon { display:inline-flex; width:24px; height:24px; padding:0; border-radius:4px; }
+
+.guild-app .raid-sidebar #discordAccountCard [data-raid-view="characters"] {
+ display:flex; align-items:center; justify-content:center; gap:6px;
+ width:max-content; max-width:100%; min-height:28px; margin:12px auto;
+ padding:4px 12px; font-size:12px; line-height:18px;
+}
+.guild-app .raid-sidebar #discordAccountCard [data-raid-view="characters"] .tabler-icon { width:14px; height:14px; }
