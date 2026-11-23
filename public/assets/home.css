@@ -1798,3 +1798,41 @@ body.character-page-active > main > :not(.character-page-root) { display: none !
 .character-reputation-row progress { display: block; width: 100%; height: 6px; margin-top: 10px; accent-color: #569d77; }
 .character-reputation-row small { display: block; margin-top: 5px; text-align: right; color: #8da9c0; font-size: 12px; font-variant-numeric: tabular-nums; }
 @media(max-width:600px) { .character-reputations { grid-template-columns: minmax(0,1fr); } }
+
+/* Shared navy palette, carried from the Activity dashboard across Solstice. */
+:root,
+.guild-app,
+body:has(> :is(.guild-home,.editor,.chronicle-article)) {
+ --surface: #0c1218;
+ --night: #0c1218;
+ --bg: #0c1218;
+ --container: #141b21;
+ --panel: #141b21;
+ --raised: #1b2834;
+ --field: #0f171e;
+ --ink: #e7edf3;
+ --muted: #92a9bd;
+ --line: #293a48;
+ --hover: #203345;
+ --accent: #65a9ef;
+ --deep-accent: #355775;
+ --copper: #65a9ef;
+ --gold: #65a9ef;
+ --sage: #59a68e;
+ --glass-panel: #141b21ed;
+ --glass-nav: #111a23f5;
+}
+body,.guild-app { background: var(--surface); color: var(--ink); }
+.guild-app > main { background: radial-gradient(ellipse at 84% 0%,#182b3c80,transparent 58%),var(--surface); }
+.guild-home { --home-gold: var(--accent); }
+.site-header,footer,.guild-topbar { background: var(--container); border-color: var(--line); }
+.site-header:has(+ .guild-home) .discord { border-color: var(--line); }
+.home-banner .home-chronicle-link,.button.gold { background: var(--accent); border-color: var(--accent); color: #07131e; box-shadow: none; }
+.home-banner .home-chronicle-link:hover,.button.gold:hover { background: #8ac3fb; box-shadow: none; }
+.home-about { background: radial-gradient(ellipse at 50% 108%,#4594ff1f,transparent 42%),var(--container); border-color: var(--line); }
+.home-about::after { background: linear-gradient(90deg,transparent,var(--accent),transparent); box-shadow: 0 0 12px #4594ff40; }
+.guild-app .armory-confirm { background: var(--container); }
+.guild-app .character-page-root .character-profile-hero { background: linear-gradient(90deg,#0c1621ed,#142334b3 55%,#0c1621dd),url('/assets/solstice-dawn.webp') center 30% / cover; }
+.character-reputation-heading span { color: var(--accent); }
+.character-gear-stats .character-stat-table { background: var(--container); }
+.character-gear-stats .character-stat-table dl > div { background: var(--field); }
