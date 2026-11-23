@@ -1927,8 +1927,10 @@ body.character-page-active .character-page-root { min-width: 0; }
 .character-page-root .character-profile-info { display: block; }
 .character-page-root .profile-overview { display: none; }
 .character-page-root .character-profile-hero .character-inspector-title { display: flex; align-items: center; gap: 22px; }
-.character-header-model { width: 154px; height: 182px; flex: 0 0 154px; border: 2px solid #35bddc; border-radius: 11px; background: #141b21; display: grid; place-items: center; overflow: hidden; }
+.character-header-model { width: 190px; height: 220px; flex: 0 0 190px; border: 0; border-radius: 0; background: transparent; display: grid; place-items: center; overflow: hidden; }
 .character-header-model img { width: 100%; height: 100%; object-fit: contain; }
+/* Blizzard raw renders include empty canvas around the character. */
+.character-header-model .character-model-raw { transform: scale(3); transform-origin: 50% 60%; }
 .character-header-badges { display: flex; gap: 8px; margin-bottom: 8px; }
 .character-header-badges span { padding: 2px 7px; border: 1px solid #34404a; border-radius: 20px; background: #1b242c; color: #dce7f4; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
 .character-header-badges span:first-child { color: #e8bd34; border-color: #635121; background: #2a281b; }
@@ -1940,7 +1942,7 @@ body.character-page-active .character-page-root { min-width: 0; }
 .guild-app .character-header-freshness button { min-height: 24px; margin: 0; padding: 2px 0; border: 0; background: transparent; color: #4ba2ff; font-size: 11px; font-weight: 400; }
 @media(max-width:700px) { .character-profession-reputation-pair { grid-template-columns: minmax(0,1fr); } }
 @media(max-width:600px) {
- .character-header-model { width: 90px; height: 126px; flex-basis: 90px; }
+ .character-header-model { width: 105px; height: 150px; flex-basis: 105px; }
  .character-page-root .character-profile-hero .character-inspector-title { gap: 14px; }
  .character-header-badges { gap: 4px; flex-wrap: wrap; }
  .character-header-badges span { font-size: 9px; }

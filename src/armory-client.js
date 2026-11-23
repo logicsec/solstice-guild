@@ -581,6 +581,7 @@ export function openCharacterSheet(player, event, organizer) {
     const thumbnail = character.render || character.portrait;
     if (thumbnail) {
       const image = raidElement('img');image.src=thumbnail;image.alt=character.name+' character render';
+      if (character.render && character.renderStyle === 'main-raw') image.className = 'character-model-raw';
       image.addEventListener('error',()=>{image.remove();headerModel.textContent=character.className || '';},{once:true});headerModel.replaceChildren(image);
     }
     if (!evidence) return;
