@@ -36,5 +36,4 @@ jobs:
         env:
           KOMODO_API_KEY: ${{ secrets.KOMODO_API_KEY }}
           KOMODO_API_SECRET: ${{ secrets.KOMODO_API_SECRET }}
-          KOMODO_DIAGNOSTIC_UPDATE: 6b04a546a8212b8bd4da52f5
         run: node scripts/deploy-komodo.mjs

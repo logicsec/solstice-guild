@@ -42,7 +42,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const agenda = make('section',undefined,'raid-card guild-events-agenda');
   const agendaHead = make('header',undefined,'guild-events-agenda-head');
   const heading = make('h3','Upcoming Events');
-  const viewAll = button('View all',()=>{selected=null;drawAgenda();drawCalendar();},'Show all upcoming events');
+  const viewAll = button('Reset',()=>{selected=null;drawAgenda();drawCalendar();},'Reset date filter');
   agendaHead.append(heading,viewAll);
   const weekStrip = make('div',undefined,'guild-agenda-week');
   weekStrip.setAttribute('role','group');weekStrip.setAttribute('aria-label','Choose an agenda day');
@@ -231,6 +231,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   heading.tabIndex = -1;
   function drawAgenda() {
     heading.textContent = 'Upcoming Events';
+    viewAll.hidden = selected === null;
     rows.replaceChildren();
     weekStrip.replaceChildren();
     const activeDay = selected === null ? today : new Date(selected);

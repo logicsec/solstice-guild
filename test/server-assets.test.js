@@ -6,6 +6,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
+import {DatabaseSync} from 'node:sqlite';
+import {createHash} from 'node:crypto';
 
 test('production server serves theme and Tabler assets without authentication', {timeout:15000}, async t=>{
   const directory=await mkdtemp(join(tmpdir(),'solstice-assets-'));
@@ -13,7 +15,11 @@ test('production server serves theme and Tabler assets without authentication', 
   await new Promise(resolve=>reservation.listen(0,'127.0.0.1',resolve));
   const port=reservation.address().port;
   await new Promise(resolve=>reservation.close(resolve));
-  const child=spawn(process.execPath,['src/server.js'],{
+  const preload = `globalThis.fetch=async(url)=>{
+    if(String(url).includes('/v1/pricetable/'))return new Response(new ReadableStream({start(controller){controller.enqueue(new TextEncoder().encode('{"items":['));setTimeout(()=>controller.error(new DOMException('upstream timed out','TimeoutError')),10)}}),{headers:{'Content-Type':'application/json'}});
+    return new Response('<rss></rss>');
+  };`;
+  const child=spawn(process.execPath,['--import','data:text/javascript,'+encodeURIComponent(preload),'src/server.js'],{
     cwd:new URL('..',import.meta.url),stdio:'ignore',
     env:{...process.env,PORT:String(port),SQLITE_PATH:join(directory,'test.sqlite'),PUBLIC_ORIGIN:'https://guild.example',DISCORD_CLIENT_ID:'1',DISCORD_CLIENT_SECRET:'test-only',DISCORD_GUILD_ID:'2'},
   });
@@ -30,6 +36,15 @@ test('production server serves theme and Tabler assets without authentication', 
     await delay(30);
   }
   assert.ok(ready,'server starts with the production adapter');
+  const sqlite=new DatabaseSync(join(directory,'test.sqlite'));
+  const token='a'.repeat(64);
+  sqlite.prepare('INSERT INTO discord_sessions(token_hash,discord_id,display_name,expires_at) VALUES(?,?,?,?)').run(createHash('sha256').update(token).digest('hex'),'test','Tester',Date.now()+60000);
+  sqlite.close();
+  const failedFeed=await fetch(base+'/prices',{headers:{Cookie:'__Host-solstice-session='+token}});
+  assert.equal(failedFeed.status,502,'upstream body timeout becomes a controlled error response');
+  assert.match(await failedFeed.text(),/AHledger did not respond/);
+  assert.equal((await fetch(base+'/healthz')).status,200,'upstream timeout does not terminate the actual Node server');
+
   for(const [asset,type,expected] of [
     ['theme.css','text/css','--theme-body-bg:#17181e'],
     ['icons.js','javascript','function tablerIcon'],

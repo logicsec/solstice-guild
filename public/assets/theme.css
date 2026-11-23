@@ -346,3 +346,31 @@ body.guild-app #raidPanel > .raid-content {
 @media(min-width:1001px) and (max-width:1250px) { .guild-event-main { grid-template-columns:minmax(0,1fr); gap:3px; } }
 
 .guild-app #raidList .guild-event-meta .guild-event-creator { margin-top:0; }
+
+/* Guild Hall: a wide roster with an ordered, compact overview sidebar. */
+.guild-app #raidList .guild-dashboard-layout { display:grid; grid-template-columns:minmax(0,3fr) minmax(260px,1fr); gap:20px; align-items:start; }
+.guild-dashboard-main,.guild-dashboard-sidebar { display:grid; grid-template-columns:minmax(0,1fr); gap:16px; min-width:0; }
+.guild-app #raidList .guild-dashboard-main > .guild-dashboard-hero { grid-template-columns:minmax(0,1fr); padding:22px 0 18px; margin:0; border:0; border-radius:0; background:transparent; box-shadow:none; }
+.guild-dashboard-main > .guild-dashboard-hero::after,.guild-dashboard-main .guild-dashboard-crest { display:none; }
+.guild-app #raidList .guild-dashboard-main .guild-dashboard-totals { border-top:0; }
+.guild-app #raidList .guild-dashboard-main > .raid-card,.guild-app #raidList .guild-dashboard-sidebar > .raid-card { margin:0; min-width:0; grid-column:auto; }
+.guild-app #raidList .guild-dashboard-main > .guild-roster-directory { padding:16px; }
+.guild-app #raidList .guild-dashboard-sidebar > .guild-dashboard-tile { padding:14px; }
+.guild-app #raidList .guild-dashboard-sidebar > .guild-upcoming-events { padding:0; }
+.guild-app #raidList .guild-dashboard-sidebar h3 { font-size:14px; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-dashboard-entry { min-height:36px; padding:5px 8px; gap:7px; grid-template-columns:22px minmax(0,1fr) auto; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-dashboard-entry strong { font-size:12px; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-symbol { width:22px; height:22px; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-dashboard-count { min-width:24px; height:22px; font-size:11px; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-profession-group .guild-dashboard-rows { grid-template-columns:minmax(0,1fr); }
+.guild-app #raidList .guild-dashboard-sidebar .guild-profession-group h4 { font-size:12px; }
+.guild-app #raidList .guild-dashboard-sidebar .guild-dashboard-tile > p { font-size:11px; line-height:1.5; }
+@media(max-width:1050px) { .guild-app #raidList .guild-dashboard-layout { grid-template-columns:minmax(0,1fr); } }
+/* Match the rest of the navigation while linking to the public homepage. */
+.guild-app .raid-sidebar #raidMenu > .guild-home-link { display:flex; align-items:center; gap:10px; min-height:36px; box-sizing:border-box; padding:8px 10px; font-size:13px; text-decoration:none; }
+/* Third-party item tooltips live above scrolling tables and their sticky rows. */
+body.guild-app .wowhead-tooltip { z-index:2147483000!important; max-width:min(400px,calc(100vw - 24px))!important; overflow:visible!important; padding:10px; box-sizing:border-box; background:#080d1b; color:#fff; border:1px solid #526071; border-radius:6px; box-shadow:0 8px 24px #0009; font:12px/1.35 var(--site-font); }
+body.guild-app .wowhead-tooltip table { width:auto!important; max-width:100%; border-collapse:collapse; white-space:normal; text-align:left; font-variant-numeric:normal; }
+body.guild-app .wowhead-tooltip :is(tbody,tr,td,th) { background-color:transparent!important; border:0; }
+body.guild-app .wowhead-tooltip :is(td,th) { position:static; padding:0; white-space:normal; text-align:left; }
+body.guild-app .wowhead-tooltip-screen { z-index:2147482999!important; }
