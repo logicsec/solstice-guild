@@ -365,14 +365,14 @@ export function openCharacterSheet(player, event, organizer) {
   const badges = raidElement('div',null,'character-header-badges');
   const rulesetBadge = raidElement('span',player.ruleset || 'Normal');
   badges.append(raidElement('span','Warcraft Forever'),rulesetBadge);
-  identity.prepend(badges);
+  identity.prepend(raidElement('p','Alliance Guild','eyebrow'),badges);
   title.append(level);
   const freshness = raidElement('div',null,'character-header-freshness');
   const freshnessText = raidElement('span','Loading Armory…');
   const refreshButton = raidElement('button','Refresh');refreshButton.type='button';refreshButton.addEventListener('click',()=>location.reload());
   freshness.append(freshnessText,refreshButton);identity.append(freshness);
   heading.append(headerModel,identity);
-  const header = raidElement('header',null,'character-profile-hero');
+  const header = raidElement('header',null,'character-profile-hero guild-page-heading');
   const inner = raidElement('div',null,'character-profile-grid');
   const info = raidElement('div',null,'character-profile-info');
   const overview = raidElement('div');

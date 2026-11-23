@@ -273,3 +273,36 @@ code { color:var(--theme-code-color); }
 
 .guild-calendar-month-title { display:flex; align-items:center; gap:8px; }
 .guild-calendar-month-title .tabler-icon { color:var(--theme-warning-text-emphasis); }
+
+/* One image-backed page heading across every view in the shared site shell. */
+body.guild-app #raidPanel > .raid-content {
+ background-color:var(--theme-body-bg);
+ background-image:linear-gradient(180deg,#17181e26 0%,#17181e80 55%,var(--theme-body-bg) 100%),linear-gradient(90deg,#17181ee6 0%,#17181e70 50%,#17181e30 100%),url('/assets/solstice-twilight.webp');
+ background-position:right top; background-size:100% 440px,100% 440px,100% 440px; background-repeat:no-repeat;
+}
+.guild-app #raidPanel .guild-page-heading {
+ min-height:190px; box-sizing:border-box; margin:0 0 24px; padding:28px 0;
+ background:transparent; border:0; border-radius:0; box-shadow:none;
+}
+.guild-app #raidPanel .guild-page-heading .eyebrow {
+ display:block; margin:0 0 8px; color:var(--theme-primary-text-emphasis);
+ font-size:11px; line-height:1.4; font-weight:700; letter-spacing:.16em; text-transform:uppercase;
+}
+.guild-app #raidPanel .guild-page-heading :is(h1,h2) {
+ margin:0 0 8px; font:700 clamp(30px,3.4vw,42px)/1.12 var(--site-font);
+ letter-spacing:-.025em; color:var(--theme-heading-color); text-shadow:none;
+}
+.guild-app #raidPanel .guild-page-heading p:not(.eyebrow) { margin:0; color:var(--theme-body-color); font-size:14px; line-height:1.5; }
+.guild-app #raidPanel .raid-heading.guild-page-heading { align-items:center; gap:20px; }
+.guild-app #raidPanel .tool-page-heading.guild-page-heading { display:flex; flex-direction:column; justify-content:center; align-items:flex-start; gap:0; }
+.guild-app #raidPanel #marketHero.guild-page-heading { min-height:190px; padding:28px 0; margin-bottom:24px; }
+.guild-app #raidPanel .planner-header.guild-page-heading { align-items:center; }
+/* The character keeps its model and identity within the same unboxed header. */
+.guild-app #raidPanel .character-profile-hero.guild-page-heading { background:transparent!important; padding:18px 0 24px; }
+.guild-app #raidPanel .character-page-back { display:inline-flex; margin-bottom:4px; }
+.guild-app #raidPanel .character-profile-hero.guild-page-heading .eyebrow { margin-bottom:10px; }
+@media(max-width:650px) {
+ body.guild-app #raidPanel > .raid-content { background-size:100% 360px,100% 360px,100% 360px; }
+ .guild-app #raidPanel .guild-page-heading,.guild-app #raidPanel #marketHero.guild-page-heading { min-height:160px; padding:24px 0; margin-bottom:20px; }
+ .guild-app #raidPanel .raid-heading.guild-page-heading,.guild-app #raidPanel .planner-header.guild-page-heading { flex-wrap:wrap; gap:14px; }
+}
