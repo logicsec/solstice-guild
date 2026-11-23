@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-5"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-6"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero" aria-labelledby="marketTitle">
@@ -1612,6 +1612,7 @@ function renderGuildRoster(list, characters) {
       const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
       if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
       const row = raidElement('button',null,'guild-character-row');
+      row.dataset.wowClass = character.class_name;
       row.type = 'button';
       row.setAttribute('aria-label','Open character sheet for '+character.name+', '+meta+
         (character.level == null ? '' : ', level '+character.level));
@@ -1754,6 +1755,7 @@ async function openRaidView(view, id, navigate = true) {
         for (const [name,count] of entries) {
           const row = raidElement('div',null,'guild-dashboard-entry');
           if (kind === 'class') row.dataset.wowClass = name;
+          else row.dataset.role = name;
           const icon = kind === 'class' ? characterIcons(name) :
             tablerIcon(roleIcons[name],'guild-dashboard-role-icon');
           icon.setAttribute('aria-hidden','true');
@@ -1783,7 +1785,7 @@ async function openRaidView(view, id, navigate = true) {
           button.setAttribute('aria-label','Show '+count+(count === 1 ? ' character' : ' characters')+' with '+name);
           const icon = professionIcon(name,button);
           icon.setAttribute('aria-hidden','true');
-          button.append(icon,raidElement('strong',name),raidElement('span',String(count)+' ›','guild-dashboard-count'));
+          button.append(icon,raidElement('strong',name),raidElement('span',String(count),'guild-dashboard-count'));
           button.addEventListener('click',()=>{
             selectedProfession = [name,slugs,ranks];
             filterRoster?.(selectedProfession);

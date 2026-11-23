@@ -158,3 +158,45 @@ code { color:var(--theme-code-color); }
 
 .card-header-title { display:flex; align-items:center; gap:8px; }
 .card-header-title > .card-header-icon { width:18px; height:18px; flex:none; }
+
+/* One visual language for the dashboard's composition, coverage and roster cards. */
+.guild-app .guild-dashboard-tiles,.guild-app .guild-dashboard-lower { gap:16px; margin-top:16px; }
+.guild-app .guild-dashboard-lower { grid-template-columns:repeat(2,minmax(0,1fr)); }
+.guild-app :is(.guild-dashboard-tiles,.guild-dashboard-lower) > .raid-card { margin:0; padding:16px; border-radius:8px; }
+.guild-app :is(.guild-dashboard-tile,.guild-roster-directory) > h3 {
+ margin:0 0 14px; padding-bottom:12px; border-bottom:1px solid var(--theme-border-color); font-size:16px;
+}
+.guild-app #raidList :is(.guild-dashboard-entry,.guild-character-row) {
+ --row-accent:var(--class-color,var(--theme-primary-text-emphasis));
+ min-height:48px; box-sizing:border-box; padding:8px 10px; gap:10px;
+ border:1px solid color-mix(in srgb,var(--row-accent) 15%,var(--theme-border-color));
+ border-radius:5px; box-shadow:none;
+ background:color-mix(in srgb,var(--row-accent) 9%,var(--theme-secondary-bg));
+}
+.guild-app #raidList .guild-profession-link { --row-accent:var(--profession-color); }
+.guild-app #raidList [data-role="Tank"] { --row-accent:var(--theme-primary-text-emphasis); }
+.guild-app #raidList [data-role="Healer"] { --row-accent:var(--theme-success-text-emphasis); }
+.guild-app #raidList [data-role="Melee DPS"] { --row-accent:var(--theme-warning-text-emphasis); }
+.guild-app #raidList [data-role="Ranged DPS"] { --row-accent:var(--theme-purple-text-emphasis); }
+.guild-app #raidList :is(.guild-dashboard-entry,.guild-character-row):is(button):is(:hover,:focus-visible) {
+ background:color-mix(in srgb,var(--row-accent) 16%,var(--theme-secondary-bg)); border-color:var(--row-accent);
+}
+.guild-app #raidList .guild-dashboard-entry { grid-template-columns:24px minmax(0,1fr) auto; }
+.guild-app #raidList .guild-dashboard-count {
+ display:grid; place-items:center; min-width:26px; height:24px; box-sizing:border-box; padding:2px 6px;
+ border:1px solid var(--theme-border-color); border-radius:4px; background:var(--theme-secondary-bg);
+ color:var(--row-accent); font-size:12px; font-weight:500;
+}
+.guild-app #raidList .guild-dashboard-entry strong { font-size:14px; font-weight:500; }
+.guild-app #raidList .guild-profession-link strong { color:var(--theme-body-color); }
+.guild-app #raidList .guild-dashboard-role-icon { width:24px; height:24px; padding:3px; box-sizing:border-box; color:var(--row-accent); }
+.guild-app #raidList .guild-dashboard-rows,.guild-app #raidList .guild-character-list { gap:6px; }
+.guild-app #raidList .guild-character-row { grid-template-columns:32px auto minmax(0,1fr) auto; }
+.guild-app #raidList .guild-character-level { min-height:24px; font-size:14px; font-weight:600; color:var(--row-accent); text-shadow:none; }
+.guild-app #raidList .guild-character-name strong { font-size:14px; font-weight:500; }
+.guild-app #raidList .guild-character-name small { font-size:11px; }
+.guild-app #raidList .guild-character-watermark { display:none; }
+.guild-app #raidList .guild-character-row.has-profession-progress {
+ background:linear-gradient(to right,color-mix(in srgb,var(--row-accent) 16%,transparent) var(--profession-progress),transparent var(--profession-progress)),var(--theme-secondary-bg);
+}
+@media(max-width:1050px) { .guild-app .guild-dashboard-lower { grid-template-columns:minmax(0,1fr); } }
