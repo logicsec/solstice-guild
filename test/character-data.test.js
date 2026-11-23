@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { achievementProgress, characterAchievements, characterStatGroups, flattenLifetime } from '../src/character-data.js';
+import { deduplicateAchievements, achievementProgress, characterAchievements, characterStatGroups, flattenLifetime } from '../src/character-data.js';
 
 test('stat groups preserve real zero values and distinguish missing data',()=>{
  const groups=characterStatGroups({health:1917,power:4095,power_type:{id:0},intellect:{effective:214},melee_crit:{value:3},main_hand_damage_min:97.88,main_hand_damage_max:145.88,ranged_attack_power:0});
@@ -39,4 +39,13 @@ test('achievement catalog joins real definitions, categories, media, progress an
  assert.equal(result.items.length,2);assert.equal(result.partial,false);
  const mage=result.items.find(item=>item.id===501);assert.equal(mage.category,'Classes');assert.equal(mage.earned,true);assert.equal(mage.completedAt,1794000000000);
  const forest=result.items.find(item=>item.id===503);assert.equal(forest.icon,'https://render.worldofwarcraft.com/us/icons/56/forest.jpg');assert.equal(forest.current,1);assert.equal(forest.total,2);
+});
+
+
+test('equivalent achievement variants appear once and retain earned progress',()=>{
+ const base={name:'Journeyman Alchemist',category:'Tradeskills',group:'Alchemy',total:150};
+ const result=deduplicateAchievements([{...base,id:1,current:0,earned:false},{...base,id:2,current:150,earned:true,completedAt:123},{...base,id:3,total:225,current:20,earned:false}]);
+ assert.equal(result.length,2);
+ assert.equal(result[0].id,2);
+ assert.equal(result[0].completedAt,123);
 });

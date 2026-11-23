@@ -45,6 +45,17 @@ export function achievementProgress(criteria,definition,earned=false) {
  return {current:earned ? leaves.length : leaves.filter(leaf=>values.get(leaf.id)?.is_completed).length,total:leaves.length};
 }
 
+export function deduplicateAchievements(items) {
+ const unique=new Map();
+ for(const item of items) {
+  const key=[item.category,item.group,item.name.trim().toLowerCase(),item.total].join('|');
+  const previous=unique.get(key);
+  const score=value=>(value.earned ? 100 : 0)+(value.current/Math.max(1,value.total))+(value.completedAt ? 2 : 0);
+  if(!previous || score(item)>score(previous))unique.set(key,item);
+ }
+ return [...unique.values()];
+}
+
 const cache=new Map();
 async function staticData(token,path) {
  const cached=cache.get(path);
@@ -93,5 +104,5 @@ export async function characterAchievements(token,profile,summary) {
  })).filter(Boolean);
  const categoryOrder=categories.filter(category=>!category.parent_category).sort((a,b)=>(a.display_order??0)-(b.display_order??0)).map(category=>category.name);
  items.sort((a,b)=>categoryOrder.indexOf(a.category)-categoryOrder.indexOf(b.category)||a.group.localeCompare(b.group)||a.order-b.order||a.name.localeCompare(b.name));
- return {items,partial:categoryResults.some(category=>!category) || definitions.some(definition=>!definition),accountWide:true};
+ return {items:deduplicateAchievements(items),partial:categoryResults.some(category=>!category) || definitions.some(definition=>!definition),accountWide:true};
 }

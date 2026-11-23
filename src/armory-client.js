@@ -196,6 +196,7 @@ export function renderArmoryProfile(character) {
     const card = raidElement('section',null,'character-stat-table');
     card.append(raidElement('h3',group.name));
     const rows = raidElement('dl');
+    const advanced = raidElement('dl');
     for (const item of group.rows) {
       const row = raidElement('div');
       let value = '—';
@@ -206,10 +207,19 @@ export function renderArmoryProfile(character) {
           value = new Intl.NumberFormat(undefined,{minimumFractionDigits:decimals,maximumFractionDigits:decimals}).format(item.value)+(item.format === 'percent' ? '%' : '');
         }
       }
-      row.append(raidElement('dt',item.label),raidElement('dd',value));
-      rows.append(row);
+      const shortLabel = item.label.replace(/^(?:Spell|Ranged|Melee) /,'').replace('Main Hand ','Main hand ').replace('Off Hand ','Off hand ').replace('Mana Regen (Combat)','Regen in combat').replace('Mana Regen','Mana regen');
+      const label = raidElement('dt',shortLabel);
+      label.title = item.label;
+      row.append(label,raidElement('dd',value));
+      const secondary = /Resistance|Expertise|Penetration|Mastery|Movement|Off Hand/.test(item.label) || item.value == null;
+      (secondary ? advanced : rows).append(row);
     }
     card.append(rows);
+    if (advanced.children.length) {
+      const details = raidElement('details',null,'character-stat-more');
+      details.append(raidElement('summary','More stats'),advanced);
+      card.append(details);
+    }
     columns[({Base:0,Melee:1,Ranged:2,Spell:2,Defense:3})[group.name] ?? 0].append(card);
   }
   statistics.append(...columns);
@@ -467,6 +477,16 @@ export function openCharacterSheet(player, event, organizer) {
       button.setAttribute('aria-pressed',String(panel === selected));
       panel.hidden = panel !== selected;
     }
+    requestAnimationFrame(()=>{
+      if (!matchMedia('(max-width: 600px)').matches) return;
+      const active = panels.find(({panel})=>panel === selected)?.button;
+      if (!active) return;
+      const bounds = tabs.getBoundingClientRect();
+      const item = active.getBoundingClientRect();
+      if (item.left < bounds.left || item.right > bounds.right) {
+        tabs.scrollLeft += item.left-bounds.left-(tabs.clientWidth-item.width)/2;
+      }
+    });
   }
   for (const {button,panel} of panels) button.addEventListener('click',()=>{
     selectPanel(panel);

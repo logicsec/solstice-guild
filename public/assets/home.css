@@ -1593,8 +1593,8 @@ body.character-page-active > main > :not(.character-page-root) { display: none !
 }
 @media(max-width:600px) {
  .character-page-layout { grid-template-columns: minmax(0,1fr); }
- .character-page-root .character-review-tabs { flex-direction: row; overflow-x: auto; border-inline-end: 0; border-bottom: 1px solid var(--line); padding: 8px; }
- .character-page-root .character-review-tabs button { width: auto; flex: 0 0 auto; min-height: 44px; }
+ .character-page-root .character-review-tabs { flex-direction: row; flex-wrap: nowrap; align-items: center; min-width: 0; max-width: 100%; overflow-x: auto; overscroll-behavior-x: contain; border-inline-end: 0; border-bottom: 1px solid var(--line); padding: 8px; scrollbar-width: thin; }
+ .character-page-root .character-review-tabs button { width: auto; flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
  .character-page-root .character-review-tabs small { display: none; }
  .character-page-content { padding: 16px; }
  .character-key-stats { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 20px; }
@@ -1681,3 +1681,21 @@ body.character-page-active > main > :not(.character-page-root) { display: none !
 .character-talent-summary > div { display: flex; align-items: baseline; flex-wrap: wrap; gap: 8px; }
 .character-talent-summary strong { color: var(--ink); }
 .character-talent-summary small { padding: 2px 5px; border-radius: 3px; background: var(--hover); color: var(--accent); font-size: 10px; font-weight: 700; text-transform: uppercase; }
+
+.character-page-root .character-profile-hero {
+ background: linear-gradient(90deg,#101313ed,#141615c9 55%,#101313e0),url('/assets/solstice-dawn.webp') center 30% / cover;
+}
+.character-page-root .character-review-tabs { margin: 0; align-self: stretch; }
+.character-page-root .character-weapons { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); grid-column: 1/-1; width: min(100%,600px); justify-self: center; align-items: start; gap: 12px; margin: 10px 0 0; }
+.character-page-root .character-weapons > * { min-width: 0; }
+.character-page-root .character-sheet .character-weapons :is(.character-slot-button,.character-slot-empty) { width: 100%; min-height: 52px; justify-content: flex-start; }
+.character-page-root .character-weapons .character-slot-copy { display: block; }
+.character-page-root .character-weapons .character-slot-empty > span + span { display: block; }
+.character-page-root .character-weapons .character-item-level { display: none; }
+.character-stat-more { border-top: 1px solid var(--line); }
+.character-stat-more summary { padding: 9px 12px; color: var(--muted); font-size: 12px; cursor: pointer; }
+@media(max-width:600px) {
+ .character-page-root .character-weapons { gap: 8px; }
+ .character-page-root .character-weapons :is(.character-slot-copy,.character-slot-empty > span + span) { display: none; }
+ .character-page-root .character-sheet .character-weapons :is(.character-slot-button,.character-slot-empty) { justify-content: center; }
+}
