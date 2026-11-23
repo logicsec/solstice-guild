@@ -1,6 +1,7 @@
 /* Shared Google Sans theme. Values follow the supplied dark dashboard palette. */
 :root,[data-bs-theme="dark"],.guild-app,body:has(> :is(.guild-home,.editor,.chronicle-article)) {
  color-scheme: dark;
+ --card-radius:8px;
  --site-font: "Google Sans",system-ui,"Segoe UI",sans-serif;
  --theme-body-color:#aab8c5; --theme-body-color-rgb:170,184,197;
  --theme-body-bg:#17181e; --theme-body-bg-rgb:23,24,30;
@@ -43,7 +44,7 @@ h1,h2,h3,h4,h5,h6 { font-family:var(--site-font); color:var(--theme-heading-colo
 a { color:var(--theme-link-color); } a:hover { color:var(--theme-link-hover-color); }
 code { color:var(--theme-code-color); }
 .guild-app .raid-sidebar { background:var(--theme-secondary-bg); }
-.guild-app :is(.raid-card,.character-page-section,.character-equipment-card,.character-gear-stats,.profession-card,.armory-confirm,.activity-card),.planner-site-active .planner-page .panel { background:var(--theme-secondary-bg); border-color:var(--theme-border-color); border-radius:6px; }
+.guild-app :is(.raid-card,.character-page-section,.character-equipment-card,.character-gear-stats,.profession-card,.armory-confirm,.activity-card),.planner-site-active .planner-page .panel { background:var(--theme-secondary-bg); border-color:var(--theme-border-color); border-radius:var(--card-radius); }
 .guild-app .character-equipment-section { background:transparent; border:0; }
 .guild-app .character-page-section:has(.character-activity) { background:transparent; }
 .guild-app .character-section-header,.guild-app .tool-card-heading,.planner-site-active .planner-card-header { border-color:var(--theme-border-color); }
@@ -208,3 +209,10 @@ code { color:var(--theme-code-color); }
 .armory-confirm-portrait > .guild-symbol { width:36px; height:36px; color:var(--class-color,var(--theme-primary-text-emphasis)); }
 .armory-spec .guild-symbol { width:26px; height:26px; color:var(--class-color,var(--theme-primary-text-emphasis)); }
 .guild-app .raid-sidebar #raidMenu .tabler-icon { width:18px; height:18px; fill:none; stroke:currentColor; stroke-width:1.75; }
+
+/* Shared radius for card containers throughout the site. */
+:is(body,.guild-app) :is(.guild-panel,.news-card,.empty,.chronicle-card,.raid-card,.board,.recipe-card,.profession-card,.character-page-section,.character-equipment-card,.character-gear-stats,.character-stat-card,.character-lifetime-card,.activity-card,.activity-summary-card,.group-plan-panel,.guild-discord-card,.armory-confirm,.armory-confirm-summary,.raid-calendar),
+.guild-app .raid-stats > div,.guild-app .guild-dashboard-totals > div,
+.guild-app.planner-site-active .planner-page .panel,.planner-page .panel {
+ border-radius:var(--card-radius);
+}
