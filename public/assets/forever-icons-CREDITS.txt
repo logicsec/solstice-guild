@@ -1,0 +1,8 @@
+Class and specialization icons: World of Warcraft artwork by Blizzard Entertainment.
+Upscaled by hastecraft/forever-icons (unofficial fan project).
+Source: https://github.com/hastecraft/forever-icons
+Release: v1.2.1, forever-icons-WOW-70959patch1.60.1_Retail.zip
+The 36 selected BLP textures were decoded to a 6 x 6 WebP atlas for this website.
+All artwork belongs to Blizzard Entertainment. The source repository MIT license
+covers its scripts only, not the icons. Neither project is affiliated with or
+endorsed by Blizzard Entertainment.

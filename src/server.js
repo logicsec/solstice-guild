@@ -20,6 +20,8 @@ const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CM
 const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
   ['/assets/theme.css', ['theme.css', 'text/css; charset=utf-8']],
+  ['/assets/forever-identities.webp', ['forever-identities.webp', 'image/webp']],
+  ['/assets/forever-icons-CREDITS.txt', ['forever-icons-CREDITS.txt', 'text/plain; charset=utf-8']],
   ['/assets/icons.js', ['icons.js', 'text/javascript; charset=utf-8']],
   ['/assets/tabler-icons.svg', ['tabler-icons.svg', 'image/svg+xml']],
   ['/assets/tabler-LICENSE.txt', ['tabler-LICENSE.txt', 'text/plain; charset=utf-8']],

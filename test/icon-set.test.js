@@ -17,3 +17,27 @@ test('identity sprite covers every supported class, specialization, profession a
   const custom=sprite.slice(sprite.indexOf('<!-- Original Solstice'));
   assert.doesNotMatch(custom,/<image\b|https?:\/\//,'identity artwork uses local vector paths');
 });
+
+test('forever artwork covers each class and class-specific specialization without collisions',async()=>{
+  const {guildIcon}=await import('../public/assets/icons.js');
+  const manifest=JSON.parse(readFileSync(new URL('../public/assets/forever-icons-manifest.json',import.meta.url),'utf8'));
+  const original=globalThis.document;
+  globalThis.document={createElement:()=>({dataset:{},style:{},setAttribute(){}})};
+  try {
+    const positions=new Set();
+    for(const [className,specs] of Object.entries(armorySpecs)){
+      for(const [kind,name] of [['class',className],...specs.map(([name])=>['spec',name])]){
+        const icon=guildIcon(kind,name,'',className);
+        assert.match(icon.className,/forever-icon/);
+        const key=kind==='class'?name:className+':'+name;
+        const index=manifest.icons[kind][key];
+        assert.equal(icon.style.backgroundPosition,(index%6*20)+'% '+(Math.floor(index/6)*20)+'%');
+        assert.ok(!positions.has(icon.style.backgroundPosition),key+' has distinct artwork');
+        positions.add(icon.style.backgroundPosition);
+      }
+    }
+    assert.equal(positions.size,36);
+    const atlas=readFileSync(new URL('../public/assets/forever-identities.webp',import.meta.url));
+    assert.equal(atlas.toString('ascii',8,12),'WEBP');
+  }finally{globalThis.document=original;}
+});

@@ -21,7 +21,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-17" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-17&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-18" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-18&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
     <svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-2#menu-2"></use></svg>
@@ -150,7 +150,11 @@ export async function publicRaidPage(env, id, roles, session, requested) {
     const profile = await publicRosterProfile(env,link?.slug);
     const specs = Object.hasOwn(armorySpecs,player.class_name) ? armorySpecs[player.class_name] : null;
     const spec = specs?.find(([name])=>name.toLowerCase() === (link?.spec ?? '').toLowerCase());
-    const icon = (kind,name) => `<svg class="tabler-icon guild-symbol" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#solstice-${kind}-${escape(name.toLowerCase().replace(/[^a-z0-9]+/g,"-"))}"></use></svg>`;
+    const icon = (kind,name) => {
+      const names = Object.keys(armorySpecs);
+      const index = kind === 'class' ? names.indexOf(name) : names.length+Object.entries(armorySpecs).flatMap(([className,specs])=>specs.map(([specName])=>className+':'+specName)).indexOf(player.class_name+':'+name);
+      return `<span class="guild-symbol forever-icon" style="background-position:${index%6*20}% ${Math.floor(index/6)*20}%" title="${escape(name)}" aria-hidden="true"></span>`;
+    };
     const metadata = [player.class_name,spec?.[0],player.role,profile?.level != null ? 'Level '+profile.level : ''].filter(Boolean);
     return `<li class="news-card public-raider">
       <div class="public-raider-identity">

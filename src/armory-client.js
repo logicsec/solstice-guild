@@ -40,7 +40,7 @@ export function characterIcons(className,spec) {
   icons.append(classIcon);
   const match = armorySpecs[className].find(([name])=>name.toLowerCase() === (spec ?? '').toLowerCase());
   if (match) {
-    const specIcon = guildIcon('spec',match[0]);
+    const specIcon = guildIcon('spec',match[0],'',className);
     specIcon.setAttribute('role','img');specIcon.setAttribute('aria-label',match[0]);specIcon.removeAttribute('aria-hidden');
     icons.append(specIcon);
   }
@@ -681,7 +681,7 @@ export function renderArmoryConfirmation(card,character,search) {
       Object.assign(input,{type:'radio',name:'spec',value:name,checked:index===0});
       const text = raidElement('span');
       text.append(raidElement('strong',name),raidElement('small',defaultRole));
-      const specIcon = guildIcon('spec',name);
+      const specIcon = guildIcon('spec',name,'',character.className);
       label.dataset.wowClass = character.className;
       label.append(input,specIcon,text);
       choices.append(label);

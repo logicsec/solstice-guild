@@ -45,9 +45,15 @@ test('production server serves theme and Tabler assets without authentication', 
   assert.match(await failedFeed.text(),/AHledger did not respond/);
   assert.equal((await fetch(base+'/healthz')).status,200,'upstream timeout does not terminate the actual Node server');
 
+  const atlas=await fetch(base+'/assets/forever-identities.webp');
+  assert.equal(atlas.status,200);
+  assert.equal(atlas.headers.get('content-type'),'image/webp');
+  assert.equal(Buffer.from(await atlas.arrayBuffer()).toString('ascii',8,12),'WEBP');
+
   for(const [asset,type,expected] of [
     ['theme.css','text/css','--theme-body-bg:#17181e'],
     ['icons.js','javascript','function tablerIcon'],
+    ['forever-icons-CREDITS.txt','text/plain','hastecraft/forever-icons'],
     ['tabler-icons.svg','image/svg+xml','id="layout-dashboard"'],
     ['tabler-LICENSE.txt','text/plain','MIT License'],
   ]){

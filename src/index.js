@@ -407,7 +407,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-17" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-17&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-18" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-18&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -507,7 +507,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="hero-stats" aria-label="Guild realm"><div><span>Region</span><strong>US</strong></div><div><span>Ruleset</span><strong>Normal</strong></div><div><span>Faction</span><strong>Alliance</strong></div></div>
 </section>
 <section id="raidPanel" class="raid-shell" hidden aria-label="Guild Hall">
-<aside class="raid-sidebar"><button type="button" id="sidebarCollapse" aria-label="Collapse sidebar" aria-expanded="true" title="Collapse sidebar"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#menu-2"></use></svg></button><a class="brand guild-sidebar-brand" href="/?tool=raid&view=guildDashboard" aria-label="Solstice Guild Hall">${solsticeLockup}</a>
+<aside class="raid-sidebar"><a class="brand guild-sidebar-brand" href="/?tool=raid&view=guildDashboard" aria-label="Solstice Guild Hall">${solsticeLockup}</a>
 <div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="tabler-icon guild-character-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#menu-2"></use></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="tabler-icon raid-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg>
@@ -2441,33 +2441,6 @@ for (const id of ['rosterFilter','rosterRole','rosterReadiness','rosterSearch'])
   });
 }
 byId('raidTab').addEventListener('click',()=>openRaidView('guildDashboard'));
-// Keep the compact navigation preference across pages and reloads.
-const sidebarCollapse = byId('sidebarCollapse');
-for (const item of document.querySelectorAll('#raidMenu button,#raidMenu a')) {
-  item.title = item.textContent.trim();
-  item.setAttribute('aria-label',item.title);
-  for (const child of [...item.childNodes]) {
-    if (child.nodeType !== 3 || !child.textContent.trim()) continue;
-    const label = document.createElement('span');label.className = 'guild-nav-label';label.textContent = child.textContent;child.replaceWith(label);
-  }
-}
-function setSidebarCollapsed(collapsed) {
-  const wasCollapsed = document.body.classList.contains('guild-sidebar-collapsed');
-  document.body.classList.toggle('guild-sidebar-collapsed',collapsed);
-  if (collapsed !== wasCollapsed) for (const group of document.querySelectorAll('#raidMenu details')) {
-    if (collapsed) { group.dataset.expandedBeforeCollapse = String(group.open);group.open = true; }
-    else { group.open = group.dataset.expandedBeforeCollapse === 'true'; }
-  }
-  sidebarCollapse.setAttribute('aria-expanded',String(!collapsed));
-  sidebarCollapse.setAttribute('aria-label',collapsed ? 'Expand sidebar' : 'Collapse sidebar');
-  sidebarCollapse.title = collapsed ? 'Expand sidebar' : 'Collapse sidebar';
-  if (collapsed) { byId('discordAccountCard').hidden = true;byId('discordAccountTrigger').setAttribute('aria-expanded','false'); }
-  try { localStorage.setItem('solstice-sidebar-collapsed',String(collapsed)); } catch {}
-}
-let sidebarWasCollapsed = false;
-try { sidebarWasCollapsed = localStorage.getItem('solstice-sidebar-collapsed') === 'true'; } catch {}
-setSidebarCollapsed(sidebarWasCollapsed);
-sidebarCollapse.addEventListener('click',()=>setSidebarCollapsed(!document.body.classList.contains('guild-sidebar-collapsed')));
 const raidMenuToggle = byId('raidMenuToggle');
 raidMenuToggle.addEventListener('click', () => {
   raidMenuToggle.setAttribute('aria-expanded', String(raidMenuToggle.getAttribute('aria-expanded') !== 'true'));
