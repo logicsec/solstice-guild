@@ -1,3 +1,4 @@
+import { raidCompositionsApi, ownedRaidComposition } from './raid-compositions-api.js';
 import { createCompositionPlan, compositionBuffs, renderRaidComposition } from './raid-composition.js';
 import { tablerIcon, guildIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
@@ -143,10 +144,15 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
     }
     const reserve = clean(input.softReserve, 400);
     if (reserve && !/^https:\/\/[^\s]+$/i.test(reserve)) return reply({ error: 'Use an HTTPS soft-reserve link.' }, 400);
-    const groupPlan = normalizeGroupPlan(input.groupPlan ?? [], size, raidClasses, raidRoles);
+    const composition=input.compositionId ? await ownedRaidComposition(db,user,input.compositionId) : null;
+    if(input.compositionId && !composition)return reply({error:'Saved composition not found.'},404);
+    if(composition && composition.plan.size!==size)return reply({error:'Choose a saved composition with the same raid size.'},400);
+    const planned=composition ? composition.plan.players.map((player,index)=>({name:player.spec+' '+player.className+' '+(index+1),className:player.className,role:player.role,group:player.group})) : input.groupPlan ?? [];
+    const groupPlan = normalizeGroupPlan(planned, size, raidClasses, raidRoles);
     if (!groupPlan) return reply({ error: 'Check the planned characters and group sizes.' }, 400);
     const settings = {
       groupPlan,
+      ...(composition ? {composition:{id:composition.id,title:composition.title,plan:composition.plan}} : {}),
       roles: input.slots ? roles : null, review: input.review === true, waitlist: input.waitlist === true,
       requirements: clean(input.requirements, 500), softReserve: reserve,
     };
@@ -408,7 +414,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-20" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-20&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-21" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-21&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1695,7 +1701,7 @@ async function openRaidView(view, id, navigate = true) {
     if (view === 'raiding') {
       byId('raidTitle').textContent = 'Group Planner';
       byId('raidSubtitle').textContent = 'Build a raid composition before sign-ups.';
-      renderRaidComposition(byId('raidList'),{specs:armorySpecs});
+      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});
       return;
     }
     if (view === 'craftingDirectory') {
@@ -2885,6 +2891,10 @@ export default {
     if (!session && request.method === 'GET' && ['/character','/gear-planner'].includes(pathname)) return Response.redirect(url.origin+'/auth/discord?next='+encodeURIComponent(pathname+url.search),303);
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/gear-planner' && request.method === 'GET') return new Response(gearPlannerPage(page),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
+    if (pathname === '/api/raid-compositions') {
+      try { return await raidCompositionsApi(request,env,url,session); }
+      catch { return Response.json({error:'Saved compositions are temporarily unavailable.'},{status:503,headers:{'Cache-Control':'no-store'}}); }
+    }
     if (pathname === '/api/gear-planner') {
       try { return await gearPlannerApi(request,env,url,session); }
       catch { return Response.json({error:'Gear planner unavailable.'},{status:503}); }

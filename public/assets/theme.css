@@ -485,3 +485,41 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-spell-icon { display:inline-block; width:22px; height:22px; flex-shrink:0; border-radius:3px; background:url('/assets/forever-buffs.webp?v=1') no-repeat; background-size:500% 500%; }
 .comp-category-detail.comp-buff { padding:9px 10px; margin:0; background:transparent; color:var(--theme-body-color); }
 .comp-category-detail.comp-buff strong { font-size:12px; }
+/* Compact group summaries and reusable locked compositions. */
+.comp-controls > button { margin-inline-start:0; }
+.comp-controls > .comp-optimize { margin-inline-start:auto; }
+.comp-optimize,.comp-lock { display:inline-flex; align-items:center; gap:6px; }
+.comp-optimize > svg { width:15px; height:15px; }
+.comp-group h4 { gap:5px; margin-bottom:6px; }
+.comp-group-coverage { margin-inline-start:auto; font-size:11px; color:var(--theme-warning-text-emphasis); font-weight:500; cursor:help; }
+.comp-group-roles { display:flex; align-items:center; gap:8px; min-height:15px; margin-bottom:7px; }
+.comp-role-mini { display:inline-flex; align-items:center; gap:3px; font-size:11px; color:var(--comp-role-color); }
+.comp-role-mini > svg { width:12px; height:12px; }
+.comp-player-role[data-role="Tank"],.comp-role-mini[data-role="Tank"],.comp-count[data-role="Tank"] { --comp-role-color:var(--theme-primary-text-emphasis); }
+.comp-player-role[data-role="Healer"],.comp-role-mini[data-role="Healer"],.comp-count[data-role="Healer"] { --comp-role-color:var(--theme-success-text-emphasis); }
+.comp-player-role[data-role="Melee DPS"],.comp-role-mini[data-role="Melee DPS"],.comp-count[data-role="Melee DPS"] { --comp-role-color:var(--theme-danger-text-emphasis); }
+.comp-player-role[data-role="Ranged DPS"],.comp-role-mini[data-role="Ranged DPS"],.comp-count[data-role="Ranged DPS"] { --comp-role-color:var(--theme-warning-text-emphasis); }
+.comp-count > svg { color:var(--comp-role-color,var(--theme-primary-text-emphasis)); }
+.comp-player { min-height:36px; border-color:var(--class-color,var(--theme-border-color)); background:var(--theme-body-bg); }
+.guild-app #raidList .comp-player-select { min-height:34px; padding:5px; gap:7px; }
+.comp-player-select strong { font-size:11px; font-weight:500; }
+.guild-app #raidList .comp-empty { height:36px; min-height:36px; }
+.guild-app #raidList .comp-player-select > .comp-player-artwork { position:relative; display:block; width:24px; height:24px; min-width:24px; flex:0 0 24px; }
+.comp-player-artwork > .forever-icon { display:block; width:22px; height:22px; }
+.comp-player-artwork > .comp-player-role { position:absolute; bottom:-1px; right:-2px; width:12px; height:12px; padding:1px; box-sizing:content-box; border-radius:50%; background:var(--theme-body-bg); color:var(--comp-role-color); }
+.comp-group-hint { min-height:40px; padding-top:9px; border-top:1px solid var(--theme-border-color); color:var(--theme-secondary-color); }
+.comp-group-hint > small { display:block; font-size:10px; margin-bottom:4px; }
+.comp-buff-chip { display:inline-block; margin:0 4px 3px 0; padding:1px 5px; border-radius:3px; background:var(--theme-success-bg-subtle); color:var(--theme-success-text-emphasis); font-size:10px; line-height:1.5; cursor:help; }
+.comp-buff-chip[data-state="missing"] { background:var(--theme-warning-bg-subtle); color:var(--theme-warning-text-emphasis); }
+.comp-group-no-buffs { font-size:10px; }
+.comp-saved-bar { margin-bottom:12px; }
+.comp-saved-bar > label { display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:13px; }
+.comp-saved-bar select { width:min(380px,100%); margin:0; }
+.guild-app .comp-lock-dialog { width:min(480px,calc(100vw - 32px)); box-sizing:border-box; max-height:calc(100dvh - 40px); overflow:auto; padding:22px; background:var(--theme-secondary-bg); color:var(--theme-body-color); border:1px solid var(--theme-border-color); border-radius:8px; }
+.comp-lock-dialog form { float:none; width:100%; }
+.comp-lock-dialog h3 { margin:0 0 12px; }
+.comp-lock-dialog label { display:block; margin:16px 0; }
+.comp-lock-dialog input { display:block; width:100%; box-sizing:border-box; margin-top:7px; }
+.comp-lock-dialog button { margin-right:8px; }
+.comp-lock-dialog p { line-height:1.6; font-size:13px; }
+@media(max-width:720px) { .comp-controls > .comp-optimize { margin-inline-start:0; } }

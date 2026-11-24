@@ -179,6 +179,20 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(flips.checked,2);
   assert.deepEqual(flips.flips,[{id:117,name:'Tough Jerky',min:80,vendor:100,profit:20}]);
   const raidDraft = { instance: 'barrow-deeps', startsAt: new Date(Date.now()+86400000).toISOString(), size: 10, review: true };
+  const compDraft={size:10,players:[{className:'Warrior',spec:'Protection',role:'Tank',group:1}]};
+  const saveComp=await post('/api/raid-compositions',{title:'Test locked comp',plan:compDraft});
+  assert.equal(saveComp.status,201);
+  const lockedComp=(await saveComp.json()).composition;
+  const compRaidResponse=await post('/api/raids',{...raidDraft,compositionId:lockedComp.id});
+  assert.equal(compRaidResponse.status,201);
+  const compRaidId=(await compRaidResponse.json()).id;
+  const copied=JSON.parse(db.prepare('SELECT settings FROM raids WHERE id=?').get(compRaidId).settings);
+  assert.equal(copied.composition.id,lockedComp.id);
+  assert.deepEqual(copied.composition.plan,lockedComp.plan);
+  assert.equal(copied.groupPlan[0].group,1);
+  assert.equal(copied.groupPlan[0].className,'Warrior');
+  assert.equal((await post('/api/raids',{...raidDraft,instance:'hyjal-summit',size:20,compositionId:lockedComp.id})).status,400);
+
   const groupPlan = [{ name: 'Planned Mage', className: 'Mage', role: 'Ranged DPS', group: 2 }];
   assert.equal((await post('/api/raids', { ...raidDraft, groupPlan: [{ ...groupPlan[0], group: 3 }] })).status, 400);
   const created = await post('/api/raids', { ...raidDraft, groupPlan });
@@ -187,6 +201,7 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   discordId = '31';
   const member = (await signIn('/?tool=raid&raid=' + id)).headers.getSetCookie().find(value => value.startsWith('__Host-solstice-session=')).split(';')[0];
   const memberOptions = {headers:{Cookie:member}};
+  assert.equal((await post('/api/raids',{...raidDraft,compositionId:lockedComp.id},member)).status,404,'another member cannot use a private locked comp');
   for (const path of ['/api/raids','/api/raids?discover=1']) {
     const {raids} = await (await send(path,memberOptions)).json();
     assert.ok(raids.some(raid=>raid.id === id && !raid.organizer));

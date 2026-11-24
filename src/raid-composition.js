@@ -42,6 +42,27 @@ export function createCompositionPlan(specs, initial = {}) {
       if (players.length > value) throw new Error('Remove '+(players.length-value)+' placeholders before reducing the raid size.');
       size=value;for (const player of players) if (player.group > size/5) player.group=null;
     },
+    optimize() {
+      const buckets=Array.from({length:size/5},(_,index)=>({group:index+1,members:[]}));
+      const partyBuffs=player=>[
+        ...(player.className==='Shaman'?['Mana Spring']:[]),
+        ...(player.className==='Warlock'?['Blood Pact']:[]),
+        ...(player.className==='Priest'&&player.spec==='Shadow'?['Dark Inspiration']:[]),
+        ...(player.className==='Paladin'&&player.aura!=='Resistance'?[player.aura]:[]),
+      ];
+      const ordered=[...players].sort((a,b)=>roles.indexOf(a.role)-roles.indexOf(b.role)||Number(a.id)-Number(b.id));
+      for(const player of ordered){
+        const benefits=partyBuffs(player);
+        const repeatedBuffs=bucket=>bucket.members.filter(other=>partyBuffs(other).some(buff=>benefits.includes(buff))).length;
+        const count=(bucket,key,value)=>bucket.members.filter(member=>member[key]===value).length;
+        const available=buckets.filter(bucket=>bucket.members.length<5);
+        available.sort((a,b)=>a.members.length-b.members.length ||
+          repeatedBuffs(a)-repeatedBuffs(b) ||
+          count(a,'role',player.role)-count(b,'role',player.role) ||
+          count(a,'className',player.className)-count(b,'className',player.className) || a.group-b.group);
+        const bucket=available[0];player.group=bucket.group;bucket.members.push(player);
+      }
+    },
     clear() { players=[]; },
   };
 }
@@ -77,30 +98,34 @@ export function compositionBuffs(plan) {
   ];
   const assigned = plan.players.filter(player=>player.group !== null);
   const occupied = [...new Set(assigned.map(player=>player.group))].sort((a,b)=>a-b);
+  const shortNames=['Fort','Kings','MotW','AI','Might','Wisdom','Salv','Light','DS','BS','TSA','Moonkin','LotP','WF','GoA','SoE','MST','DI','BP','Aura','Ret Aura','Res Aura'];
   return rules.map(([name,category,className,scope,spec,description,choice,value],iconIndex)=>{
     const candidates=assigned.filter(player=>player.className === className && (!spec || player.spec === spec));
     const providers=candidates.filter(player=>!choice || player[choice] === value);
     const groups=scope === 'Raid' && providers.length ? occupied : [...new Set(providers.map(player=>player.group))].sort((a,b)=>a-b);
-    return {name,category,className,scope,spec,description,iconIndex,groups,providers:providers.length,available:candidates.length>0,covered:providers.length>0,complete:providers.length>0 && (scope === 'Raid' || groups.length === occupied.length),choice,value};
+    return {name,shortName:shortNames[iconIndex],category,className,scope,spec,description,iconIndex,groups,providers:providers.length,available:candidates.length>0,covered:providers.length>0,complete:providers.length>0 && (scope === 'Raid' || groups.length === occupied.length),choice,value};
   });
 }
 
-export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1'}) {
+export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
   function buffLine(buff, compact = false) {
     const row=make('div',null,compact?'comp-buff comp-category-detail':'comp-buff');
+    row.dataset.buffName=buff.name;row.title=buff.name+' — '+buff.description;
     row.dataset.state=buff.complete?'covered':buff.covered?'partial':buff.available?'alternative':'missing';
     const icon=make('span',null,'comp-spell-icon');icon.setAttribute('aria-hidden','true');icon.title=buff.name;
     icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
-    const info=make('div');info.append(make('strong',buff.name));if(!compact)info.append(make('small',buff.description));
+    const info=make('div');info.append(make('strong',buff.shortName));if(!compact)info.append(make('small',buff.description));
     const state=buff.complete?'Covered':buff.covered?'Group '+buff.groups.join(', '):buff.available?'Alternative':'Missing';
     const badge=make('span',buff.scope,'comp-scope');badge.dataset.scope=buff.scope;
     row.append(icon,info,make('small',state,'comp-buff-state'),badge);return row;
   }
   let initial;try{initial=JSON.parse(localStorage.getItem(storageKey));}catch{}
-  const model=createCompositionPlan(specs,initial);
+  let model=createCompositionPlan(specs,initial);
+  let locked=initial?.lockedId?{id:initial.lockedId,title:'Loading saved composition…'}:null;
+  let savedCompositions=[];
   let chosenClass='Warrior',selected=null,dragged=null,expandedCategory=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
   const controls=make('div',null,'comp-controls');
@@ -121,53 +146,112 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const categories=make('section',null,'raid-card comp-categories');
   const buffs=make('section',null,'raid-card comp-buffs');
   const analysis=make('div',null,'comp-analysis');analysis.append(categories,buffs);
-  controls.append(sizeLabel,saveStatus,button('Clear all',()=>{if(model.snapshot().players.length && !window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');}));
-  root.replaceChildren(controls,status,layout,issues,analysis);
-  size.addEventListener('change',()=>{try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
-  function persist(){try{localStorage.setItem(storageKey,JSON.stringify(model.snapshot()));saveStatus.textContent='Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
+  const savedBar=make('div',null,'comp-saved-bar');
+  const savedLabel=make('label','Saved compositions');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(savedLabel);savedBar.hidden=!request;
+  const dialog=make('dialog',null,'comp-lock-dialog');dialog.setAttribute('aria-label','Lock in composition');
+  const lockForm=make('form');const lockTitle=make('h3','Lock In Composition');
+  const nameLabel=make('label','Composition name');const nameInput=make('input');nameInput.required=true;nameInput.maxLength=80;nameInput.placeholder='e.g. Hyjal balanced comp';nameLabel.append(nameInput);
+  const lockStatus=make('p');lockStatus.setAttribute('role','status');
+  const saveLocked=button('Save locked composition',()=>{});saveLocked.type='submit';
+  lockForm.append(lockTitle,make('p','Save a fixed copy for raid creation. You can make a new draft without changing the saved version.'),nameLabel,saveLocked,button('Cancel',()=>dialog.close()),lockStatus);dialog.append(lockForm);
+  const lockButton=button('Lock In',()=>{
+    const plan=model.snapshot();
+    if(locked||!request)return;
+    if(!plan.players.length||plan.players.some(player=>player.group===null)){status.textContent='Assign every placeholder to a group before locking in. Auto-Optimize can do this for you.';return;}
+    nameInput.value=plan.size+'-player composition';lockStatus.textContent='';dialog.showModal();nameInput.focus();
+  },'comp-lock');
+  const draftButton=button('Edit as draft',()=>{locked=null;savedSelect.value='';persist();draw();status.textContent='Editing a draft copy. The locked composition is unchanged.';});
+  const clear=button('Clear all',()=>{if(locked)return;if(model.snapshot().players.length&&!window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');});
+  function savedOptions(){savedSelect.replaceChildren(new Option('Choose a locked composition',''));for(const entry of savedCompositions)savedSelect.add(new Option(entry.title+' · '+entry.plan.players.length+'/'+entry.plan.size,entry.id));savedSelect.value=locked?.id??'';}
+  function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;size.value=String(entry.plan.size);persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
+  savedSelect.addEventListener('change',()=>{const entry=savedCompositions.find(entry=>entry.id===savedSelect.value);if(entry)openSaved(entry);});
+  lockForm.addEventListener('submit',async event=>{
+    event.preventDefault();if(!request||saveLocked.disabled)return;
+    saveLocked.disabled=true;lockStatus.textContent='Saving…';
+    try{const result=await request({title:nameInput.value.trim(),plan:model.snapshot()});savedCompositions.unshift(result.composition);openSaved(result.composition);savedOptions();dialog.close();status.textContent='Locked in as '+result.composition.title+'. Saved to your account for raid creation.';}
+    catch(error){lockStatus.textContent=error.message;}
+    finally{saveLocked.disabled=false;}
+  });
+  const optimize=button('Auto-Optimize',()=>{
+    if(locked)return;
+    if(!model.snapshot().players.length){status.textContent='Add some class and spec placeholders first.';return;}
+    model.optimize();selected=null;commit('All placeholders distributed evenly across groups. You can still move anyone manually.');
+  },'comp-optimize');
+  optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
+  controls.append(sizeLabel,saveStatus,optimize,lockButton,draftButton,clear);
+  root.replaceChildren(savedBar,controls,status,layout,issues,analysis,dialog);
+  size.addEventListener('change',()=>{if(locked){size.value=String(model.snapshot().size);return;}try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
+  function persist(){try{localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));saveStatus.textContent=locked?'Locked: '+locked.title:'Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
   function commit(message){persist();draw();status.textContent=message;}
-  function move(id,group){try{const player=model.snapshot().players.find(player=>player.id===id);model.move(id,group);selected=null;commit(player.spec+' '+player.className+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');}catch(error){draw();status.textContent=error.message;}}
+  function move(id,group){if(locked){status.textContent='Choose Edit as draft before moving placeholders.';return;}try{const player=model.snapshot().players.find(player=>player.id===id);model.move(id,group);selected=null;commit(player.spec+' '+player.className+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');}catch(error){draw();status.textContent=error.message;}}
   function destination(node,group){
-    node.addEventListener('dragover',event=>{event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';node.classList.add('is-drop-target');});
+    node.addEventListener('dragover',event=>{if(locked)return;event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';node.classList.add('is-drop-target');});
     node.addEventListener('dragleave',()=>node.classList.remove('is-drop-target'));
     node.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();node.classList.remove('is-drop-target');const id=event.dataTransfer?.getData('application/x-solstice-composition')||dragged;if(id)move(id,group);dragged=null;});
   }
   function playerCard(player){
-    const row=make('div',null,'comp-player');row.dataset.wowClass=player.className;row.draggable=true;row.dataset.playerId=player.id;
-    row.addEventListener('dragstart',event=>{dragged=player.id;event.dataTransfer.setData('application/x-solstice-composition',player.id);event.dataTransfer.setData('text/plain',player.spec+' '+player.className);event.dataTransfer.effectAllowed='move';row.classList.add('is-dragging');});
+    const row=make('div',null,'comp-player');row.dataset.wowClass=player.className;row.draggable=!locked;row.dataset.playerId=player.id;
+    row.addEventListener('dragstart',event=>{if(locked){event.preventDefault();return;}dragged=player.id;event.dataTransfer.setData('application/x-solstice-composition',player.id);event.dataTransfer.setData('text/plain',player.spec+' '+player.className);event.dataTransfer.effectAllowed='move';row.classList.add('is-dragging');});
     row.addEventListener('dragend',()=>{dragged=null;row.classList.remove('is-dragging');for(const target of root.querySelectorAll('.is-drop-target'))target.classList.remove('is-drop-target');});
     const select=button('',()=>{selected=selected===player.id?null:player.id;draw();root.querySelector('[data-player-select="'+player.id+'"]')?.focus();status.textContent=selected?'Choose an empty slot or use Move to for '+player.spec+' '+player.className+'.':'Selection cleared.';},'comp-player-select');
     select.dataset.playerSelect=player.id;select.setAttribute('aria-pressed',String(selected===player.id));select.setAttribute('aria-label','Select '+player.spec+' '+player.className+' to move');
-    const identity=make('span');identity.append(make('strong',player.spec==='Feral Combat'?(player.role==='Tank'?'Feral (Bear)':'Feral (Cat)'):player.spec),make('small',player.className));
-    select.append(guildIcon('spec',player.spec,'',player.className),identity,tablerIcon(roleIcons[player.role]));
+    const label=(player.spec==='Feral Combat'?(player.role==='Tank'?'Feral (Bear)':'Feral (Cat)'):player.spec)+' '+player.className;
+    select.title=label+' · '+player.role;
+    const identity=make('span');identity.append(make('strong',label));
+    const artwork=make('span',null,'comp-player-artwork');
+    const roleIcon=tablerIcon(roleIcons[player.role],'comp-player-role');roleIcon.dataset.role=player.role;
+    artwork.append(guildIcon('spec',player.spec,'',player.className),roleIcon);
+    select.append(artwork,identity);
     const remove=button('',event=>{
-      event.stopPropagation();
+      event.stopPropagation();if(locked)return;
       if(player.group!==null){move(player.id,null);return;}
       model.remove(player.id);if(selected===player.id)selected=null;
       commit(player.spec+' '+player.className+' removed.');
     },'comp-remove');
     const removeLabel=player.group===null?'Remove '+player.spec+' '+player.className:'Move '+player.spec+' '+player.className+' to Unassigned';
-    remove.append(tablerIcon('x'));remove.setAttribute('aria-label',removeLabel);remove.title=removeLabel;
+    remove.append(tablerIcon('x'));remove.setAttribute('aria-label',removeLabel);remove.title=removeLabel;remove.disabled=!!locked;
     row.append(select,remove);return row;
   }
   function draw(){
     const plan=model.snapshot();const coverage=compositionBuffs(plan);const assigned=plan.players.filter(player=>player.group!==null);const chosen=plan.players.find(player=>player.id===selected);
+    lockButton.disabled=!!locked||!request;draftButton.hidden=!locked;optimize.disabled=!!locked;clear.disabled=!!locked;size.disabled=!!locked;
     groups.replaceChildren();
     for(let group=1;group<=plan.size/5;group++){
       const members=assigned.filter(player=>player.group===group);const card=make('section',null,'comp-group');destination(card,group);
-      const title=make('h4','Group '+group);title.append(make('small','('+members.length+'/5)'));card.append(title);
+      const title=make('h4','Group '+group);title.append(make('small','('+members.length+'/5)'));
+      const covered=coverage.filter(buff=>buff.groups.includes(group));
+      const percentage=make('span',Math.round(covered.length/coverage.length*100)+'%','comp-group-coverage');
+      percentage.title='Buff coverage: '+covered.length+' of '+coverage.length+' planned effects available to this group.';
+      percentage.setAttribute('aria-label',percentage.title);title.append(percentage);card.append(title);
+      const counts=make('div',null,'comp-group-roles');
+      for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
+        const count=members.filter(player=>player.role===role).length;if(!count)continue;
+        const badge=make('span',null,'comp-role-mini');badge.dataset.role=role;badge.title=role+': '+count;badge.setAttribute('aria-label',badge.title);
+        badge.append(tablerIcon(roleIcons[role]),make('span',String(count)));counts.append(badge);
+      }
+      card.append(counts);
       for(const player of members)card.append(playerCard(player));
       for(let slot=members.length;slot<5;slot++){
-        const empty=button(selected?'Place selected':'Empty',()=>{if(selected)move(selected,group);else status.textContent='Add a class and spec, then drag or select a placeholder to place it.';},'comp-empty');empty.setAttribute('aria-label','Group '+group+', empty slot '+(slot+1)+(selected?', place selected placeholder':''));card.append(empty);
+        const empty=button(selected?'Place selected':'Empty',()=>{if(selected)move(selected,group);else status.textContent='Add a class and spec, then drag or select a placeholder to place it.';},'comp-empty');empty.disabled=!!locked;empty.setAttribute('aria-label','Group '+group+', empty slot '+(slot+1)+(selected?', place selected placeholder':''));card.append(empty);
       }
       const groupBuffs=coverage.filter(buff=>buff.scope==='Group'&&buff.groups.includes(group));
-      const hint=make('small',members.length?(groupBuffs.length?groupBuffs.map(buff=>buff.name).join(' · '):'No group-only buffs'):'Group is empty','comp-group-hint');card.append(hint);groups.append(card);
+      const hasManaUsers=members.some(player=>!['Warrior','Rogue'].includes(player.className));
+      const missing=coverage.filter(buff=>buff.name==='Mana Spring Totem'&&buff.available&&!buff.groups.includes(group)&&hasManaUsers);
+      const hint=make('div',null,'comp-group-hint');
+      hint.append(make('small',members.length?'Group Buffs:':'Group is empty'));
+      for(const buff of [...groupBuffs,...missing]){
+        const covered=buff.groups.includes(group);const chip=make('span',(covered?'':'× ')+buff.shortName,'comp-buff-chip');
+        chip.dataset.state=covered?'covered':'missing';chip.title=buff.name+' — '+buff.description+(covered?' (available in this group)':' (missing from this group)');
+        chip.setAttribute('aria-label',buff.name+': '+(covered?'available':'missing'));hint.append(chip);
+      }
+      if(members.length&&!groupBuffs.length&&!missing.length)hint.append(make('small','No group-only buffs','comp-group-no-buffs'));
+      card.append(hint);groups.append(card);
     }
     const pool=plan.players.filter(player=>player.group===null);unassigned.replaceChildren(heading('Unassigned ('+pool.length+')','users'));
     const poolRows=make('div',null,'comp-pool');destination(poolRows,null);
     for(const player of pool)poolRows.append(playerCard(player));
     if(!pool.length)poolRows.append(make('p','Select a class and specialization to add a placeholder.','comp-empty-message'));
-    unassigned.append(poolRows,button('Move selected to Unassigned',()=>{if(selected)move(selected,null);},'comp-return'));unassigned.lastElementChild.hidden=!selected||chosen?.group===null;
+    unassigned.append(poolRows,button('Move selected to Unassigned',()=>{if(selected)move(selected,null);},'comp-return'));unassigned.lastElementChild.hidden=!selected||chosen?.group===null;unassigned.lastElementChild.disabled=!!locked;
     picker.replaceChildren(heading('Add Characters','user-circle'),make('label','Class'));
     const classes=make('div',null,'comp-classes');
     for(const className of ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid']){
@@ -176,7 +260,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     picker.append(classes,make('label','Specialization'));
     for(const [name,role] of specs[chosenClass])for(const selectedRole of name==='Feral Combat'?['Melee DPS','Tank']:[role]){
       const label=name==='Feral Combat'?(selectedRole==='Tank'?'Feral (Bear)':'Feral (Cat)'):name;
-      const add=button('',()=>{try{model.add(chosenClass,name,selectedRole);commit(label+' '+chosenClass+' added to Unassigned.');}catch(error){status.textContent=error.message;}},'comp-add-spec');add.dataset.wowClass=chosenClass;add.disabled=plan.players.length>=plan.size;add.setAttribute('aria-label','Add '+label+' '+chosenClass+' to Unassigned');add.append(guildIcon('spec',name,'',chosenClass),make('span',label),tablerIcon(roleIcons[selectedRole]),tablerIcon('plus'));picker.append(add);
+      const add=button('',()=>{if(locked)return;try{model.add(chosenClass,name,selectedRole);commit(label+' '+chosenClass+' added to Unassigned.');}catch(error){status.textContent=error.message;}},'comp-add-spec');add.dataset.wowClass=chosenClass;add.disabled=!!locked||plan.players.length>=plan.size;add.setAttribute('aria-label','Add '+label+' '+chosenClass+' to Unassigned');add.append(guildIcon('spec',name,'',chosenClass),make('span',label),tablerIcon(roleIcons[selectedRole]),tablerIcon('plus'));picker.append(add);
     }
     composition.replaceChildren(heading('Composition','chart-line'));
     for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
@@ -186,7 +270,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     settings.hidden=!chosen;
     if(chosen){
       settings.replaceChildren(heading('Selected Placeholder','adjustments-horizontal'),make('p',chosen.spec+' '+chosen.className));
-      const field=(label,values,value,action)=>{const wrapper=make('label',label);const select=make('select');for(const [key,title] of values)select.add(new Option(title,key));select.value=String(value);select.addEventListener('change',()=>action(select.value));wrapper.append(select);settings.append(wrapper);};
+      const field=(label,values,value,action)=>{const wrapper=make('label',label);const select=make('select');for(const [key,title] of values)select.add(new Option(title,key));select.value=String(value);select.disabled=!!locked;select.addEventListener('change',()=>{if(!locked)action(select.value);});wrapper.append(select);settings.append(wrapper);};
       field('Move to',[[0,'Unassigned'],...Array.from({length:plan.size/5},(_,i)=>[i+1,'Group '+(i+1)])],chosen.group??0,value=>move(chosen.id,Number(value)||null));
       field('Role',['Tank','Healer','Melee DPS','Ranged DPS'].map(role=>[role,role]),chosen.role,value=>{model.update(chosen.id,{role:value});commit('Role updated.');});
       if(chosen.className==='Paladin'){
@@ -216,5 +300,9 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     buffs.append(list,make('p','Coverage uses assigned placeholders. Greater Blessings are planned by class; one blessing per Paladin. A Shaman provides one air totem. Talent, form, Imp and totem requirements must be met in game.','comp-buff-note'));
   }
   persist();draw();
-  return {model,draw};
+  if(request)request().then(result=>{
+    savedCompositions=[...savedCompositions,...(result.compositions??[])].filter((entry,index,all)=>all.findIndex(other=>other.id===entry.id)===index);savedOptions();
+    if(locked){const entry=savedCompositions.find(entry=>entry.id===locked.id);if(entry)openSaved(entry);else{locked=null;persist();draw();}}
+  }).catch(error=>{status.textContent='Saved compositions could not be loaded: '+error.message;});
+  return {get model(){return model;},draw};
 }
