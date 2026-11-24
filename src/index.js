@@ -1,3 +1,6 @@
+import { matchesGuildRosterFilter } from './guild-roster-filters.js';
+import { raidTeamsApi, guildRoster, guildRosterProfessions } from './raid-teams-api.js';
+import { raidTeamSummary, renderRaidTeams } from './raid-teams-client.js';
 import { raidCompositionsApi, ownedRaidComposition } from './raid-compositions-api.js';
 import { createCompositionPlan, compositionBuffs, renderRaidComposition } from './raid-composition.js';
 import { tablerIcon, guildIcon } from '../public/assets/icons.js';
@@ -83,23 +86,14 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
   if (url.pathname === '/api/raid-characters') {
     if (!post) {
       if (url.searchParams.get('guild') === '1' || url.searchParams.get('dashboard') === '1') {
-        const {results} = await db.prepare(`SELECT name, class_name, spec, role, 1 AS armory_linked, slug AS armorySlug FROM armory_links
-          UNION ALL
-          SELECT c.name, c.class_name, c.spec, c.role, 0, NULL FROM raid_characters c
-          WHERE NOT EXISTS (SELECT 1 FROM armory_links a WHERE a.member = c.member AND a.name = c.name COLLATE NOCASE)
-          ORDER BY name COLLATE NOCASE`).bind().all();
-        if (url.searchParams.get('dashboard') === '1') {
-          const slugs = results.map(character=>character.armorySlug).filter(Boolean);
-          const counts = field => [...new Set(results.map(character=>character[field]))]
-            .map(name=>[name,results.filter(character=>character[field] === name).length])
-            .sort(([nameA,countA],[nameB,countB])=>countB-countA || nameA.localeCompare(nameB));
-          return reply({total:results.length,linked:slugs.length,classes:counts('class_name'),roles:counts('role'),
-            ...await guildProfessionSummary(env,slugs)});
+        const roster=await guildRoster(env);
+        const characters=roster.characters.map(character=>({name:character.name,class_name:character.className,spec:character.spec||'',role:character.role||'',armory_linked:Number(character.linked),armorySlug:character.slug,level:character.level,race:character.race??null}));
+        if(url.searchParams.get('dashboard')==='1'){
+          const counts=field=>[...new Set(characters.map(character=>character[field]||'Not set'))].map(name=>[name,characters.filter(character=>(character[field]||'Not set')===name).length]).sort(([a,n],[b,m])=>m-n||a.localeCompare(b));
+          const coverage=await guildRosterProfessions(env,characters.map(character=>character.armorySlug).filter(Boolean),url.searchParams.get('professions')!=='1');
+          return reply({total:characters.length,linked:characters.filter(character=>character.armory_linked).length,classes:counts('class_name'),roles:counts('role'),source:roster.source,warning:roster.warning,...coverage});
         }
-        const characters = await Promise.all(results.map(async character => ({
-          ...character, level:(await publicRosterProfile(env,character.armorySlug))?.level ?? null,
-        })));
-        return reply({ characters });
+        return reply({characters,source:roster.source,warning:roster.warning});
       }
       const result = await db.prepare('SELECT name, class_name, spec, role FROM raid_characters WHERE member = ? ORDER BY name').bind(user).all();
       const linked = await db.prepare('SELECT name, class_name, role, spec, slug AS armorySlug FROM armory_links WHERE member = ? ORDER BY name').bind(user).all();
@@ -414,7 +408,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-21" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-21&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-22" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-22&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -518,7 +512,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 <div class="guild-character-control"><button type="button" id="guildCharacterTrigger" class="guild-character-switch" role="combobox" aria-label="Active character" aria-haspopup="listbox" aria-expanded="false" aria-controls="guildCharacterOptions" disabled><span id="guildCharacterIcon" aria-hidden="true"></span><span class="guild-character-caption">Playing as</span><span id="guildCharacterName">Loading characters…</span><svg class="tabler-icon guild-character-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg></button><select id="guildCharacter" aria-hidden="true" tabindex="-1" hidden disabled><option value="">Loading characters…</option></select><div id="guildCharacterOptions" role="listbox" aria-label="Your characters" hidden></div></div><button type="button" id="raidMenuToggle" aria-expanded="false" aria-controls="raidMenu">
 <svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#menu-2"></use></svg>
 <span id="raidMenuLabel">Guild Hall menu</span><svg class="tabler-icon raid-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg>
-</button><nav id="raidMenu" aria-label="Guild Hall"><a href="/" class="guild-home-link"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#home"></use></svg>Home</a><details class="guild-menu-group"><summary><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#shield"></use></svg><span>Guild Hall</span><svg class="tabler-icon guild-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg></summary><div class="guild-menu-items"><button data-raid-view="guildDashboard"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#layout-dashboard"></use></svg>Guild Dashboard</button><button data-raid-view="calendar"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#calendar-event"></use></svg>Events</button><a href="/gear-planner" class="guild-planner-link"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#book"></use></svg>Gear Planner</a></div></details><details class="guild-menu-group"><summary><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#swords"></use></svg><span>Raiding</span><svg class="tabler-icon guild-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg></summary><div class="guild-menu-items"><button data-raid-view="raiding"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#users"></use></svg>Group Planner</button></div></details><button id="professionTab" aria-pressed="false"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#flask"></use></svg>Professions</button><button id="auctionTab" aria-pressed="false"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#gavel"></use></svg>Auction House</button></nav><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="tabler-icon guild-discord-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#brand-discord"></use></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><button data-raid-view="characters"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#user-circle"></use></svg>My characters</button><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></aside>
+</button><nav id="raidMenu" aria-label="Guild Hall"><a href="/" class="guild-home-link"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#home"></use></svg>Home</a><details class="guild-menu-group"><summary><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#shield"></use></svg><span>Guild Hall</span><svg class="tabler-icon guild-menu-chevron" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#chevron-down"></use></svg></summary><div class="guild-menu-items"><button data-raid-view="guildDashboard"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#layout-dashboard"></use></svg>Guild Dashboard</button><button data-raid-view="calendar"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#calendar-event"></use></svg>Events</button><a href="/gear-planner" class="guild-planner-link"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#book"></use></svg>Gear Planner</a></div></details><button data-raid-view="raiding"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#swords"></use></svg>Raiding</button><button id="professionTab" aria-pressed="false"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#flask"></use></svg>Professions</button><button id="auctionTab" aria-pressed="false"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#gavel"></use></svg>Auction House</button></nav><div class="guild-account"><div class="guild-discord-account"><button type="button" id="discordAccountTrigger" class="guild-discord-trigger" aria-expanded="false" aria-controls="discordAccountCard"><span class="guild-discord-icon-square"><svg class="tabler-icon guild-discord-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#brand-discord"></use></svg></span><span id="guildIdentity">Discord</span><span class="guild-discord-status" role="img" aria-label="Signed in with Discord"></span></button><section id="discordAccountCard" class="guild-discord-card" aria-label="Discord Account" hidden><div class="eyebrow">Discord Account</div><strong id="discordCardName">Discord</strong><p id="discordConnection">Connected</p><dl id="discordAccountStats"></dl><small id="discordStatsUpdated"></small><button data-raid-view="characters"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#user-circle"></use></svg>My characters</button><form method="post" action="/auth/logout"><button class="raid-primary guild-signout" type="submit">Sign Out</button></form></section></div></div></aside>
 <div class="raid-content">
 <header class="raid-heading guild-page-heading"><div><p class="eyebrow">Alliance Guild</p><h2 id="raidTitle" tabindex="-1">My sign-ups</h2><p id="raidSubtitle">World of Warcraft: Forever · US Normal Alliance</p></div><button id="newRaid" class="raid-primary"><svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-3#plus"></use></svg> New Raid</button></header>
 <p id="raidMessage" role="status"></p><a id="raidSignIn" class="raid-primary" target="_top" hidden>Sign in with Discord</a>
@@ -811,7 +805,7 @@ function setView(view) {
   byId('marketFooter').hidden = view !== 'auction';
   const showProfessions = view === 'profession';
   const showRaids = view === 'raid';
-  if (!showRaids) document.body.classList.remove('guild-dashboard-active');
+  if (!showRaids) document.body.classList.remove('guild-dashboard-active','raid-teams-active');
   byId('raidPanel').hidden = false;
   byId('sharedRaidContent').hidden = !showRaids;
   for (const [id,selected] of [['auctionTab',view === 'auction'],['professionTab',showProfessions]]) {
@@ -1514,18 +1508,19 @@ function raidError(error) {
 }
 function raidReset(view, id) {
   document.body.classList.toggle('guild-dashboard-active',view === 'guildDashboard');
-  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard';
+  document.body.classList.toggle('raid-teams-active',view === 'raiding');
+  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding';
   raidView = view;
   activeRaid = id || null;
   const dashboard = workspaceViews.includes(view);
   for (const node of document.querySelectorAll('[data-raid-view]')) {
-    const current = node.dataset.raidView === (dashboard ? 'readiness' : view);
+    const current = node.dataset.raidView === (dashboard ? 'readiness' : view==='groupPlanner' ? 'raiding' : view);
     node.setAttribute('aria-current',String(current));
     if (current) node.closest('details')?.setAttribute('open','');
   }
   for (const node of document.querySelectorAll('[data-raid-tab]')) node.setAttribute('aria-current',String(node.dataset.raidTab === view));
   byId('raidDashboardControls').hidden = !dashboard;
-  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { raiding:'Raiding', signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Events', discover:'Find a raid', manage:'Manage raids', new:'New Raid', detail:'Raid details' }[view];
+  byId('raidTitle').textContent = dashboard ? 'Raid Dashboard' : { raiding:'Raiding', groupPlanner:'Group Planner', signups:'My sign-ups', characters:'My characters', guildDashboard:'Guild Dashboard', guildChat:'Guild Chat', craftingDirectory:'Crafting Directory', calendar:'Events', discover:'Find a raid', manage:'Manage raids', new:'New Raid', detail:'Raid details' }[view];
   byId('raidMenuLabel').textContent = byId('raidTitle').textContent;
   byId('raidMenuToggle').setAttribute('aria-label','Guild Hall menu, current view: ' + byId('raidTitle').textContent);
   byId('raidMenuToggle').setAttribute('aria-expanded','false');
@@ -1540,7 +1535,7 @@ function raidReset(view, id) {
   byId('raidSignIn').hidden = true;
   const guildView = ['guildDashboard','guildChat','craftingDirectory'].includes(view);
   const createButton = byId('newRaid');
-  createButton.hidden = view === 'new' || view === 'raiding' || guildView;
+  createButton.hidden = view === 'new' || view === 'raiding' || view === 'groupPlanner' || guildView;
   createButton.replaceChildren(tablerIcon('plus'),document.createTextNode(view === 'characters' ? 'Add character' : view === 'calendar' ? 'New Event' : 'New Raid'));
   createButton.classList.toggle('guild-new-event',view === 'calendar');
   byId('raidList').replaceChildren();
@@ -1596,7 +1591,23 @@ function renderGuildRoster(list, characters) {
   for (const [label,value] of [['Level: Highest First','level-desc'],['Level: Lowest First','level-asc'],['Name: A–Z','name']]) {
     sort.add(new Option(label,value));
   }
-  filters.append(search,sort);
+  const toggle=raidElement('button');toggle.type='button';toggle.replaceChildren(tablerIcon('adjustments-horizontal'),document.createTextNode('Filters'));toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','guildRosterAdvancedFilters');
+  filters.append(search,sort,toggle);
+  const advanced=raidElement('div',null,'guild-roster-advanced');advanced.id='guildRosterAdvancedFilters';advanced.hidden=true;
+  const race=raidElement('select');race.setAttribute('aria-label','Filter roster by race');race.add(new Option('All races',''));
+  for(const name of [...new Set(characters.map(character=>character.race).filter(Boolean))].sort())race.add(new Option(name,name));
+  if(characters.some(character=>!character.race))race.add(new Option('Not reported','__unknown__'));
+  const className=raidElement('select');className.setAttribute('aria-label','Filter roster by class');className.add(new Option('All classes',''));for(const name of Object.keys(armorySpecs).sort())className.add(new Option(name,name));
+  const spec=raidElement('select');spec.setAttribute('aria-label','Filter roster by specialization');
+  function specOptions(){const previous=spec.value;spec.replaceChildren(new Option('All specs',''));const names=className.value?(armorySpecs[className.value]??[]).map(([name])=>name):Object.values(armorySpecs).flatMap(values=>values.map(([name])=>name));for(const name of [...new Set(names)].sort())spec.add(new Option(name,name));spec.add(new Option('Not set','__unknown__'));if(names.includes(previous)||previous==='__unknown__')spec.value=previous;}
+  specOptions();
+  const minLevel=raidElement('input');minLevel.type='number';minLevel.min='1';minLevel.max='60';minLevel.placeholder='1';minLevel.setAttribute('aria-label','Minimum character level');
+  const maxLevel=raidElement('input');maxLevel.type='number';maxLevel.min='1';maxLevel.max='60';maxLevel.placeholder='60';maxLevel.setAttribute('aria-label','Maximum character level');
+  for(const [label,input] of [['Race',race],['Class',className],['Spec',spec],['Min level',minLevel],['Max level',maxLevel]]){const field=raidElement('label',label);field.append(input);advanced.append(field);}
+  const reset=raidElement('button','Reset filters');reset.type='button';advanced.append(reset);
+  const total=raidElement('span',String(characters.length),'guild-roster-total');list.querySelector('#guildRosterTitle')?.append(total);
+  toggle.addEventListener('click',()=>{advanced.hidden=!advanced.hidden;toggle.setAttribute('aria-expanded',String(!advanced.hidden));});
+
   const rows = raidElement('div',null,'guild-character-list');
   const clear = raidElement('button','Clear Profession Filter');
   clear.type = 'button';
@@ -1604,12 +1615,15 @@ function renderGuildRoster(list, characters) {
   const activeFilter = raidElement('div',null,'guild-profession-filter');
   activeFilter.hidden = true;
   activeFilter.append(filterName,clear);
-  list.append(activeFilter,filters,rows);
+  list.append(activeFilter,filters,advanced,rows);
   let professionSlugs = null;
   let professionRanks = new Map();
   let professionName = '';
   const draw = () => {
     const query = search.value.trim().toLowerCase();
+    const active=[race.value,className.value,spec.value,minLevel.value,maxLevel.value].filter(Boolean).length;
+    toggle.replaceChildren(tablerIcon('adjustments-horizontal'),document.createTextNode('Filters'+(active?' ('+active+')':'')));
+    let matches=0;
     rows.replaceChildren();
     const ordered = [...characters].sort((a,b)=>{
       const nameOrder = a.name.localeCompare(b.name);
@@ -1621,9 +1635,9 @@ function renderGuildRoster(list, characters) {
       return (sort.value === 'level-asc' ? aLevel-bLevel : bLevel-aLevel) || nameOrder;
     });
     for (const character of ordered) {
-      if (professionSlugs && !professionSlugs.has(character.armorySlug)) continue;
+      if(!matchesGuildRosterFilter(character,{query,race:race.value,className:className.value,spec:spec.value,minLevel:minLevel.value,maxLevel:maxLevel.value,professionSlugs}))continue;
+      matches++;
       const meta = [character.class_name,character.spec,character.role].filter(Boolean).join(' · ');
-      if (!(character.name+' '+meta).toLowerCase().includes(query)) continue;
       const row = raidElement('button',null,'guild-character-row');
       row.dataset.wowClass = character.class_name;
       row.type = 'button';
@@ -1656,10 +1670,14 @@ function renderGuildRoster(list, characters) {
       row.addEventListener('click',()=>openCharacterSheet({...character,character:character.name}));
       rows.append(row);
     }
-    if (!rows.childElementCount) rows.append(raidElement('p',query || professionSlugs ? 'No characters match your filters.' : 'No guild characters have been added yet.'));
+    total.textContent=matches===characters.length?String(characters.length):matches+' / '+characters.length;
+    total.setAttribute('aria-label','Showing '+matches+' of '+characters.length+' guild characters');
+    if (!rows.childElementCount) rows.append(raidElement('p',query || professionSlugs || active ? 'No characters match your filters.' : 'No guild characters have been added yet.'));
   };
   search.addEventListener('input',draw);
   sort.addEventListener('change',draw);
+  race.addEventListener('change',draw);spec.addEventListener('change',draw);className.addEventListener('change',()=>{specOptions();draw();});minLevel.addEventListener('input',draw);maxLevel.addEventListener('input',draw);
+  reset.addEventListener('click',()=>{race.value='';className.value='';spec.value='';minLevel.value='';maxLevel.value='';specOptions();draw();});
   function filterByProfession(profession) {
     professionSlugs = profession ? new Set(profession[1]) : null;
     professionRanks = new Map(profession?.[2] ?? []);
@@ -1699,10 +1717,15 @@ async function openRaidView(view, id, navigate = true) {
   const revision = ++raidRevision;
   try {
     if (view === 'raiding') {
-      byId('raidTitle').textContent = 'Group Planner';
-      byId('raidSubtitle').textContent = 'Build a raid composition before sign-ups.';
-      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});
-      return;
+      await renderRaidTeams(byId('raidList'),{
+        request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,
+        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
+        renderCalendar:target=>renderGuildEvents(target,{eventTypes:${JSON.stringify(eventTypes)},raidInstances,request:(path,data)=>guildRequest('/api/guild-events'+path,data),createRaid:data=>raidRequest('',data),openRaid:id=>openRaidView('detail',id)}),
+      });return;
+    }
+    if(view==='groupPlanner'){
+      byId('raidTitle').textContent='Group Planner';
+      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});return;
     }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));
@@ -1757,7 +1780,7 @@ async function openRaidView(view, id, navigate = true) {
       const compositionCards = new Map();
       for (const [kind,title,entries,empty] of [
         ['class','Class Composition',data.classes,'No characters added yet.'],
-        ['role','Role Composition',raidRoles.map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),'No roles assigned yet.'],
+        ['role','Role Composition',[...raidRoles,...(data.roles.some(([name])=>name==='Not set')?['Not set']:[])].map(role=>[role,data.roles.find(([name])=>name === role)?.[1] ?? 0]),'No roles assigned yet.'],
       ]) {
         const tile = raidElement('section',null,'raid-card guild-dashboard-tile');
         tile.dataset.kind = kind;
@@ -1768,7 +1791,7 @@ async function openRaidView(view, id, navigate = true) {
           if (kind === 'class') row.dataset.wowClass = name;
           else row.dataset.role = name;
           const icon = kind === 'class' ? characterIcons(name) :
-            guildIcon('role',name,'guild-dashboard-role-icon');
+            (name==='Not set'?tablerIcon('user-circle'):guildIcon('role',name,'guild-dashboard-role-icon'));
           icon.setAttribute('aria-hidden','true');
           const countBadge = raidElement('span',String(count),'guild-dashboard-count');
           countBadge.setAttribute('aria-label',count+(count === 1 ? ' character' : ' characters'));
@@ -1781,8 +1804,10 @@ async function openRaidView(view, id, navigate = true) {
       }
       const coverage = raidElement('section',null,'raid-card guild-dashboard-tile');
       coverage.dataset.kind = 'profession';
-      coverage.append(raidElement('h3','Profession Coverage'),
-        raidElement('p',data.reviewed+' of '+data.linked+' linked characters reported profession data.'));
+      function drawCoverage(data){
+      coverage.replaceChildren(raidElement('h3','Profession Coverage'),
+        raidElement('p',data.pending?'Loading professions for '+data.total+' guild characters…':data.reviewed+' of '+data.total+' guild characters reported profession data.'));
+      if(data.pending)return;
       for (const [category,label] of [['primary','Primary Professions'],['secondary','Secondary Professions']]) {
         const section = raidElement('section',null,'guild-profession-group');
         section.append(raidElement('h4',label));
@@ -1807,6 +1832,8 @@ async function openRaidView(view, id, navigate = true) {
         section.append(rows.children.length ? rows : raidElement('p','No '+category+' professions reported.'));
         coverage.append(section);
       }
+      }
+      drawCoverage(data);
       const eventsWidget = raidElement('div',null,'guild-dashboard-events');
       const layout = raidElement('div',null,'guild-dashboard-layout');
       const main = raidElement('div',null,'guild-dashboard-main');main.append(roster);
@@ -1821,11 +1848,12 @@ async function openRaidView(view, id, navigate = true) {
         createRaid:data=>raidRequest('',data), openRaid:id=>openRaidView('detail',id),
         agendaOnly:true, limit:5, onViewAll:()=>openRaidView('calendar'),
       });
+      if(data.pending)guildRequest('/api/raid-characters?dashboard=1&professions=1').then(details=>{if(revision===raidRevision)drawCoverage(details);}).catch(()=>{if(revision===raidRevision)coverage.querySelector('p').textContent='Profession data is temporarily unavailable.';});
       if (showGuildRoster) jumpToRoster();
       try {
-        const {characters} = await guildRequest('/api/raid-characters?guild=1');
+        const {characters,warning} = await guildRequest('/api/raid-characters?guild=1');
         if (revision !== raidRevision) return;
-        rosterStatus.remove();
+        if(warning)rosterStatus.textContent=warning;else rosterStatus.remove();
         filterRoster = renderGuildRoster(roster,characters);
         if (selectedProfession) filterRoster(selectedProfession);
       } catch {
@@ -1968,6 +1996,9 @@ ${renderCharacterReputations.toString()}
 ${createCompositionPlan.toString()}
 ${compositionBuffs.toString()}
 ${renderRaidComposition.toString()}
+${matchesGuildRosterFilter.toString()}
+${raidTeamSummary.toString()}
+${renderRaidTeams.toString()}
 ${tablerIcon.toString()}
 ${guildIcon.toString()}
 // Keep card headers consistent as views and asynchronously loaded cards change.
@@ -2737,7 +2768,7 @@ function route() {
   if (tool === 'raid') {
     const id = params.get('raid');
     const view = params.get('view');
-    openRaidView(id ? 'detail' : [...workspaceViews,'raiding','signups','calendar','discover','characters','guildDashboard','guildChat','craftingDirectory','guildCharacters','manage','new'].includes(view) ? view : 'guildDashboard',id,false);
+    openRaidView(id ? 'detail' : [...workspaceViews,'raiding','groupPlanner','signups','calendar','discover','characters','guildDashboard','guildChat','craftingDirectory','guildCharacters','manage','new'].includes(view) ? view : 'guildDashboard',id,false);
   } else {
     ++raidRevision;
     activeRaid = null;
@@ -2891,6 +2922,10 @@ export default {
     if (!session && request.method === 'GET' && ['/character','/gear-planner'].includes(pathname)) return Response.redirect(url.origin+'/auth/discord?next='+encodeURIComponent(pathname+url.search),303);
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
     if (pathname === '/gear-planner' && request.method === 'GET') return new Response(gearPlannerPage(page),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
+    if (pathname === '/api/raid-teams') {
+      try { return await raidTeamsApi(request,env,url,session); }
+      catch { return Response.json({error:'Raid teams are temporarily unavailable.'},{status:503,headers:{'Cache-Control':'no-store'}}); }
+    }
     if (pathname === '/api/raid-compositions') {
       try { return await raidCompositionsApi(request,env,url,session); }
       catch { return Response.json({error:'Saved compositions are temporarily unavailable.'},{status:503,headers:{'Cache-Control':'no-store'}}); }

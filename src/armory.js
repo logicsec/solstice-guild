@@ -55,7 +55,7 @@ export function publicRosterProfile(env, slug) {
     const response = await requestCharacterProfile(await battleNetToken(env),slug,'',3000);
     if (!response.ok) return null;
     const profile = await response.json();
-    return { level:Number.isSafeInteger(profile.level) ? profile.level : null, guild:localized(profile.guild?.name) };
+    return { level:Number.isSafeInteger(profile.level) ? profile.level : null, guild:localized(profile.guild?.name), itemLevel:Number.isFinite(profile.equipped_item_level ?? profile.average_item_level) ? (profile.equipped_item_level ?? profile.average_item_level) : null };
   })().catch(()=>null);
   rosterProfileCache.delete(key);
   rosterProfileCache.set(key,{value,expires:Date.now() + 5 * 60 * 1000});
@@ -289,4 +289,38 @@ export async function linkedRosterProfiles(db, id) {
     LEFT JOIN raid_characters c ON c.member = s.member AND c.name = s.character COLLATE NOCASE AND c.class_name = s.class_name
     WHERE s.raid_id = ?`).bind(id).all();
   return new Map(result.results.map(row=>[row.member,row]));
+}
+
+
+// Forever's guild roster is realmless and includes characters without linked site accounts.
+export function parseGuildRoster(data,races={1:'Human',2:'Orc',3:'Dwarf',4:'Night Elf',5:'Undead',6:'Tauren',7:'Gnome',8:'Troll'}) {
+  const classes={1:'Warrior',2:'Paladin',3:'Hunter',4:'Rogue',5:'Priest',7:'Shaman',8:'Mage',9:'Warlock',11:'Druid'};
+  const seen=new Set();const characters=[];
+  for(const row of Array.isArray(data?.members)?data.members:[]){
+    const character=row?.character;const className=classes[character?.playable_class?.id??character?.character_class?.id];
+    if(!className)continue;
+    const name=localized(character.name_search)||[localized(character.name),localized(character.surname)].filter(Boolean).join(' ');
+    const slug=profileSlug(character.slug||name.toLowerCase().replace(/\s+/g,'-'));
+    if(!slug||!name)continue;
+    const key=Number.isSafeInteger(character.id)?'blizzard:'+character.id:'slug:'+slug;
+    if(seen.has(key))continue;seen.add(key);
+    characters.push({key,name,slug,className,race:localized(character.playable_race?.name??character.race?.name)||races[character.playable_race?.id??character.race?.id]||null,level:Number.isSafeInteger(character.level)?character.level:null,rank:Number.isInteger(row.rank)?row.rank:null,spec:'',role:'',itemLevel:null});
+  }
+  return {guild:localized(data?.guild?.name)||'Solstice',characters:characters.sort((a,b)=>a.name.localeCompare(b.name)),source:'blizzard',updatedAt:Date.now()};
+}
+export async function fetchGuildRoster(env) {
+  if(!env.BLIZZARD_CLIENT_ID||!env.BLIZZARD_CLIENT_SECRET)throw new Error('Blizzard integration is not configured.');
+  const token=await battleNetToken(env);
+  const response=await fetch('https://us.api.blizzard.com/data/wow/guild/solstice/roster?namespace=profile-forever-us&locale=en_US',{
+    headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000),
+  });
+  if(!response.ok)throw new Error('Blizzard guild roster returned HTTP '+response.status+'.');
+  const data=await response.json();
+  if(!Array.isArray(data.members))throw new Error('Blizzard returned an incomplete guild roster.');
+  let races;
+  try{
+    const response=await fetch('https://us.api.blizzard.com/data/wow/playable-race/index?namespace=static-forever-us&locale=en_US',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)});
+    if(response.ok){const catalog=await response.json();if(Array.isArray(catalog.races))races=Object.fromEntries(catalog.races.map(race=>[race.id,localized(race.name)]));}
+  }catch{}
+  return parseGuildRoster(data,races);
 }

@@ -47,6 +47,13 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
       assert.equal(options.headers.Authorization,'Bearer blizzard-token');
       const profile = new URL(url);
       assert.equal(profile.searchParams.get('namespace'),'profile-forever-us');
+      if(profile.pathname==='/data/wow/guild/solstice/roster')return Response.json({guild:{name:'Solstice'},members:[
+        {character:{id:1,name:'Astra',surname:'Mortis',slug:'astra-mortis',level:60,playable_class:{id:8}},rank:1},
+        {character:{id:2,name:'Guild',surname:'Tester',slug:'guild-tester',level:40,playable_class:{id:5}},rank:3},
+        {character:{id:3,name:'Unlinked',surname:'Hunter',slug:'unlinked-hunter',level:1,playable_class:{id:3}},rank:5},
+      ]});
+      if(profile.pathname.startsWith('/profile/wow/character/')&&!profile.pathname.includes('/astra-mortis'))return new Response(null,{status:404});
+
       if (profile.pathname.endsWith('/achievements/statistics')) return Response.json({categories:[{name:'Quests',statistics:[{id:98,name:'Quests completed',quantity:830}]}]});
       const suffix = profile.pathname.split('/').at(-1);
       if (suffix === 'reputations') return Response.json({reputations:[{standing:{tier:7,raw:42000}},{standing:{tier:6,raw:21000}}]});
@@ -128,10 +135,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   for (const [,symbol] of plannerHtml.matchAll(/tabler-icons\.svg(?:\?[^#"]+)?#([a-z0-9-]+)/g)) assert.ok(tablerSprite.includes('id="'+symbol+'"'),'missing Tabler symbol '+symbol);
 
   assert.doesNotMatch(plannerHtml,/<div class="raid-nav-group">/);
-  assert.equal((plannerHtml.match(/<details class="guild-menu-group">/g) ?? []).length,2);
-  const raidingMenu=plannerHtml.match(/<details class="guild-menu-group">[\s\S]*?<\/details>/g)[1];
-  assert.match(raidingMenu,/<span>Raiding<\/span>/);
-  assert.match(raidingMenu,/<div class="guild-menu-items"><button data-raid-view="raiding">[\s\S]*?Group Planner<\/button>/);
+  assert.equal((plannerHtml.match(/<details class="guild-menu-group">/g) ?? []).length,1);
+  assert.match(plannerHtml,/<button data-raid-view="raiding">/);
   const guildMenu=plannerHtml.match(/<details class="guild-menu-group">[\s\S]*?<\/details>/)[0];
   assert.match(guildMenu,/guild-planner-link/);
   const menu=plannerHtml.match(/<nav id="raidMenu"[\s\S]*?<\/nav>/)[0];
@@ -261,7 +266,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await send('/api/raid-characters?guild=1')).status,401);
   assert.equal((await post('/api/raid-characters',{name:'Guild Tester',className:'Priest',spec:'Holy',role:'Healer'},member)).status,200);
   const directory = await (await send('/api/raid-characters?guild=1',options)).json();
-  assert.deepEqual(directory.characters,[{name:'Guild Tester',class_name:'Priest',spec:'Holy',role:'Healer',armory_linked:0,armorySlug:null,level:null}]);
+  assert.equal(directory.characters.length,3,'guild roster includes unlinked characters');
+  assert.ok(directory.characters.some(character=>character.name==='Unlinked Hunter'&&character.level===1));
   const ownCharacters = await (await send('/api/raid-characters',options)).json();
   assert.deepEqual(ownCharacters.signupCharacters,[]);
   const raid = '/api/raids/' + id;
@@ -336,8 +342,12 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.ok(linkedDirectory.characters.every(character=>!Object.hasOwn(character,'member')));
   assert.equal((await send('/api/raid-characters?dashboard=1')).status,401);
   const overview = await (await send('/api/raid-characters?dashboard=1',options)).json();
-  assert.deepEqual(overview,{total:2,linked:1,classes:[['Mage',1],['Priest',1]],
-    roles:[['Healer',1],['Ranged DPS',1]],reviewed:1,professions:[['Alchemy',1,'primary',['astra-mortis'],[['astra-mortis',{skill:100,maxSkill:150}]]]]});
+  assert.equal(overview.total,3);assert.equal(overview.linked,1);assert.equal(overview.source,'blizzard');
+  assert.ok(overview.classes.some(([name,count])=>name==='Hunter'&&count===1));
+  assert.ok(overview.roles.some(([name,count])=>name==='Not set'&&count===2));
+  const professionOverview=await (await send('/api/raid-characters?dashboard=1&professions=1',options)).json();
+  assert.equal(professionOverview.reviewed,1);
+  assert.equal(professionOverview.professions.find(([name])=>name==='Alchemy')[1],1);
   const linked = await (await send('/api/armory',{headers:{Cookie:member}})).json();
   assert.equal(linked.characters[0].spec,'Frost');
   assert.equal(linked.characters[0].role,'Ranged DPS');
