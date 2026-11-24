@@ -1,3 +1,5 @@
+import {matchesGuildRosterFilter} from './guild-roster-filters.js';
+
 export function raidTeamSummary(members, mainsOnly=true){
   const characters=members.filter(member=>!mainsOnly||member.isMain);
   const roles=Object.fromEntries(['Tank','Healer','Melee DPS','Ranged DPS','Not set'].map(role=>[role,characters.filter(member=>(member.role||'Not set')===role).length]));
@@ -16,6 +18,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   let section=new URLSearchParams(location.search).get('section')||'roster';
   if(!['roster','report','calendar','planner','professions','settings'].includes(section))section='roster';
   let data=null,teams=[],tab='team',query='',mode='role',mainsOnly=true,selected=new Set(),revision=0,professions=null,saving=false;
+  let filtersOpen=false;const rosterFilters={race:'',className:'',spec:'',minLevel:'',maxLevel:''};
   const status=el('p','','teams-status');status.setAttribute('role','status');
   const content=el('div',null,'teams-content');
   const dialog=el('dialog',null,'team-edit-dialog');dialog.setAttribute('aria-label','Create raid team');
@@ -82,17 +85,32 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     panel.append(tabs());const layout=el('div',null,'team-roster-layout');const list=el('div',null,'team-roster-main');layout.append(list,summary());panel.append(layout);
     const tools=el('div',null,'team-roster-tools');const search=el('input');search.type='search';search.placeholder='Search name, class or spec';search.setAttribute('aria-label','Search team roster');search.value=query;const rows=el('div');
     search.addEventListener('input',()=>{query=search.value;drawRows(rows);});tools.append(search);
+    const filterPanel=el('div',null,'guild-roster-advanced team-filter-panel');filterPanel.id='teamRosterFilters';filterPanel.hidden=!filtersOpen;
+    const filterButton=btn('',()=>{filtersOpen=!filtersOpen;filterPanel.hidden=!filtersOpen;filterButton.setAttribute('aria-expanded',String(filtersOpen));},'team-filter-button');
+    filterButton.setAttribute('aria-controls','teamRosterFilters');filterButton.setAttribute('aria-expanded',String(filtersOpen));
+    const updateButton=()=>{const count=Object.values(rosterFilters).filter(Boolean).length;filterButton.replaceChildren(icon('adjustments-horizontal'),el('span','Filters'+(count?' ('+count+')':'')));};updateButton();tools.append(filterButton);
+    const race=el('select');race.setAttribute('aria-label','Filter team roster by race');race.add(new Option('All races',''));
+    const raceNames=[...new Set([...data.roster.characters,...data.members].map(character=>character.race).filter(Boolean))].sort();for(const name of raceNames)race.add(new Option(name,name));race.add(new Option('Not reported','__unknown__'));race.value=rosterFilters.race;
+    const className=el('select');className.setAttribute('aria-label','Filter team roster by class');className.add(new Option('All classes',''));for(const name of Object.keys(specs).sort())className.add(new Option(name,name));className.value=rosterFilters.className;
+    const spec=el('select');spec.setAttribute('aria-label','Filter team roster by specialization');
+    const specOptions=()=>{spec.replaceChildren(new Option('All specs',''));const names=rosterFilters.className?(specs[rosterFilters.className]??[]).map(([name])=>name):Object.values(specs).flatMap(entries=>entries.map(([name])=>name));for(const name of [...new Set(names)].sort())spec.add(new Option(name,name));spec.add(new Option('Not set','__unknown__'));if(rosterFilters.spec&&!names.includes(rosterFilters.spec)&&rosterFilters.spec!=='__unknown__')rosterFilters.spec='';spec.value=rosterFilters.spec;};specOptions();
+    const minimum=el('input'),maximum=el('input');for(const input of [minimum,maximum]){input.type='number';input.min='1';input.max='60';}minimum.placeholder='1';maximum.placeholder='60';minimum.value=rosterFilters.minLevel;maximum.value=rosterFilters.maxLevel;minimum.setAttribute('aria-label','Minimum team character level');maximum.setAttribute('aria-label','Maximum team character level');
+    for(const [label,input] of [['Race',race],['Class',className],['Spec',spec],['Min level',minimum],['Max level',maximum]]){const field=el('label',label);field.append(input);filterPanel.append(field);}
+    const apply=()=>{updateButton();drawRows(rows);};
+    race.addEventListener('change',()=>{rosterFilters.race=race.value;apply();});className.addEventListener('change',()=>{rosterFilters.className=className.value;specOptions();apply();});spec.addEventListener('change',()=>{rosterFilters.spec=spec.value;apply();});minimum.addEventListener('input',()=>{rosterFilters.minLevel=minimum.value;apply();});maximum.addEventListener('input',()=>{rosterFilters.maxLevel=maximum.value;apply();});
+    filterPanel.append(btn('Reset filters',()=>{for(const key of Object.keys(rosterFilters))rosterFilters[key]='';race.value='';className.value='';minimum.value='';maximum.value='';specOptions();apply();}));
+
     if(tab==='team'){const select=el('select');select.setAttribute('aria-label','Group roster by');select.add(new Option('Role','role'));select.add(new Option('Guild rank','rank'));select.value=mode;select.addEventListener('change',()=>{mode=select.value;drawRows(rows);});tools.append(select);}
-    else tools.append(btn('Refresh guild roster',async()=>{try{status.textContent='Refreshing guild roster…';const result=await request('?team='+teamId,{action:'refresh'});await load();status.textContent=result.roster.warning||'Guild roster refreshed.';}catch(error){status.textContent=error.message;}}));list.append(tools,rows);drawRows(rows);
+    else tools.append(btn('Refresh guild roster',async()=>{try{status.textContent='Refreshing guild roster…';const result=await request('?team='+teamId,{action:'refresh'});await load();status.textContent=result.roster.warning||'Guild roster refreshed.';}catch(error){status.textContent=error.message;}}));list.append(tools,filterPanel,rows);drawRows(rows);
   }
   function identity(character){const node=el('span',null,'team-character-identity');node.dataset.wowClass=character.className;node.append(guildIcon('class',character.className));if(character.spec)node.append(guildIcon('spec',character.spec,'',character.className));const name=btn(character.name,()=>{if(character.slug)location.href='/character?character='+encodeURIComponent(character.name)+'&name='+encodeURIComponent(character.slug);},'team-character-link');node.append(name);return node;}
   async function change(input){if(saving)return;saving=true;status.textContent='Saving team…';for(const control of content.querySelectorAll('button,input,select'))control.disabled=true;try{await request('?team='+teamId,input);selected.clear();await load();status.textContent='Team updated.';}catch(error){status.textContent=error.message;}finally{saving=false;if(isCurrent()&&data)drawWorkspace();}}
   function drawRows(target){
     const scrollTop=target.querySelector('.team-table-scroll')?.scrollTop??0;
-    target.replaceChildren();const term=query.trim().toLowerCase();const matches=character=>[character.name,character.className,character.spec,character.role].join(' ').toLowerCase().includes(term);
+    target.replaceChildren();const matches=character=>matchesGuildRosterFilter({...character,class_name:character.className},{...rosterFilters,query});
     if(tab==='guild'){
       const pool=data.roster.characters.filter(matches);const assigned=new Set(data.members.flatMap(member=>[member.key,member.guildKey].filter(Boolean)));
-      const banner=el('div',null,'team-guild-banner');banner.append(el('strong',data.roster.guild+' · US Normal'),el('small',data.roster.characters.length+' characters found · '+data.members.filter(member=>member.inGuild).length+' assigned to this team'+(data.roster.updatedAt?' · Synced '+new Date(data.roster.updatedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'')));if(data.roster.warning)banner.append(el('p',data.roster.warning));target.append(banner);
+      const banner=el('div',null,'team-guild-banner');banner.append(el('strong',data.roster.guild+' · US Normal'),el('small',data.roster.characters.length+' characters found · '+data.members.filter(member=>member.inGuild).length+' assigned to this team'+(data.roster.updatedAt?' · Synced '+new Date(data.roster.updatedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'')));if(data.roster.warning)banner.append(el('p',data.roster.warning));target.append(banner,el('p','Showing '+pool.length+' of '+data.roster.characters.length+' guild characters.','team-filter-count'));
       const bulk=el('div',null,'team-bulk-actions');bulk.append(el('strong',selected.size+' selected'));const assign=btn('Assign to team',()=>change({action:'assign',characters:[...selected]}));assign.disabled=!selected.size||!data.team.canEdit;bulk.append(btn('Clear',()=>{selected.clear();drawRows(target);}),assign);target.append(bulk);
       const scroller=el('div',null,'team-table-scroll');const table=el('table');const head=el('thead');const heading=el('tr');
       for(const label of ['', 'Character','Spec','Level','ILVL','Rank','Status',''])heading.append(el('th',label));head.append(heading);table.append(head);const body=el('tbody');
@@ -102,7 +120,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
       }
       table.append(body);scroller.append(table);target.append(scroller);scroller.scrollTop=scrollTop;if(!pool.length)target.append(el('p','No guild characters match your search.'));return;
     }
-    const members=data.members.filter(matches);const buckets=mode==='role'?[...roles,'Not set']:[...new Set(members.map(member=>member.rank??'Unknown'))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
+    const members=data.members.filter(matches);target.append(el('p','Showing '+members.length+' of '+data.members.length+' team characters.','team-filter-count'));const buckets=mode==='role'?[...roles,'Not set']:[...new Set(members.map(member=>member.rank??'Unknown'))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));
     for(const key of buckets){const characters=members.filter(member=>mode==='role'?(member.role||'Not set')===key:(member.rank??'Unknown')===key);const group=el('section',null,'team-role-group');const heading=el('header');heading.dataset.role=key;heading.append(icon(mode==='role'?roleIcons[key]:'shield'),el('strong',mode==='role'?key.toUpperCase():key===0?'GUILD MASTER':'RANK '+key),el('small',String(characters.length)));if(data.team.canEdit)heading.append(btn('+ Add',()=>{tab='guild';query='';drawWorkspace();}));group.append(heading);
       for(const member of characters){const row=el('div',null,'team-member-row');row.append(identity(member));const fields=el('div',null,'team-member-fields');
         const spec=el('select');spec.setAttribute('aria-label','Specialization for '+member.name);spec.add(new Option('Spec not set',''));for(const [name] of specs[member.className]??[])spec.add(new Option(name,name));spec.value=member.spec;spec.disabled=!data.team.canEdit;
@@ -114,6 +132,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
       }
       target.append(group);
     }
+    if(data.members.length&&!members.length)target.append(el('p','No team characters match your filters.','teams-empty'));
     if(!data.members.length)target.append(el('p','Open Guild Roster and assign characters to build this raid team.','teams-empty'));
   }
   function drawSettings(panel){

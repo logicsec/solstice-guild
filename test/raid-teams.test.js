@@ -1,3 +1,4 @@
+import {matchesGuildRosterFilter} from '../src/guild-roster-filters.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {DatabaseSync} from 'node:sqlite';
@@ -80,15 +81,15 @@ test('team workspace creates a team, assigns a guild character and updates the r
   const document={createElement:tag=>new Element(tag)};
   const location={href:'https://solsticeguild.net/?tool=raid&view=raiding',search:'?tool=raid&view=raiding'};
   const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
-  const specs={Mage:[['Arcane','Ranged DPS']]};
-  const render=new Function('document','Option','location','history','tablerIcon','guildIcon','raidTeamSummary','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary);
-  const member={key:'blizzard:100',name:'Astra Mortis',slug:'astra-mortis',className:'Mage',spec:'Arcane',role:'Ranged DPS',level:60,itemLevel:null,rank:1};
+  const specs={Mage:[['Arcane','Ranged DPS']],Warrior:[['Protection','Tank']]};
+  const render=new Function('document','Option','location','history','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
+  const member={key:'blizzard:100',name:'Astra Mortis',slug:'astra-mortis',className:'Mage',race:'Human',spec:'Arcane',role:'Ranged DPS',level:60,itemLevel:null,rank:1};
   const team={id:'team-id',name:'Progression',size:20,accent:'#7b70ef',canEdit:true,description:''};
   let created=false;let members=[];
   const request=async(path='',input)=>{
     if(input?.action==='create'){created=true;return{id:team.id};}
     if(input?.action==='assign'){members=[{...member,isMain:true,inGuild:true}];return{ok:true};}
-    if(path.startsWith('?team='))return{team,roster:{guild:'Solstice',characters:[member],source:'blizzard'},members:structuredClone(members)};
+    if(path.startsWith('?team='))return{team,roster:{guild:'Solstice',characters:[member,{key:'blizzard:101',name:'Dwarf Warrior',className:'Warrior',race:'Dwarf',spec:'Protection',role:'Tank',level:20}],source:'blizzard'},members:structuredClone(members)};
     return{teams:created?[team]:[]};
   };
   const root=new Element('div');await render(root,{request,specs});
@@ -102,4 +103,17 @@ test('team workspace creates a team, assigns a guild character and updates the r
   await find(root,e=>e.textContent==='Assign to team').listeners.click();
   assert.equal(members.length,1);assert.ok(find(root,e=>e.textContent==='On team'));
   assert.ok(find(root,e=>e.className==='team-summary-label'&&find(e,c=>c.textContent==='1 mains')));
+  find(root,e=>e.className==='team-filter-button').listeners.click();
+  assert.equal(find(root,e=>e.className==='guild-roster-advanced team-filter-panel').hidden,false);
+  const classFilter=find(root,e=>e.attributes['aria-label']==='Filter team roster by class');classFilter.value='Mage';classFilter.listeners.change();
+  assert.ok(find(root,e=>e.textContent==='Showing 1 of 2 guild characters.'));
+  const min=find(root,e=>e.attributes['aria-label']==='Minimum team character level');min.value='60';min.listeners.input();
+  const max=find(root,e=>e.attributes['aria-label']==='Maximum team character level');max.value='60';max.listeners.input();
+  const specFilter=find(root,e=>e.attributes['aria-label']==='Filter team roster by specialization');specFilter.value='Arcane';specFilter.listeners.change();
+  assert.ok(find(root,e=>e.textContent==='Showing 1 of 2 guild characters.'));
+  const raceFilter=find(root,e=>e.attributes['aria-label']==='Filter team roster by race');raceFilter.value='Dwarf';raceFilter.listeners.change();
+  assert.ok(find(root,e=>e.textContent==='Showing 0 of 2 guild characters.'));
+  find(root,e=>e.textContent==='Reset filters').listeners.click();
+  assert.ok(find(root,e=>e.textContent==='Showing 2 of 2 guild characters.'));
+
 });
