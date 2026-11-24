@@ -117,3 +117,43 @@ test('team workspace creates a team, assigns a guild character and updates the r
   assert.ok(find(root,e=>e.textContent==='Showing 2 of 2 guild characters.'));
 
 });
+
+test('primary sidebar switches working teams, remembers selection and replaces the second menu',async()=>{
+  const {renderRaidTeams}=await import('../src/raid-teams-client.js');
+  const document={createElement:tag=>new Element(tag)};
+  const location={href:'https://solsticeguild.net/?tool=raid&view=raiding&team=team-a',search:'?tool=raid&view=raiding&team=team-a'};
+  const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
+  const stored=new Map();const localStorage={getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)};
+  const render=new Function('document','Option','location','history','localStorage','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,localStorage,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
+  const teams=[{id:'team-a',name:'Team A',size:20,accent:'#7b70ef',canEdit:true},{id:'team-b',name:'Team B',size:20,accent:'#dba349',canEdit:true}];
+  const request=async(path='')=>{
+    const team=new URLSearchParams(path.slice(1)).get('team');
+    return team?{team:teams.find(item=>item.id===team),roster:{characters:[],source:'blizzard'},members:[]}:{teams};
+  };
+  const root=new Element('main'),sidebar=new Element('div');let planned;
+  const options={request,specs:{Mage:[['Arcane','Ranged DPS']]},navigationRoot:sidebar,renderPlanner:(target,id)=>{planned=id;}};
+  await render(root,options);
+  assert.equal(find(sidebar,e=>e.attributes['aria-label']==='Working raid team').value,'team-a');
+  assert.equal(find(root,e=>e.className==='team-workspace').children.length,1,'main workspace contains only content');
+  assert.equal(find(root,e=>e.className==='team-navigation'),undefined,'second navigation column is removed');
+  assert.equal(find(sidebar,e=>e.textContent==='Guild Calendar'),undefined,'raid menu has no duplicate calendar');
+  const report=find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Roster Report'));
+  report.listeners.click();assert.equal(new URLSearchParams(location.search).get('section'),'report');
+  assert.equal(find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Roster Report')).attributes['aria-current'],'true');
+  const select=find(sidebar,e=>e.attributes['aria-label']==='Working raid team');select.value='team-b';select.listeners.change();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Team B'));
+  assert.equal(new URLSearchParams(location.search).get('section'),'roster','team switch starts at that team roster');
+  assert.equal(stored.get('solstice-working-raid-team'),'team-b');
+  find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Group Planner')).listeners.click();
+  assert.equal(planned,'team-b','planner receives the selected team');
+  location.href='https://solsticeguild.net/?tool=raid&view=raiding';location.search='?tool=raid&view=raiding';
+  await render(root,options);
+  assert.equal(find(sidebar,e=>e.attributes['aria-label']==='Working raid team').value,'team-b','returning to Raiding restores the last working team');
+  find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='All raid teams')).listeners.click();
+  await new Promise(resolve=>setImmediate(resolve));
+  assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Raid Teams'));
+  assert.equal(find(sidebar,e=>e.className==='team-menu-item'),undefined,'team tools are hidden without a selected team');
+  await render(root,options);
+  assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Raid Teams'),'explicit All raid teams route stays on team list after reload');
+});
