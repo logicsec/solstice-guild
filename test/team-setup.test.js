@@ -65,5 +65,15 @@ test('team setup isolates regional guilds, verifies rulesets, enforces roles and
   assert.equal((await send(id,{action:'settings',name:'Updated by officer',description:'',size:20,accent:'#56789a'},'officer')).status,200);
 
   data=await (await send(id,null,'editor')).json();assert.equal(data.team.canEdit,true);assert.equal(data.team.canManage,false);assert.equal(data.setup.joined,true);assert.equal(data.setup.permissionConfirmed,true);assert.equal(data.setup.schedules.length,2);
+  assert.equal(data.team.isOwner,false);
+  assert.equal((await send(id,{action:'delete',confirmName:'Updated by officer'},'officer')).status,403,'officers cannot delete a team');
+  assert.equal((await send(id,{action:'delete',confirmName:'Updated by officer'},'raider')).status,403);
+  assert.equal((await send(id,{action:'delete',confirmName:'Old name'})).status,409,'a stale confirmation cannot delete a renamed team');
+  assert.equal((await send(id,{action:'delete',confirmName:'Updated by officer'})).status,200);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raid_teams WHERE id=?').get(id).n,0);
+  for(const table of ['raid_team_members','raid_team_people','raid_team_schedules'])assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM '+table+' WHERE team_id=?').get(id).n,0,'deletion cascades to '+table);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raids').get().n,count,'existing raid events are preserved');
+  assert.equal((await send(id)).status,404);
+
  }finally{sqlite.close();}
 });

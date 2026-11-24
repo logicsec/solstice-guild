@@ -209,3 +209,22 @@ test('creation wizard selects region and ruleset, links a guild and previews and
  assert.equal(dialog.open,false);assert.deepEqual(savedSchedule.days.map(day=>day.day),[2,4]);assert.equal(savedSchedule.instance,'hyjal-summit');
  const permission=find(root,e=>e.attributes['aria-label']==='Default team member role');permission.value='Editor';await find(root,e=>e.textContent==='Save permissions').listeners.click();assert.equal(team.defaultRole,'Editor');assert.equal(setup.permissionConfirmed,true);
 });
+
+test('only creators see team deletion and confirmed deletion returns to the team list',async()=>{
+ const {renderRaidTeams}=await import('../src/raid-teams-client.js');
+ const document={createElement:tag=>new Element(tag)},location={href:'https://solsticeguild.net/?tool=raid&view=raiding&team=team-a&section=settings',search:'?tool=raid&view=raiding&team=team-a&section=settings'};
+ const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
+ const stored=new Map([['solstice-working-raid-team','team-a']]);const localStorage={getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)};
+ let approved=false,deleted=false,deletions=0;
+ const window={confirm:message=>{assert.match(message,/Existing raid events will remain/);return approved;}};
+ const render=new Function('document','Option','location','history','localStorage','window','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,localStorage,window,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
+ const team={id:'team-a',name:'Team A',description:'',size:20,accent:'#56789a',canEdit:true,canManage:true,isOwner:false};
+ const request=async(path='',input)=>{if(input?.action==='delete'){assert.equal(input.confirmName,'Team A');deleted=true;deletions++;return{ok:true};}return path.startsWith('?team=')?{team,roster:{characters:[]},members:[]}:{teams:deleted?[]:[team]};};
+ const root=new Element('main');await render(root,{request,specs:{}});
+ assert.equal(find(root,e=>e.tagName==='button'&&e.textContent==='Delete team'),undefined,'an officer cannot see Delete team');
+ team.isOwner=true;await render(root,{request,specs:{}});
+ await find(root,e=>e.tagName==='button'&&e.textContent==='Delete team').listeners.click();assert.equal(deletions,0,'cancelling keeps the team');
+ approved=true;await find(root,e=>e.tagName==='button'&&e.textContent==='Delete team').listeners.click();assert.equal(deletions,1);
+ assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Raid Teams'));
+ assert.equal(stored.has('solstice-working-raid-team'),false);assert.equal(new URLSearchParams(location.search).has('team'),false);
+});

@@ -754,3 +754,6 @@ body button:disabled { opacity:.5; cursor:not-allowed; }
 .guild-app .raid-sidebar .guild-discord-card #discordStatsUpdated { display:block; padding:4px 0 8px; font-size:10px; color:#8fa7a2; }
 .guild-app .raid-sidebar .guild-discord-card form { position:static; margin:0; padding:9px 0 0; background:transparent; border-top:1px solid #354544; }
 .guild-app .raid-sidebar .guild-discord-card .guild-signout { display:flex; align-items:center; gap:10px; width:100%; min-height:38px; padding:8px; margin:0; border:0; background:#342a2b; color:#f49b9d; text-align:left; }
+.team-delete-danger { max-width:640px; padding:18px; margin-top:28px; border:1px solid var(--theme-danger-border-subtle); border-radius:8px; background:var(--theme-secondary-bg); }
+.team-delete-danger h4 { margin:0 0 8px; color:var(--theme-danger-text-emphasis); }
+.team-delete-danger p { line-height:1.6; font-size:13px; }

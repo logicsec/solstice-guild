@@ -87,7 +87,7 @@ export async function raidTeamsApi(request,env,url,session){
       }));
     }
     const schedules=(await db.prepare('SELECT id,kind,instance,timezone,days FROM raid_team_schedules WHERE team_id=? ORDER BY created_at').bind(teamId).all()).results.map(row=>({...row,days:JSON.parse(row.days)}));
-    return reply({setup:{joined:!!person,permissionConfirmed:!!team.permissions_confirmed,schedules},team:{id:team.id,name:team.name,description:team.description,size:team.size,accent:team.accent,region:team.region,ruleset:team.ruleset,guildSlug:team.guild_slug,guildName:team.guild_name,defaultRole:team.default_role,canManage,canEdit},roster,members});
+    return reply({setup:{joined:!!person,permissionConfirmed:!!team.permissions_confirmed,schedules},team:{id:team.id,name:team.name,description:team.description,size:team.size,accent:team.accent,region:team.region,ruleset:team.ruleset,guildSlug:team.guild_slug,guildName:team.guild_name,defaultRole:team.default_role,isOwner:team.owner===user,canManage,canEdit},roster,members});
   }
   if(request.method!=='POST')return reply({error:'Method not allowed.'},405);
   if(!sameOriginWrite(request,url)||!request.headers.get('Content-Type')?.startsWith('application/json'))return reply({error:'Invalid request origin.'},403);
@@ -106,6 +106,12 @@ export async function raidTeamsApi(request,env,url,session){
     await db.prepare('UPDATE raid_teams SET name=?,description=?,size=?,accent=?,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(name,description,input.size,input.accent,teamId).run();return reply({ok:true});
   }
   if(!team)return reply({error:'Choose a team.'},400);
+  if(input.action==='delete'){
+    if(team.owner!==user)return reply({error:'Only the team creator can delete this team.'},403);
+    if(input.confirmName!==team.name)return reply({error:'The team name changed. Reload its settings before deleting.'},409);
+    await db.prepare('DELETE FROM raid_teams WHERE id=? AND owner=?').bind(teamId,user).run();
+    return reply({ok:true});
+  }
   if(input.action==='refresh'){return reply({roster:await guildRoster(env,true,team)});}
   if(input.action==='join'){
     await db.prepare('INSERT INTO raid_team_people(team_id,member,access_role) VALUES(?,?,?) ON CONFLICT DO NOTHING').bind(teamId,user,team.default_role).run();return reply({ok:true});

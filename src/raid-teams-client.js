@@ -205,12 +205,24 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     }
     const progress=el('progress');progress.max=5;progress.value=completed.filter(Boolean).length;progress.setAttribute('aria-label','Team setup progress');box.append(progress,el('small',completed.filter(Boolean).length+' / 5 complete'),btn('Skip to my team',()=>navigate('roster')));panel.append(box);
   }
+  async function deleteTeam(){
+    if(saving||!data?.team.isOwner)return;
+    const team=data.team;
+    if(!window.confirm('Delete “'+team.name+'”? This permanently removes its roster, team memberships and recurring schedules. Existing raid events will remain on the calendar.'))return;
+    saving=true;content.inert=true;if(navigationRoot)navigationRoot.inert=true;status.textContent='Deleting team…';
+    try{
+      await request('?team='+teamId,{action:'delete',confirmName:team.name});
+      try{if(localStorage.getItem('solstice-working-raid-team')===teamId)localStorage.removeItem('solstice-working-raid-team');localStorage.removeItem('solstice-composition-v1:'+teamId);}catch{}
+      teamId=null;data=null;section='roster';selected.clear();path();await load();status.textContent='Team deleted.';
+    }catch(error){status.textContent=error.message;}finally{saving=false;if(isCurrent()){content.inert=false;if(navigationRoot)navigationRoot.inert=false;}}
+  }
   function drawSettings(panel){
     if(!(data.team.canManage??data.team.canEdit)){panel.append(el('p','Only team leaders and officers can change team settings.'));return;}
     panel.append(el('p',contextLabel(data.team)+' · '+(data.team.guildName||'No guild linked')),btn('Open team setup',()=>navigate('setup')));
     const form=el('form',null,'team-settings-form');const inputs={};
     for(const [key,label,type,value] of [['name','Team name','text',data.team.name],['description','Description','text',data.team.description],['size','Raid size','select',data.team.size],['accent','Banner color','color',data.team.accent]]){const labelNode=el('label',label);const field=el(type==='select'?'select':'input');if(type==='select')for(const size of [10,20,40])field.add(new Option(size+' players',size));else field.type=type;field.value=String(value);field.maxLength=key==='name'?60:500;field.required=key==='name';inputs[key]=field;labelNode.append(field);form.append(labelNode);}
     const save=btn('Save settings',()=>{});save.type='submit';form.append(save);form.addEventListener('submit',event=>{event.preventDefault();change({action:'settings',name:inputs.name.value,description:inputs.description.value,size:Number(inputs.size.value),accent:inputs.accent.value});});panel.append(form);
+    if(data.team.isOwner){const danger=el('section',null,'team-delete-danger');danger.append(el('h4','Delete team'),el('p','Permanently remove this team, its assigned roster, memberships and recurring schedules. Existing raid events stay on the calendar.'),btn('Delete team',deleteTeam,'raid-control-danger'));panel.append(danger);}
   }
   function drawProfessions(panel){
     if(!professions){const loading=el('p','Loading team professions…');panel.append(loading);const token=revision;request('?team='+teamId+'&section=professions').then(result=>{if(token!==revision||!isCurrent()||section!=='professions')return;professions=result;drawWorkspace();}).catch(error=>{loading.textContent=error.message;panel.append(btn('Retry',()=>drawWorkspace()));});return;}
