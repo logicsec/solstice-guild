@@ -6,7 +6,3 @@ Selected BLP textures were decoded to local WebP atlases for this website.
 All artwork belongs to Blizzard Entertainment. The source repository MIT license
 covers its scripts only, not the icons. Neither project is affiliated with or
 endorsed by Blizzard Entertainment.
-
-Additional planner utility and boss-debuff spell artwork © Blizzard Entertainment.
-Source: https://wow.zamimg.com/images/wow/icons/medium/
-The planner-effects manifest records the selected spell texture names.

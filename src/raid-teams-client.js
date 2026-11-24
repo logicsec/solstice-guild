@@ -47,7 +47,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   characterDialog.addEventListener('close',()=>characterBody.replaceChildren());
   const scheduleDialog=el('dialog',null,'team-schedule-dialog');scheduleDialog.setAttribute('aria-label','Set weekly raid times');
   root.replaceChildren(status,content,characterDialog,scheduleDialog);
-  function path(){const url=new URL(location.href);if(section!=='planner'||url.searchParams.get('team')!==teamId)url.hash='';url.searchParams.set('tool','raid');url.searchParams.set('view','raiding');if(teamId){url.searchParams.set('team',teamId);url.searchParams.set('section',section);url.searchParams.delete('teams');try{localStorage.setItem('solstice-working-raid-team',teamId);}catch{}}else{url.searchParams.delete('team');url.searchParams.delete('section');url.searchParams.set('teams',creating?'new':'all');}if(url.href!==location.href)history.pushState(null,'',url);}
+  function path(){const url=new URL(location.href);url.searchParams.set('tool','raid');url.searchParams.set('view','raiding');if(teamId){url.searchParams.set('team',teamId);url.searchParams.set('section',section);url.searchParams.delete('teams');try{localStorage.setItem('solstice-working-raid-team',teamId);}catch{}}else{url.searchParams.delete('team');url.searchParams.delete('section');url.searchParams.set('teams',creating?'new':'all');}if(url.href!==location.href)history.pushState(null,'',url);}
   function openForm(){creating=true;creationStep='size';name.value='';description.value='';size.value='';accent.value='#7b70ef';region.value='us';ruleset.value='2';drawRulesets();formStatus.textContent='';creationPage.hidden=false;path();drawCreation();}
   function drawCreation(){
     creationPage.dataset.step=creationStep;
@@ -101,13 +101,13 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   }
   function drawWorkspace(){
     if(!isCurrent())return;content.replaceChildren();const team=data.team;content.style.setProperty('--team-accent',team.accent);
-    if(section!=='planner'){const banner=el('header',null,'team-banner');const identity=el('div',null,'team-banner-identity');identity.append(el('span',team.name.charAt(0).toUpperCase(),'team-avatar'));const text=el('div');text.append(el('h2',team.name),el('p',contextLabel(team)),el('span','WoW Forever','team-version'));identity.append(text);banner.append(identity);if(team.canManage??team.canEdit)banner.append(btn('Edit banner',()=>navigate('settings')));content.append(banner);}
+    const banner=el('header',null,'team-banner');const identity=el('div',null,'team-banner-identity');identity.append(el('span',team.name.charAt(0).toUpperCase(),'team-avatar'));const text=el('div');text.append(el('h2',team.name),el('p',contextLabel(team)),el('span','WoW Forever','team-version'));identity.append(text);banner.append(identity);if(team.canManage??team.canEdit)banner.append(btn('Edit banner',()=>navigate('settings')));content.append(banner);
     drawNavigation();const layout=el('div',null,'team-workspace');
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
-    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',planner:'layout-dashboard',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',planner:'Group Planner',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);if(section!=='planner')panel.append(heading);
+    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',planner:'layout-dashboard',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',planner:'Group Planner',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
     if(section==='setup'){drawSetup(panel);}
     else if(section==='roster'){heading.append(el('p','Your raid team and the wider guild roster.'));drawRoster(panel);}
-    else if(section==='planner'){const target=el('div');panel.append(target);renderPlanner?.(target,teamId,team.size);}
+    else if(section==='planner'){const target=el('div');panel.append(target);renderPlanner?.(target,teamId);}
     else if(section==='professions')drawProfessions(panel);
     else if(section==='settings')drawSettings(panel);
   }
@@ -120,40 +120,9 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const gear=el('section');gear.append(el('strong','Item level'));if(!stats.itemLevels.known)gear.append(el('p','No gear data yet.'));else{gear.append(el('p',stats.itemLevels.average.toFixed(1)+' average','team-ilvl'),el('small',stats.itemLevels.min+'–'+stats.itemLevels.max+' · Data for '+stats.itemLevels.known+' of '+stats.total+' characters'));}card.append(gear);
     const armor=el('section');armor.append(el('strong','Armor types'));for(const entry of stats.armor){const row=el('div',null,'team-armor-row');const title=el('div');title.append(el('span',entry.name),el('small',entry.count+' · '+(stats.total?Math.round(entry.count/stats.total*100):0)+'%'));const meter=el('div',null,'team-meter');const fill=el('span');fill.style.width=(stats.total?entry.count/stats.total*100:0)+'%';meter.append(fill);const icons=el('div',null,'team-armor-icons');for(const className of entry.classes)icons.append(guildIcon('class',className));row.append(title,meter,icons);armor.append(row);}armor.append(el('small','Expected armor by class.'));card.append(armor);return card;
   }
-  function tabs(){
-    const nav=el('div',null,'team-roster-tabs');
-    nav.setAttribute('role','tablist');
-    nav.setAttribute('aria-label','Roster view');
-    const views=[['team','Raid team','users'],['guild','Guild roster','swords']];
-    const activate=value=>{
-      if(value!==tab){tab=value;query='';selected.clear();drawWorkspace();}
-      content.querySelector('#team-roster-tab-'+value)?.focus();
-    };
-    for(const [value,label,symbol] of views){
-      const item=btn('',()=>activate(value));
-      item.id='team-roster-tab-'+value;
-      item.append(icon(symbol),el('span',label));
-      item.setAttribute('role','tab');
-      item.setAttribute('aria-selected',String(tab===value));
-      item.setAttribute('aria-controls','team-roster-panel');
-      item.tabIndex=tab===value?0:-1;
-      item.addEventListener('keydown',event=>{
-        const target={ArrowLeft:value==='team'?'guild':'team',ArrowRight:value==='team'?'guild':'team',Home:'team',End:'guild'}[event.key];
-        if(target){event.preventDefault();activate(target);}
-      });
-      nav.append(item);
-    }
-    return nav;
-  }
+  function tabs(){const nav=el('div',null,'team-roster-tabs');for(const [value,label,symbol] of [['team','Raid Team','users'],['guild','Guild Roster','swords']]){const item=btn('',()=>{tab=value;query='';selected.clear();drawWorkspace();});item.append(icon(symbol),el('span',label));item.setAttribute('aria-selected',String(tab===value));nav.append(item);}return nav;}
   function drawRoster(panel){
-    panel.append(tabs());
-    const layout=el('div',null,'team-roster-layout');
-    layout.id='team-roster-panel';
-    layout.setAttribute('role','tabpanel');
-    layout.setAttribute('aria-labelledby','team-roster-tab-'+tab);
-    const list=el('div',null,'team-roster-main');
-    layout.append(list,summary());
-    panel.append(layout);
+    panel.append(tabs());const layout=el('div',null,'team-roster-layout');const list=el('div',null,'team-roster-main');layout.append(list,summary());panel.append(layout);
     const tools=el('div',null,'team-roster-tools');const search=el('input');search.type='search';search.placeholder='Search name, class or spec';search.setAttribute('aria-label','Search team roster');search.value=query;const rows=el('div');
     search.addEventListener('input',()=>{query=search.value;drawRows(rows);});tools.append(search);
     const filterPanel=el('div',null,'guild-roster-advanced team-filter-panel');filterPanel.id='teamRosterFilters';filterPanel.hidden=!filtersOpen;

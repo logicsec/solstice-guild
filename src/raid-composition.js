@@ -107,146 +107,63 @@ export function compositionBuffs(plan) {
   });
 }
 
-export function compositionCapabilities(plan) {
-  // Baseline class utility; pet-dependent dispels are excluded. Counts are providers,
-  // not simultaneous casts. Talent cooldowns assume the named specialization.
-  // Priest updates: https://news.blizzard.com/en-us/article/24301514/
-  const assigned=plan.players.filter(p=>p.group!==null);
-  const count=predicate=>assigned.filter(predicate).length;
-  const classes=(...names)=>p=>names.includes(p.className);
-  const entries=[
-    ['Interrupts',classes('Warrior','Rogue','Mage','Shaman'),0,'Pummel / Shield Bash, Kick, Counterspell, Earth Shock'],
-    ['Magic dispels',classes('Priest','Paladin'),1,'Dispel Magic / Cleanse; friendly magic removal'],
-    ['Curse removal',classes('Mage','Druid'),2,'Remove Lesser Curse / Remove Curse'],
-    ['Poison cures',classes('Druid','Paladin','Shaman'),3,'Cure / Abolish Poison, Cleanse, Poison Cleansing Totem'],
-    ['Disease cures',classes('Priest','Paladin','Shaman'),4,'Cure / Abolish Disease, Cleanse, Disease Cleansing Totem'],
-    ['Purge',classes('Shaman','Priest'),5,'Purge / offensive Dispel Magic; pet-dependent effects excluded'],
-    ['Tranq Shot',classes('Hunter'),6,'Tranquilizing Shot; requires learning the ability'],
-    ['Battle res',classes('Druid'),7,'Rebirth; Soulstone is not counted as a direct battle resurrection'],
-    ['Fear Ward',classes('Priest'),8,'Fear Ward'],
-    ['Power Infusion',p=>p.className==='Priest'&&p.spec==='Discipline',9,'Power Infusion; assumes the Discipline talent'],
-    ['Innervate',classes('Druid'),10,'Innervate'],
-    ['Healing',p=>p.className==='Druid'||p.className==='Priest'&&p.spec==='Shadow'||p.className==='Paladin'&&p.spec==='Holy',11,'Tranquility, Shadow Priest Vampiric Embrace, Holy Paladin Divine Favor; assumes specialization talents'],
-    ['Defensives',classes('Warrior','Paladin','Mage','Rogue','Druid'),12,'Shield Wall, Divine Shield, Ice Block, Evasion or Barkskin; personal defensives, not raid mitigation'],
-  ];
-  const debuffs=[
-    ['Major armor reduction',classes('Warrior','Rogue'),13,'Sunder Armor / Expose Armor; alternatives do not stack'],
-    ['Faerie Fire',classes('Druid'),14,'Faerie Fire'],
-    ['Hunter’s Mark',classes('Hunter'),15,'Hunter’s Mark'],
-    ['Curse of the Elements',classes('Warlock'),16,'One planned curse per Warlock; other curses are not counted'],
-    ['Attack power reduction',p=>p.className==='Warrior'||p.className==='Druid'&&p.spec==='Feral Combat',17,'Demoralizing Shout / Roar; alternative effects do not stack'],
-    ['Thunder Clap',classes('Warrior'),18,'Attack-speed reduction'],
-    ['Insect Swarm',classes('Druid'),19,'Insect Swarm; baseline Forever ability'],
-  ];
-  const map=([name,predicate,iconIndex,description])=>({name,count:count(predicate),iconIndex,description});
-  return {utility:entries.slice(0,8).map(map),single:entries.slice(8,11).map(map),cooldowns:entries.slice(11).map(map),debuffs:debuffs.map(map).filter(e=>e.count>0)};
-}
-
-export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null, defaultSize = 10, raidNames = {}, chooseRaid = false, getCharacter = () => null}) {
+export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
-  let sharedPlan;
-  let url;
-  try {
-    url = new URL(window.location.href);
-    const payload = new URLSearchParams(url.hash.slice(1)).get('lineup');
-    if (payload && payload.length <= 16000) {
-      const plan = JSON.parse(payload);
-      if (plan?.version === 1 && [10,20,40].includes(plan.size) && Array.isArray(plan.players)) sharedPlan = plan;
-    }
-  } catch {}
-  let initial;
-  try { initial = JSON.parse(localStorage.getItem(storageKey)); } catch {}
-  let model = createCompositionPlan(specs, sharedPlan ?? initial ?? {size:defaultSize});
-  let locked = !sharedPlan && initial?.lockedId ? {id:initial.lockedId,title:'Loading saved composition…'} : null;
-  let savedCompositions = [];
-  let selected = null;
-  let dragged = null;
-  let draggedSpec = null;
-  let choosing = chooseRaid && !sharedPlan;
+  function buffLine(buff, compact = false) {
+    const row=make('div',null,compact?'comp-buff comp-category-detail':'comp-buff');
+    row.dataset.buffName=buff.name;row.title=buff.name+' — '+buff.description;
+    row.dataset.state=buff.complete?'covered':buff.covered?'partial':buff.available?'alternative':'missing';
+    const icon=make('span',null,'comp-spell-icon');icon.setAttribute('aria-hidden','true');icon.title=buff.name;
+    icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
+    const info=make('div');info.append(make('strong',buff.shortName));if(!compact)info.append(make('small',buff.description));
+    const state=buff.complete?'Covered':buff.covered?'Group '+buff.groups.join(', '):buff.available?'Alternative':'Missing';
+    const badge=make('span',buff.scope,'comp-scope');badge.dataset.scope=buff.scope;
+    row.append(icon,info,make('small',state,'comp-buff-state'),badge);return row;
+  }
+  let initial;try{initial=JSON.parse(localStorage.getItem(storageKey));}catch{}
+  let model=createCompositionPlan(specs,initial);
+  let locked=initial?.lockedId?{id:initial.lockedId,title:'Loading saved composition…'}:null;
+  let savedCompositions=[];
+  let chosenClass='Warrior',selected=null,dragged=null,expandedCategory=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
-  const controls=make('header',null,'comp-controls');
-  const title=make('h3',null,'comp-plan-title');
-  const sizes=make('div',null,'comp-sizes');
-  sizes.setAttribute('role','group');
-  sizes.setAttribute('aria-label','Raid size');
-  const sizeButtons = [10,20,40].map(value=>{
-    const control = button(String(value),()=>{
-      if (locked || value === model.snapshot().size) return;
-      try { model.resize(value); commit('Raid size updated.'); }
-      catch (error) { status.textContent=error.message; }
-    });
-    control.setAttribute('aria-label',value+' players');
-    sizes.append(control);
-    return [value,control];
-  });
-  const saveStatus=make('small',null,'comp-save-status');
-  const actions=make('div',null,'comp-actions');
+  const controls=make('div',null,'comp-controls');
+  const sizeLabel=make('label','Raid size');const size=make('select');size.setAttribute('aria-label','Raid size');
+  for(const value of [10,20,40])size.add(new Option(value+' players',value));size.value=String(model.snapshot().size);sizeLabel.append(size);
+  const saveStatus=make('small','Draft saved on this browser.','comp-save-status');
   const status=make('p','','comp-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const groups=make('div',null,'comp-groups');
+  const groupsPanel=make('section',null,'raid-card comp-groups-panel');groupsPanel.append(heading('Raid Groups','users'),groups);
   const unassigned=make('section',null,'raid-card comp-unassigned');
-  const picker=make('div',null,'comp-picker');
-  picker.setAttribute('role','group');
-  picker.setAttribute('aria-label','Class specializations');
+  const picker=make('section',null,'raid-card comp-picker');
+  const composition=make('section',null,'raid-card comp-composition');
   const settings=make('section',null,'raid-card comp-settings');
+  const main=make('div',null,'comp-main');main.append(groupsPanel,unassigned);
+  const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(picker,composition,settings);
+  const layout=make('div',null,'comp-layout');layout.append(main,side);
   const issues=make('section',null,'raid-card comp-issues');
-  const raidHas=make('section',null,'raid-card comp-raid-has');
-  const main=make('div',null,'comp-main');
-  main.append(picker,groups,unassigned);
-  const side=make('aside',null,'comp-sidebar');
-  side.setAttribute('aria-label','Raid coverage and seat settings');
-  side.append(settings,raidHas);
-  const layout=make('div',null,'comp-layout');
-  layout.append(issues,main,side);
-  const savedBar=make('details',null,'comp-saved-bar');
-  const savedLabel=make('label','Saved compositions');
-  const savedSelect=make('select');
-  savedSelect.setAttribute('aria-label','Saved compositions');
-  savedSelect.add(new Option('Choose a locked composition',''));
-  savedLabel.append(savedSelect);
+  const categories=make('section',null,'raid-card comp-categories');
+  const buffs=make('section',null,'raid-card comp-buffs');
+  const analysis=make('div',null,'comp-analysis');analysis.append(categories,buffs);
+  const savedBar=make('div',null,'comp-saved-bar');
+  const savedLabel=make('label','Saved compositions');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(savedLabel);savedBar.hidden=!request;
   const dialog=make('dialog',null,'comp-lock-dialog');dialog.setAttribute('aria-label','Lock in composition');
   const lockForm=make('form');const lockTitle=make('h3','Lock In Composition');
   const nameLabel=make('label','Composition name');const nameInput=make('input');nameInput.required=true;nameInput.maxLength=80;nameInput.placeholder='e.g. Hyjal balanced comp';nameLabel.append(nameInput);
   const lockStatus=make('p');lockStatus.setAttribute('role','status');
   const saveLocked=button('Save locked composition',()=>{});saveLocked.type='submit';
   lockForm.append(lockTitle,make('p','Save a fixed copy for raid creation. You can make a new draft without changing the saved version.'),nameLabel,saveLocked,button('Cancel',()=>dialog.close()),lockStatus);dialog.append(lockForm);
-  const lockButton=button('Save to my guild',()=>{
+  const lockButton=button('Lock In',()=>{
     const plan=model.snapshot();
     if(locked||!request)return;
     if(!plan.players.length||plan.players.some(player=>player.group===null)){status.textContent='Assign every placeholder to a group before locking in. Auto-Optimize can do this for you.';return;}
     nameInput.value=plan.size+'-player composition';lockStatus.textContent='';dialog.showModal();nameInput.focus();
   },'comp-lock');
   const draftButton=button('Edit as draft',()=>{locked=null;savedSelect.value='';persist();draw();status.textContent='Editing a draft copy. The locked composition is unchanged.';});
-  const clear=button('Clear lineup',()=>{if(locked)return;if(model.snapshot().players.length&&!window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');});
-  clear.replaceChildren(tablerIcon('trash'),document.createTextNode('Clear lineup'));
-  lockButton.replaceChildren(tablerIcon('users'),document.createTextNode('Save to my guild'));
-  const shareDialog = make('dialog',null,'comp-lock-dialog');
-  shareDialog.setAttribute('aria-label','Share lineup');
-  const shareField = make('input');
-  shareField.readOnly = true;
-  shareField.setAttribute('aria-label','Lineup link');
-  const copyLink = async () => {
-    try {
-      await window.navigator.clipboard.writeText(shareField.value);
-      shareDialog.close();
-      status.textContent='Lineup link copied.';
-    } catch {
-      if (!shareDialog.open) shareDialog.showModal();
-      shareField.select();
-    }
-  };
-  shareDialog.append(make('h3','Share lineup'),shareField,button('Copy link',copyLink),button('Close',()=>shareDialog.close()));
-  const share=button('Share link',()=>{
-    if (!url) return;
-    const link = new URL(window.location.href);
-    link.hash = new URLSearchParams({lineup:JSON.stringify(model.snapshot())}).toString();
-    shareField.value = link.href;
-    copyLink();
-  },'comp-share');
-  share.replaceChildren(tablerIcon('copy'),document.createTextNode('Share link'));
+  const clear=button('Clear all',()=>{if(locked)return;if(model.snapshot().players.length&&!window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');});
   function savedOptions(){savedSelect.replaceChildren(new Option('Choose a locked composition',''));for(const entry of savedCompositions)savedSelect.add(new Option(entry.title+' · '+entry.plan.players.length+'/'+entry.plan.size,entry.id));savedSelect.value=locked?.id??'';}
-  function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
+  function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;size.value=String(entry.plan.size);persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
   savedSelect.addEventListener('change',()=>{const entry=savedCompositions.find(entry=>entry.id===savedSelect.value);if(entry)openSaved(entry);});
   lockForm.addEventListener('submit',async event=>{
     event.preventDefault();if(!request||saveLocked.disabled)return;
@@ -261,124 +178,16 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     model.optimize();selected=null;commit('All placeholders distributed evenly across groups. You can still move anyone manually.');
   },'comp-optimize');
   optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
-  const options=make('div',null,'comp-options');
-  options.append(optimize,draftButton,savedLabel);
-  savedLabel.hidden=!request;
-  savedBar.append(make('summary','Lineup options'),options);
-  actions.append(clear,lockButton,share);
-  const back = button('Raid selection',()=>{
-    choosing=true;
-    renderScreen();
-    selectionTitle.focus();
-  },'comp-back');
-  if (chooseRaid && !sharedPlan) controls.append(back);
-  controls.append(title,sizes,saveStatus,actions);
-  const planner=make('div',null,'composition-planner');
-  planner.append(controls,status,layout,savedBar,dialog,shareDialog);
-  const selection=make('section',null,'comp-selection');
-  const selectionTitle=make('h3','Raid planner','comp-selection-title');
-  selectionTitle.tabIndex=-1;
-  const selectionGrid=make('div',null,'comp-selection-grid');
-  const raidList=make('div',null,'comp-selection-choices');
-  const rows=make('div',null,'comp-selection-rows');
-  const selectionStatus=make('p',null,'comp-selection-status');
-  selectionStatus.setAttribute('role','status');
-  const profile=make('aside',null,'comp-selection-profile');
-  selectionGrid.append(raidList,profile);
-  selection.append(selectionTitle,selectionGrid);
-  raidList.append(make('h4','Plan a raid','comp-selection-label'),rows,selectionStatus,
-    make('p','Drafts are saved in this browser. Share a snapshot by link or save a lineup to your guild.','comp-selection-note'));
-  for (const size of [10,20,40]) {
-    const row=button('',()=>{
-      try {
-        if (size!==model.snapshot().size) {
-          model.resize(size);
-          locked=null;
-          savedSelect.value='';
-          selected=null;
-          persist();
-        }
-        choosing=false;
-        selectionStatus.textContent='';
-        renderScreen();
-        draw();
-        title.focus();
-      } catch (error) { selectionStatus.textContent=error.message; }
-    },'comp-selection-row');
-    const capacity=make('span',null,'comp-selection-capacity');
-    capacity.append(make('strong',String(size)),make('small','players'));
-    const info=make('span',null,'comp-selection-info');
-    info.append(make('strong',raidNames[size]||size+'-player raid'),make('small',size/5+' parties of five'));
-    const parties=make('span',null,'comp-selection-parties');
-    parties.setAttribute('aria-hidden','true');
-    for (let party=0;party<size/5;party++) {
-      const dots=make('span');
-      for(let seat=0;seat<5;seat++) dots.append(make('i'));
-      parties.append(dots);
-    }
-    const chevron=tablerIcon('chevron-right');
-    info.append(parties);
-    row.append(capacity,info,chevron);
-    rows.append(row);
-  }
-  title.tabIndex=-1;
-
-  function drawProfile() {
-    profile.replaceChildren(make('h4','You in a raid','comp-selection-label'));
-    const character=getCharacter();
-    if (!character?.class_name) {
-      profile.append(make('p','Choose an active character to see what they bring to a raid.'));
-      return;
-    }
-    const {class_name:className,spec,name,role}=character;
-    const identity=make('div',null,'comp-selection-character');
-    identity.dataset.wowClass=className;
-    const details=make('div');
-    details.append(make('strong',[spec,className].filter(Boolean).join(' ')),make('small',name));
-    identity.append(spec?guildIcon('spec',spec,'',className):guildIcon('class',className),details);
-    profile.append(identity);
-    const preview=createCompositionPlan(specs,{size:10,players:[{className,spec:spec||specs[className]?.[0]?.[0],role,group:1}]});
-    const buffs=compositionBuffs(preview.snapshot()).filter(buff=>buff.covered && (spec||!buff.spec));
-    if (!buffs.length) return;
-    const chips=make('div',null,'comp-selection-profile-buffs');
-    for (const buff of buffs) {
-      const chip=make('span',null,'comp-selection-buff');
-      chip.title=buff.description;
-      const icon=make('span',null,'comp-spell-icon');
-      icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
-      chip.append(icon,make('span',buff.name));
-      chips.append(chip);
-    }
-    profile.append(make('h4','You bring','comp-selection-label'),chips);
-  }
-
-  selection.addEventListener('planner-character-change',drawProfile);
-  function renderScreen() {
-    if (choosing) drawProfile();
-    root.replaceChildren(choosing?selection:planner);
-  }
-  renderScreen();
-  function persist() {
-    if (sharedPlan) return;
-    try { localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null})); }
-    catch { status.textContent='Draft could not be saved on this browser.'; }
-  }
+  controls.append(sizeLabel,saveStatus,optimize,lockButton,draftButton,clear);
+  root.replaceChildren(savedBar,controls,status,layout,issues,analysis,dialog);
+  size.addEventListener('change',()=>{if(locked){size.value=String(model.snapshot().size);return;}try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
+  function persist(){try{localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));saveStatus.textContent=locked?'Locked: '+locked.title:'Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
   function commit(message){persist();draw();status.textContent=message;}
   function move(id,group){if(locked){status.textContent='Choose Edit as draft before moving placeholders.';return;}try{const player=model.snapshot().players.find(player=>player.id===id);model.move(id,group);selected=null;commit(player.spec+' '+player.className+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');}catch(error){draw();status.textContent=error.message;}}
   function destination(node,group){
-    node.addEventListener('dragover',event=>{if(locked)return;event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect=draggedSpec?'copy':'move';node.classList.add('is-drop-target');});
+    node.addEventListener('dragover',event=>{if(locked)return;event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';node.classList.add('is-drop-target');});
     node.addEventListener('dragleave',()=>node.classList.remove('is-drop-target'));
-    node.addEventListener('drop',event=>{
-      event.preventDefault();
-      event.stopPropagation();
-      node.classList.remove('is-drop-target');
-      if (locked) return;
-      const id = event.dataTransfer?.getData('application/x-solstice-composition') || dragged;
-      if (id) move(id,group);
-      else if (draggedSpec) addSpec(...draggedSpec,group);
-      dragged = null;
-      draggedSpec = null;
-    });
+    node.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();node.classList.remove('is-drop-target');const id=event.dataTransfer?.getData('application/x-solstice-composition')||dragged;if(id)move(id,group);dragged=null;});
   }
   function playerCard(player){
     const row=make('div',null,'comp-player');row.dataset.wowClass=player.className;row.draggable=!locked;row.dataset.playerId=player.id;
@@ -388,7 +197,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     select.dataset.playerSelect=player.id;select.setAttribute('aria-pressed',String(selected===player.id));select.setAttribute('aria-label','Select '+player.spec+' '+player.className+' to move');
     const label=(player.spec==='Feral Combat'?(player.role==='Tank'?'Feral (Bear)':'Feral (Cat)'):player.spec)+' '+player.className;
     select.title=label+' · '+player.role;
-    const identity=make('span');identity.append(make('strong',label),make('small',player.role));
+    const identity=make('span');identity.append(make('strong',label));
     const artwork=make('span',null,'comp-player-artwork');
     const roleIcon=tablerIcon(roleIcons[player.role],'comp-player-role');roleIcon.dataset.role=player.role;
     artwork.append(guildIcon('spec',player.spec,'',player.className),roleIcon);
@@ -405,51 +214,59 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   }
   function draw(){
     const plan=model.snapshot();const coverage=compositionBuffs(plan);const assigned=plan.players.filter(player=>player.group!==null);const chosen=plan.players.find(player=>player.id===selected);
-    lockButton.disabled=!!locked||!request;
-    lockButton.hidden=!request;
-    draftButton.hidden=!locked;
-    optimize.disabled=!!locked;
-    clear.disabled=!!locked;
-    title.replaceChildren(document.createTextNode('Your '+plan.size+'-player plan'));
-    if (raidNames[plan.size]) title.append(make('span',' · '+raidNames[plan.size]));
-    saveStatus.textContent=assigned.length+' of '+plan.size+' placed · '+(locked?'Saved: '+locked.title:sharedPlan?'Shared lineup':'Saved in this browser');
-    for (const [size,control] of sizeButtons) {
-      control.disabled=!!locked;
-      control.setAttribute('aria-pressed',String(size===plan.size));
-    }
-
+    lockButton.disabled=!!locked||!request;draftButton.hidden=!locked;optimize.disabled=!!locked;clear.disabled=!!locked;size.disabled=!!locked;
     groups.replaceChildren();
     for(let group=1;group<=plan.size/5;group++){
       const members=assigned.filter(player=>player.group===group);const card=make('section',null,'comp-group');destination(card,group);
-      const title=make('h4','Party '+group);
-      const roleLabel = members.length > 0 && members.every(player=>player.role===members[0].role) ? members[0].role : '';
-      if (roleLabel) title.append(make('small',roleLabel));
-      card.append(title);
+      const title=make('h4','Group '+group);title.append(make('small','('+members.length+'/5)'));
+      const covered=coverage.filter(buff=>buff.groups.includes(group));
+      const percentage=make('span',Math.round(covered.length/coverage.length*100)+'%','comp-group-coverage');
+      percentage.title='Buff coverage: '+covered.length+' of '+coverage.length+' planned effects available to this group.';
+      percentage.setAttribute('aria-label',percentage.title);title.append(percentage);card.append(title);
+      const counts=make('div',null,'comp-group-roles');
+      for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
+        const count=members.filter(player=>player.role===role).length;if(!count)continue;
+        const badge=make('span',null,'comp-role-mini');badge.dataset.role=role;badge.title=role+': '+count;badge.setAttribute('aria-label',badge.title);
+        badge.append(tablerIcon(roleIcons[role]),make('span',String(count)));counts.append(badge);
+      }
+      card.append(counts);
       for(const player of members)card.append(playerCard(player));
       for(let slot=members.length;slot<5;slot++){
-        const empty=button(selected?'Place selected':'Empty',()=>{if(selected)move(selected,group);else status.textContent='Add a class and spec, then drag or select a placeholder to place it.';},'comp-empty');empty.disabled=!!locked;empty.setAttribute('aria-label','Group '+group+', empty slot '+(slot+1)+(selected?', place selected placeholder':''));empty.replaceChildren(tablerIcon('plus'),make('span',selected?'Place selected':'Empty'));card.append(empty);
+        const empty=button(selected?'Place selected':'Empty',()=>{if(selected)move(selected,group);else status.textContent='Add a class and spec, then drag or select a placeholder to place it.';},'comp-empty');empty.disabled=!!locked;empty.setAttribute('aria-label','Group '+group+', empty slot '+(slot+1)+(selected?', place selected placeholder':''));card.append(empty);
       }
       const groupBuffs=coverage.filter(buff=>buff.scope==='Group'&&buff.groups.includes(group));
       const hasManaUsers=members.some(player=>!['Warrior','Rogue'].includes(player.className));
       const missing=coverage.filter(buff=>buff.name==='Mana Spring Totem'&&buff.available&&!buff.groups.includes(group)&&hasManaUsers);
       const hint=make('div',null,'comp-group-hint');
+      hint.append(make('small',members.length?'Group Buffs:':'Group is empty'));
       for(const buff of [...groupBuffs,...missing]){
         const covered=buff.groups.includes(group);const chip=make('span',(covered?'':'× ')+buff.shortName,'comp-buff-chip');
         chip.dataset.state=covered?'covered':'missing';chip.title=buff.name+' — '+buff.description+(covered?' (available in this group)':' (missing from this group)');
         chip.setAttribute('aria-label',buff.name+': '+(covered?'available':'missing'));hint.append(chip);
       }
-      if(groupBuffs.length||missing.length)card.append(hint);
-      groups.append(card);
+      if(members.length&&!groupBuffs.length&&!missing.length)hint.append(make('small','No group-only buffs','comp-group-no-buffs'));
+      card.append(hint);groups.append(card);
     }
     const pool=plan.players.filter(player=>player.group===null);unassigned.replaceChildren(heading('Unassigned ('+pool.length+')','users'));
     const poolRows=make('div',null,'comp-pool');destination(poolRows,null);
     for(const player of pool)poolRows.append(playerCard(player));
-    unassigned.hidden=!pool.length&&!chosen;
+    if(!pool.length)poolRows.append(make('p','Select a class and specialization to add a placeholder.','comp-empty-message'));
     unassigned.append(poolRows,button('Move selected to Unassigned',()=>{if(selected)move(selected,null);},'comp-return'));unassigned.lastElementChild.hidden=!selected||chosen?.group===null;unassigned.lastElementChild.disabled=!!locked;
-    for(const control of specButtons) {
-      control.disabled=!!locked||plan.players.length>=plan.size;
-      control.draggable=!control.disabled;
+    picker.replaceChildren(heading('Add Characters','user-circle'),make('label','Class'));
+    const classes=make('div',null,'comp-classes');
+    for(const className of ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid']){
+      const item=button('',()=>{chosenClass=className;draw();root.querySelector('[data-class="'+className+'"]')?.focus();},'comp-class');item.dataset.class=className;item.dataset.wowClass=className;item.setAttribute('aria-pressed',String(chosenClass===className));item.append(guildIcon('class',className),make('span',className));classes.append(item);
     }
+    picker.append(classes,make('label','Specialization'));
+    for(const [name,role] of specs[chosenClass])for(const selectedRole of name==='Feral Combat'?['Melee DPS','Tank']:[role]){
+      const label=name==='Feral Combat'?(selectedRole==='Tank'?'Feral (Bear)':'Feral (Cat)'):name;
+      const add=button('',()=>{if(locked)return;try{model.add(chosenClass,name,selectedRole);commit(label+' '+chosenClass+' added to Unassigned.');}catch(error){status.textContent=error.message;}},'comp-add-spec');add.dataset.wowClass=chosenClass;add.disabled=!!locked||plan.players.length>=plan.size;add.setAttribute('aria-label','Add '+label+' '+chosenClass+' to Unassigned');add.append(guildIcon('spec',name,'',chosenClass),make('span',label),tablerIcon(roleIcons[selectedRole]),tablerIcon('plus'));picker.append(add);
+    }
+    composition.replaceChildren(heading('Composition','chart-line'));
+    for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
+      const line=make('div',null,'comp-count');line.dataset.role=role;line.append(tablerIcon(roleIcons[role]),make('span',role),make('strong',String(plan.players.filter(player=>player.role===role).length)));composition.append(line);
+    }
+    const total=make('div',null,'comp-count comp-total');total.append(tablerIcon('users'),make('span','Total'),make('strong',plan.players.length+' / '+plan.size));composition.append(total,make('small',assigned.length+' assigned · '+pool.length+' unassigned'));
     settings.hidden=!chosen;
     if(chosen){
       settings.replaceChildren(heading('Selected Placeholder','adjustments-horizontal'),make('p',chosen.spec+' '+chosen.className));
@@ -462,126 +279,25 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
       }
       if(chosen.className==='Shaman')field('Air totem',['Windfury','Grace of Air'].map(value=>[value,value]),chosen.air,value=>{model.update(chosen.id,{air:value});commit('Air totem updated.');});
     }
-    const needsHeader=make('header',null,'comp-needs-header');
-    needsHeader.append(make('h3','Needs'),make('p','What to change, most important first'));
-    issues.replaceChildren(needsHeader);
+    issues.replaceChildren(heading('Issues & Recommendations','shield'));
     let issueCount=0;
-    const issue=(title,detail)=>{
-      const row=make('div',null,'comp-issue');
-      row.append(make('strong',title));
-      if (detail) row.append(make('small',detail));
-      issues.append(row);
-      issueCount++;
-    };
-    if (assigned.length < 2) issue('Place at least two players');
-    else {
-      if (!assigned.some(player=>player.role==='Tank')) issue('No tanks assigned','Add a tank or change a player’s role.');
-      if (!assigned.some(player=>player.role==='Healer')) issue('No healers assigned','Add a healer to the assigned lineup.');
-      for (const buff of ['Power Word: Fortitude','Blessing of Kings','Mark of the Wild']) {
-        if (!coverage.find(entry=>entry.name===buff)?.covered) issue('Missing '+buff);
-      }
-      for (const buff of coverage.filter(buff=>buff.scope==='Group'&&buff.covered&&!buff.complete)) {
-        issue(buff.name+' covers Party '+buff.groups.join(', '),'Move or add a provider to cover another party.');
-      }
+    const issue=(title,detail,tone='warning')=>{const row=make('div',null,'comp-issue');row.dataset.tone=tone;row.append(tablerIcon('shield'),make('div'));row.lastElementChild.append(make('strong',title),make('small',detail));issues.append(row);issueCount++;};
+    if(!assigned.length)issue('No placeholders assigned yet','Drag from Unassigned into a group to calculate raid and party coverage.','info');
+    for(const [className,buff] of [['Priest','Power Word: Fortitude'],['Paladin','Blessing of Kings'],['Druid','Mark of the Wild']])if(!coverage.find(entry=>entry.name===buff)?.covered)issue('Missing '+buff,className==='Paladin'&&assigned.some(player=>player.className==='Paladin')?'Select Kings on a Paladin, or add another Paladin.':'Assign a '+className+' to the raid.');
+    if(assigned.length && !assigned.some(player=>player.role==='Tank'))issue('No tanks assigned','Add a tank or change a selected placeholder’s role.');
+    if(assigned.length && !assigned.some(player=>player.role==='Healer'))issue('No healers assigned','Add a healer to the assigned raid composition.');
+    for(const buff of coverage.filter(buff=>buff.scope==='Group'&&buff.covered&&!buff.complete))issue(buff.name+' covers Group '+buff.groups.join(', '),'Move or add a provider to cover the remaining occupied groups.','info');
+    if(!issueCount)issues.append(make('p','Core buffs, tanks and healers are represented. Review group coverage for your encounter.','comp-success'));
+    categories.replaceChildren(heading('Buff Categories','wand'));buffs.replaceChildren(heading('All Raid Buffs','sparkles'));
+    const list=make('div',null,'comp-buff-list');
+    for(const category of [...new Set(coverage.map(buff=>buff.category))]){
+      const entries=coverage.filter(buff=>buff.category===category);
+      const section=make('div',null,'comp-category');
+      const toggle=button('',()=>{expandedCategory=expandedCategory===category?null:category;draw();},'comp-category-toggle');toggle.setAttribute('aria-expanded',String(expandedCategory===category));toggle.dataset.coverage=entries.every(buff=>buff.covered)?'covered':'missing';toggle.append(make('span',category),make('strong',entries.filter(buff=>buff.covered).length+' / '+entries.length),tablerIcon('chevron-down'));section.append(toggle);
+      if(expandedCategory===category)for(const buff of entries)section.append(buffLine(buff,true));categories.append(section);
     }
-    if (!issueCount) issues.append(make('p','Core buffs, tanks, and healers are represented.','comp-success'));
-    drawCoverage(coverage,compositionCapabilities(plan));
-  }
-
-  function addSpec(className,name,role,group=null) {
-    if (locked) return;
-    if (group !== null && model.snapshot().players.filter(player=>player.group===group).length >= 5) {
-      status.textContent='Party '+group+' is full.';
-      return;
-    }
-    try {
-      const id = model.add(className,name,role);
-      if (group !== null) model.move(id,group);
-      selected = group === null ? id : null;
-      commit(name+' '+className+(group === null?' added to Unassigned. Choose an empty seat.':' added to Party '+group+'.'));
-    } catch (error) { status.textContent=error.message; }
-  }
-
-  function drawCoverage(coverage, capabilities) {
-    raidHas.replaceChildren(make('h3','What the raid has'));
-    const section = (label,count) => {
-      const block = make('section');
-      const title = make('h4',label);
-      if (count != null) title.append(make('strong',String(count)));
-      block.append(title);
-      raidHas.append(block);
-      return block;
-    };
-    const raidBuffs = coverage.filter(buff=>buff.scope==='Raid');
-    const raid = section('Raid-wide buffs',raidBuffs.filter(buff=>buff.covered).length);
-    const icons = make('div',null,'comp-buff-icons');
-    for (const buff of raidBuffs) {
-      const icon = make('span',null,'comp-spell-icon comp-buff-icon');
-      icon.dataset.buffName=buff.name;
-      icon.dataset.state=buff.covered?'covered':'missing';
-      icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
-      icon.title=buff.name+' · '+buff.providers+' provider'+(buff.providers===1?'':'s')+' · '+buff.description;
-      icon.setAttribute('role','img');
-      icon.setAttribute('aria-label',icon.title);
-      icons.append(icon);
-    }
-    raid.append(icons);
-    const effectIcon = entry => {
-      const icon = make('span',null,'comp-effect-icon');
-      icon.style.backgroundPosition=(entry.iconIndex%5*25)+'% '+(Math.floor(entry.iconIndex/5)*100/3)+'%';
-      return icon;
-    };
-    const debuffs = section('Debuffs on the boss',capabilities.debuffs.length);
-    const debuffIcons = make('div',null,'comp-buff-icons');
-    for (const entry of capabilities.debuffs) {
-      const icon=effectIcon(entry);
-      icon.title=entry.name+' · '+entry.count+' providers · '+entry.description;
-      icon.setAttribute('role','img');
-      icon.setAttribute('aria-label',icon.title);
-      debuffIcons.append(icon);
-    }
-    debuffs.append(capabilities.debuffs.length?debuffIcons:make('small','None yet.'));
-    for (const [label,entries] of [['Utility',capabilities.utility],['Single target',capabilities.single],['Cooldowns',capabilities.cooldowns]]) {
-      const block=section(label);
-      const grid=make('div',null,'comp-capabilities');
-      for (const entry of entries) {
-        const row=make('div',null,'comp-capability');
-        row.dataset.capability=entry.name;
-        row.dataset.available=String(entry.count>0);
-        row.title=entry.description;
-        const icon=effectIcon(entry);
-        icon.setAttribute('aria-hidden','true');
-        row.append(icon,make('span',entry.name),make('strong',String(entry.count)));
-        grid.append(row);
-      }
-      block.append(grid);
-    }
-    raidHas.append(make('small','Click a seat to edit it.','comp-seat-hint'));
-  }
-
-  const specButtons = [];
-  for (const [className,entries] of Object.entries(specs)) {
-    const family=make('div',null,'comp-spec-family');
-    family.dataset.wowClass=className;
-    family.setAttribute('role','group');
-    family.setAttribute('aria-label',className);
-    for (const [name,role] of entries) for (const selectedRole of name==='Feral Combat'?['Melee DPS','Tank']:[role]) {
-      const label=name==='Feral Combat'?(selectedRole==='Tank'?'Feral Bear':'Feral Cat'):name;
-      const control=button('',()=>addSpec(className,name,selectedRole),'comp-add-spec');
-      control.title=label+' '+className;
-      control.setAttribute('aria-label','Add '+label+' '+className+' to Unassigned');
-      control.append(guildIcon('spec',name,'',className));
-      control.addEventListener('dragstart',event=>{
-        if(locked){event.preventDefault();return;}
-        draggedSpec=[className,name,selectedRole];
-        event.dataTransfer.setData('text/plain',control.title);
-        event.dataTransfer.effectAllowed='copy';
-      });
-      control.addEventListener('dragend',()=>{draggedSpec=null;});
-      specButtons.push(control);
-      family.append(control);
-    }
-    picker.append(family);
+    for(const buff of coverage)list.append(buffLine(buff));
+    buffs.append(list,make('p','Coverage uses assigned placeholders. Greater Blessings are planned by class; one blessing per Paladin. A Shaman provides one air totem. Talent, form, Imp and totem requirements must be met in game.','comp-buff-note'));
   }
   persist();draw();
   if(request)request().then(result=>{
