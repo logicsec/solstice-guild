@@ -107,42 +107,7 @@ export function compositionBuffs(plan) {
   });
 }
 
-export function compositionCapabilities(plan) {
-  // Baseline class utility; pet-dependent dispels are excluded. Counts are providers,
-  // not simultaneous casts. Talent cooldowns assume the named specialization.
-  // Priest updates: https://news.blizzard.com/en-us/article/24301514/
-  const assigned=plan.players.filter(p=>p.group!==null);
-  const count=predicate=>assigned.filter(predicate).length;
-  const classes=(...names)=>p=>names.includes(p.className);
-  const entries=[
-    ['Interrupts',classes('Warrior','Rogue','Mage','Shaman'),0,'Pummel / Shield Bash, Kick, Counterspell, Earth Shock'],
-    ['Magic dispels',classes('Priest','Paladin'),1,'Dispel Magic / Cleanse; friendly magic removal'],
-    ['Curse removal',classes('Mage','Druid'),2,'Remove Lesser Curse / Remove Curse'],
-    ['Poison cures',classes('Druid','Paladin','Shaman'),3,'Cure / Abolish Poison, Cleanse, Poison Cleansing Totem'],
-    ['Disease cures',classes('Priest','Paladin','Shaman'),4,'Cure / Abolish Disease, Cleanse, Disease Cleansing Totem'],
-    ['Purge',classes('Shaman','Priest'),5,'Purge / offensive Dispel Magic; pet-dependent effects excluded'],
-    ['Tranq Shot',classes('Hunter'),6,'Tranquilizing Shot; requires learning the ability'],
-    ['Battle res',classes('Druid'),7,'Rebirth; Soulstone is not counted as a direct battle resurrection'],
-    ['Fear Ward',classes('Priest'),8,'Fear Ward'],
-    ['Power Infusion',p=>p.className==='Priest'&&p.spec==='Discipline',9,'Power Infusion; assumes the Discipline talent'],
-    ['Innervate',classes('Druid'),10,'Innervate'],
-    ['Healing',p=>p.className==='Druid'||p.className==='Priest'&&p.spec==='Shadow'||p.className==='Paladin'&&p.spec==='Holy',11,'Tranquility, Shadow Priest Vampiric Embrace, Holy Paladin Divine Favor; assumes specialization talents'],
-    ['Defensives',classes('Warrior','Paladin','Mage','Rogue','Druid'),12,'Shield Wall, Divine Shield, Ice Block, Evasion or Barkskin; personal defensives, not raid mitigation'],
-  ];
-  const debuffs=[
-    ['Major armor reduction',classes('Warrior','Rogue'),13,'Sunder Armor / Expose Armor; alternatives do not stack'],
-    ['Faerie Fire',classes('Druid'),14,'Faerie Fire'],
-    ['Hunter’s Mark',classes('Hunter'),15,'Hunter’s Mark'],
-    ['Curse of the Elements',classes('Warlock'),16,'One planned curse per Warlock; other curses are not counted'],
-    ['Attack power reduction',p=>p.className==='Warrior'||p.className==='Druid'&&p.spec==='Feral Combat',17,'Demoralizing Shout / Roar; alternative effects do not stack'],
-    ['Thunder Clap',classes('Warrior'),18,'Attack-speed reduction'],
-    ['Insect Swarm',classes('Druid'),19,'Insect Swarm; baseline Forever ability'],
-  ];
-  const map=([name,predicate,iconIndex,description])=>({name,count:count(predicate),iconIndex,description});
-  return {utility:entries.slice(0,8).map(map),single:entries.slice(8,11).map(map),cooldowns:entries.slice(11).map(map),debuffs:debuffs.map(map).filter(e=>e.count>0)};
-}
-
-export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null, beta = false}) {
+export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
@@ -181,8 +146,6 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const categories=make('section',null,'raid-card comp-categories');
   const buffs=make('section',null,'raid-card comp-buffs');
   const analysis=make('div',null,'comp-analysis');analysis.append(categories,buffs);
-  const raidHas=make('section',null,'raid-card comp-raid-has');
-  if(beta){root.classList.add('beta-planner');main.prepend(picker);side.replaceChildren(raidHas,settings);layout.replaceChildren(issues,main,side);}
   const savedBar=make('div',null,'comp-saved-bar');
   const savedLabel=make('label','Saved compositions');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(savedLabel);savedBar.hidden=!request;
   const dialog=make('dialog',null,'comp-lock-dialog');dialog.setAttribute('aria-label','Lock in composition');
@@ -216,7 +179,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   },'comp-optimize');
   optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
   controls.append(sizeLabel,saveStatus,optimize,lockButton,draftButton,clear);
-  root.replaceChildren(...(beta?[savedBar,controls,status,layout,dialog]:[savedBar,controls,status,layout,issues,analysis,dialog]));
+  root.replaceChildren(savedBar,controls,status,layout,issues,analysis,dialog);
   size.addEventListener('change',()=>{if(locked){size.value=String(model.snapshot().size);return;}try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
   function persist(){try{localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));saveStatus.textContent=locked?'Locked: '+locked.title:'Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
   function commit(message){persist();draw();status.textContent=message;}
@@ -335,33 +298,6 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     }
     for(const buff of coverage)list.append(buffLine(buff));
     buffs.append(list,make('p','Coverage uses assigned placeholders. Greater Blessings are planned by class; one blessing per Paladin. A Shaman provides one air totem. Talent, form, Imp and totem requirements must be met in game.','comp-buff-note'));
-    if(beta){
-      // All specializations are visible, grouped by class, like a compact toolbox.
-      picker.replaceChildren();
-      for(const [className,entries] of Object.entries(specs)){
-        const family=make('div',null,'beta-spec-family');family.dataset.wowClass=className;
-        for(const [name,role] of entries)for(const selectedRole of name==='Feral Combat'?['Melee DPS','Tank']:[role]){
-          const label=name==='Feral Combat'?(selectedRole==='Tank'?'Feral Bear':'Feral Cat'):name;
-          const add=button('',()=>{try{model.add(className,name,selectedRole);commit(label+' '+className+' added to Unassigned.');}catch(error){status.textContent=error.message;}},'beta-spec-add');
-          add.disabled=!!locked||plan.players.length>=plan.size;add.title=label+' '+className;add.setAttribute('aria-label','Add '+label+' '+className+' to Unassigned');add.append(guildIcon('spec',name,'',className));family.append(add);
-        }picker.append(family);
-      }
-      issues.firstElementChild.textContent='Needs';
-      raidHas.replaceChildren(make('p','WHAT THE RAID HAS','beta-eyebrow'));
-      const section=(label,count)=>{const s=make('section');const h=make('h4',label);if(count!=null)h.append(make('strong',String(count)));s.append(h);raidHas.append(s);return s;};
-      const raidBuffs=coverage.filter(b=>b.scope==='Raid');
-      const raid=section('Raid-wide buffs',raidBuffs.filter(b=>b.covered).length);const icons=make('div',null,'beta-buff-icons');
-      for(const buff of raidBuffs){const icon=make('span',null,'comp-spell-icon beta-buff-icon');icon.dataset.buffName=buff.name;icon.dataset.state=buff.covered?'covered':'missing';icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';icon.title=buff.name+' · '+buff.providers+' provider'+(buff.providers===1?'':'s')+' · '+buff.description;icon.setAttribute('role','img');icon.setAttribute('aria-label',icon.title);icons.append(icon);}raid.append(icons);
-      const capabilities=compositionCapabilities(plan);
-      const effectIcon=entry=>{const icon=make('span',null,'beta-effect-icon');icon.style.backgroundPosition=(entry.iconIndex%5*25)+'% '+(Math.floor(entry.iconIndex/5)*100/3)+'%';icon.setAttribute('aria-hidden','true');return icon;};
-      const debuffs=section('Debuffs on the boss',capabilities.debuffs.length);const debuffIcons=make('div',null,'beta-buff-icons');
-      for(const entry of capabilities.debuffs){const icon=effectIcon(entry);icon.title=entry.name+' · '+entry.count+' providers · '+entry.description;icon.setAttribute('role','img');icon.setAttribute('aria-label',icon.title);debuffIcons.append(icon);}debuffs.append(capabilities.debuffs.length?debuffIcons:make('small','None yet.'));
-      for(const [label,entries] of [['Utility',capabilities.utility],['Single target',capabilities.single],['Cooldowns',capabilities.cooldowns]]){
-        const s=section(label);const grid=make('div',null,'beta-capabilities');
-        for(const entry of entries){const row=make('div',null,'beta-capability');row.dataset.capability=entry.name;row.dataset.available=String(entry.count>0);row.title=entry.description;row.append(effectIcon(entry),make('span',entry.name),make('strong',String(entry.count)));grid.append(row);}s.append(grid);
-      }
-      raidHas.append(make('small','Click a seat to edit it.','beta-seat-hint'),make('small','Assigned players only. Counts assume baseline abilities and specialization talents; hover for details.','beta-provider-note'));
-    }
   }
   persist();draw();
   if(request)request().then(result=>{

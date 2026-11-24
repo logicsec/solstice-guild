@@ -19,8 +19,6 @@ const DB = openSqlite(process.env.SQLITE_PATH ?? '/data/solstice.sqlite');
 const env = { DB, DISCORD_CLIENT_ID, DISCORD_CLIENT_SECRET, DISCORD_GUILD_ID, CMS_ADMIN_DISCORD_IDS, BLIZZARD_CLIENT_ID, BLIZZARD_CLIENT_SECRET, WCL_CLIENT_ID, WCL_CLIENT_SECRET, GUILD_CHAT_BOT_TOKEN, GUILD_CHAT_CHANNEL_ID };
 const assets = new Map([
   ['/assets/home.css', ['home.css', 'text/css; charset=utf-8']],
-  ['/assets/beta.css', ['beta.css', 'text/css; charset=utf-8']],
-  ['/assets/planner-effects.webp', ['planner-effects.webp', 'image/webp']],
   ['/assets/theme.css', ['theme.css', 'text/css; charset=utf-8']],
   ['/assets/forever-buffs.webp', ['forever-buffs.webp', 'image/webp']],
   ['/assets/forever-identities.webp', ['forever-identities.webp', 'image/webp']],
