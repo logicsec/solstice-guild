@@ -11,13 +11,25 @@ export function createCompositionPlan(specs, initial = {}) {
     player.air = ['Windfury','Grace of Air'].includes(values.air) ? values.air : 'Windfury';
     return player;
   };
+  function assignCharacter(player, value) {
+    if (!value) { delete player.character; return; }
+    const key = typeof value.key === 'string' ? value.key.trim() : '';
+    const name = typeof value.name === 'string' ? value.name.trim() : '';
+    if (!key || key.length > 256 || !name || name.length > 61) throw new Error('Choose a valid roster character.');
+    if (players.some(other=>other!==player&&(other.character?.key===key||other.character?.name.toLowerCase()===name.toLowerCase()))) {
+      throw new Error('That character already has a seat in this lineup.');
+    }
+    player.character = {key,name};
+  }
   if (Array.isArray(initial?.players)) for (const value of initial.players.slice(0,size)) {
     if (!value || !validSpec(value.className,value.spec)) continue;
     const group = Number.isInteger(value.group) && value.group > 0 && value.group <= size/5 && players.filter(p=>p.group === value.group).length < 5 ? value.group : null;
-    players.push(choices({id:String(nextId++),className:value.className,spec:value.spec,role:roles.includes(value.role) ? value.role : specs[value.className].find(([name])=>name === value.spec)[1],group},value));
+    const player=choices({id:String(nextId++),className:value.className,spec:value.spec,role:roles.includes(value.role) ? value.role : specs[value.className].find(([name])=>name === value.spec)[1],group},value);
+    if(value.character)try{assignCharacter(player,value.character);}catch{}
+    players.push(player);
   }
   return {
-    snapshot:()=>({version:1,size,players:players.map(player=>({...player}))}),
+    snapshot:()=>({version:1,size,players:players.map(player=>player.character?{...player,character:{...player.character}}:{...player})}),
     add(className,spec,role) {
       if (!validSpec(className,spec)) throw new Error('Choose a valid class and specialization.');
       if (players.length >= size) throw new Error('The '+size+'-player plan is full.');
@@ -36,6 +48,11 @@ export function createCompositionPlan(specs, initial = {}) {
       player.group = group;
     },
     update(id,values) { const player=players.find(player=>player.id === id);if (!player) return;choices(player,{...player,...values});if (roles.includes(values.role)) player.role=values.role; },
+    assign(id,character) {
+      const player=players.find(player=>player.id===id);
+      if (!player) throw new Error('Select a seat first.');
+      assignCharacter(player,character);
+    },
     remove(id) { players=players.filter(player=>player.id !== id); },
     resize(value) {
       if (![10,20,40].includes(value)) throw new Error('Choose 10, 20 or 40 players.');
@@ -142,7 +159,7 @@ export function compositionCapabilities(plan) {
   return {utility:entries.slice(0,8).map(map),single:entries.slice(8,11).map(map),cooldowns:entries.slice(11).map(map),debuffs:debuffs.map(map).filter(e=>e.count>0)};
 }
 
-export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null, raidNames = {}}) {
+export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null, raidNames = {}, roster = null}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
@@ -150,7 +167,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   let model=createCompositionPlan(specs,initial);
   let locked=initial?.lockedId?{id:initial.lockedId,title:'Loading saved composition…'}:null;
   let savedCompositions=[];
-  let selected=null,dragged=null;
+  let selected=null,dragged=null,draggedSpec=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
   const controls=make('header',null,'comp-controls');
   const planTitle=make('h3',null,'comp-plan-title');
@@ -179,25 +196,37 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   picker.setAttribute('role','group');
   picker.setAttribute('aria-label','Add a specialization');
   const specButtons=[];
+  const rosterHint=roster && make('p','Dimmed specs have no roster match. You can still add them as placeholders.','comp-roster-hint');
   for(const className of ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid']){
     const family=make('div',null,'comp-spec-family');
     family.dataset.wowClass=className;
     family.setAttribute('role','group');
+    const classMembers=roster?.filter(member=>member.className===className);
     family.setAttribute('aria-label',className);
+    if(classMembers)family.dataset.rosterMatch=classMembers.length?'available':'missing';
     for(const [spec,defaultRole] of specs[className]??[]){
       const feral=spec==='Feral Combat';
       const roles=feral?['Melee DPS','Tank']:[defaultRole];
       for(const role of roles){
         const label=feral?(role==='Tank'?'Feral (Bear)':'Feral (Cat)'):spec;
-        const add=button('',()=>{
-          if(locked)return;
-          try{
-            model.add(className,spec,role);
-            commit(label+' '+className+' added to Unassigned.');
-          }catch(error){status.textContent=error.message;}
-        },'comp-add-spec');
-        add.title=label+' '+className+' · '+role;
-        add.setAttribute('aria-label','Add '+label+' '+className+' to Unassigned');
+        const add=button('',()=>addSpecialization(className,spec,role,null),'comp-add-spec');
+        add.addEventListener('dragstart',event=>{
+          if(locked||add.disabled){event.preventDefault();return;}
+          draggedSpec=[className,spec,role];
+          event.dataTransfer.setData('text/plain',label+' '+className);
+          event.dataTransfer.effectAllowed='copy';
+        });
+        add.addEventListener('dragend',()=>{draggedSpec=null;clearDropTargets();});
+        const matches=classMembers && matchingRoster({className,spec,role});
+        let availability='';
+        if(matches){
+          add.dataset.rosterMatch=matches.length?'available':'missing';
+          const unknown=classMembers.some(member=>!member.spec||feral&&member.spec===spec&&!member.role);
+          availability=matches.length?matches.map(member=>member.name).join(', '):
+            unknown?'No match recorded; some roster assignments are incomplete.':'No matching character on the team roster.';
+        }
+        add.title=[label+' '+className+' · '+role,availability].filter(Boolean).join(' — ');
+        add.setAttribute('aria-label','Add '+label+' '+className+' to Unassigned'+(availability?' — '+availability:''));
         add.append(guildIcon('spec',spec,'',className));
         if(feral){
           const badge=tablerIcon(roleIcons[role],'comp-spec-role');
@@ -213,7 +242,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const raidNeeds=make('section',null,'raid-card comp-raid-needs');
   const composition=make('section',null,'raid-card comp-composition');
   const settings=make('section',null,'raid-card comp-settings');
-  const main=make('div',null,'comp-main');main.append(picker,groupsPanel,unassigned);
+  const main=make('div',null,'comp-main');main.append(picker);if(rosterHint)main.append(rosterHint);main.append(groupsPanel,unassigned);
   const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(raidNeeds,composition,settings);
   const layout=make('div',null,'comp-layout');layout.append(main,side);
   const issues=make('section',null,'raid-card comp-issues');
@@ -251,7 +280,60 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
   actions.append(optimize,lockButton,draftButton,clear);
   controls.append(planTitle,sizes,saveStatus,actions);
-  root.replaceChildren(controls,savedBar,status,layout,issues,dialog);
+  const characterDialog=make('dialog',null,'comp-lock-dialog comp-character-dialog');
+  characterDialog.setAttribute('aria-label','Choose a roster character');
+  root.replaceChildren(controls,savedBar,status,layout,issues,dialog,characterDialog);
+
+  function matchingRoster({className,spec,role}){
+    return (roster??[]).filter(member=>member.className===className&&member.spec===spec&&(spec!=='Feral Combat'||member.role===role));
+  }
+  function chooseCharacter(player){
+    const occupied=model.snapshot().players.filter(other=>other.id!==player.id&&other.character);
+    const options=matchingRoster(player).filter(member=>member.key&&member.name&&
+      !occupied.some(other=>other.character.key===member.key||other.character.name.toLowerCase()===member.name.toLowerCase()));
+    if(!options.length&&!player.character)return;
+    const select=make('select');
+    select.setAttribute('aria-label','Team roster character');
+    select.add(new Option('Keep as a placeholder',''));
+    for(const member of options)select.add(new Option(member.name+(member.isMain?' · Main':' · Alt'),member.key));
+    if(player.character&&!options.some(member=>member.key===player.character.key)){
+      select.add(new Option(player.character.name+' · Saved assignment',player.character.key));
+    }
+    select.value=player.character?.key??'';
+    const apply=button('Save seat',()=>{
+      const character=options.find(member=>member.key===select.value)??(select.value===player.character?.key?player.character:null);
+      try{
+        model.assign(player.id,character);
+        characterDialog.close();
+        commit(character?character.name+' assigned to the seat.':'Seat kept as a placeholder.');
+        root.querySelector('[data-player-select="'+player.id+'"]')?.focus();
+      }catch(error){errorMessage.textContent=error.message;}
+    });
+    const cancel=button('Cancel',()=>{
+      characterDialog.close();
+      root.querySelector('[data-player-select="'+player.id+'"]')?.focus();
+    });
+    const errorMessage=make('p');
+    errorMessage.setAttribute('role','alert');
+    characterDialog.replaceChildren(make('h3','Choose a roster character'),make('p',player.spec+' '+player.className),select,apply,cancel,errorMessage);
+    characterDialog.showModal();
+    select.focus();
+  }
+
+  function addSpecialization(className,spec,role,group){
+    if(locked)return;
+    const players=model.snapshot().players;
+    if(group!==null&&players.filter(player=>player.group===group).length>=5){
+      status.textContent='Group '+group+' is full. Move someone out first.';
+      return;
+    }
+    try{
+      const id=model.add(className,spec,role);
+      if(group===null)commit(spec+' '+className+' added to Unassigned.');
+      else move(id,group);
+    }catch(error){status.textContent=error.message;}
+  }
+
   function persist(){
     try{
       localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));
@@ -259,21 +341,50 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     }catch{savedLocally=false;}
   }
   function commit(message){persist();draw();status.textContent=message;}
-  function move(id,group){if(locked){status.textContent='Choose Edit as draft before moving placeholders.';return;}try{const player=model.snapshot().players.find(player=>player.id===id);model.move(id,group);selected=null;commit(player.spec+' '+player.className+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');}catch(error){draw();status.textContent=error.message;}}
+  function move(id,group){
+    if(locked){status.textContent='Choose Edit as draft before moving placeholders.';return;}
+    try{
+      const player=model.snapshot().players.find(player=>player.id===id);
+      model.move(id,group);
+      selected=null;
+      commit((player.character?.name||player.spec+' '+player.className)+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');
+      if(group!==null&&!player.character)chooseCharacter(player);
+    }catch(error){draw();status.textContent=error.message;}
+  }
+  function clearDropTargets(){
+    for(const target of root.querySelectorAll('.is-drop-target'))target.classList.remove('is-drop-target');
+  }
   function destination(node,group){
-    node.addEventListener('dragover',event=>{if(locked)return;event.preventDefault();if(event.dataTransfer)event.dataTransfer.dropEffect='move';node.classList.add('is-drop-target');});
+    node.addEventListener('dragover',event=>{
+      if(locked||!draggedSpec&&!dragged)return;
+      event.preventDefault();
+      if(event.dataTransfer)event.dataTransfer.dropEffect=draggedSpec?'copy':'move';
+      node.classList.add('is-drop-target');
+    });
     node.addEventListener('dragleave',()=>node.classList.remove('is-drop-target'));
-    node.addEventListener('drop',event=>{event.preventDefault();event.stopPropagation();node.classList.remove('is-drop-target');const id=event.dataTransfer?.getData('application/x-solstice-composition')||dragged;if(id)move(id,group);dragged=null;});
+    node.addEventListener('drop',event=>{
+      event.preventDefault();
+      event.stopPropagation();
+      clearDropTargets();
+      if(draggedSpec)addSpecialization(...draggedSpec,group);
+      else {
+        const id=event.dataTransfer?.getData('application/x-solstice-composition')||dragged;
+        if(id)move(id,group);
+      }
+      dragged=null;
+      draggedSpec=null;
+    });
   }
   function playerCard(player){
     const row=make('div',null,'comp-player');row.dataset.wowClass=player.className;row.draggable=!locked;row.dataset.playerId=player.id;
     row.addEventListener('dragstart',event=>{if(locked){event.preventDefault();return;}dragged=player.id;event.dataTransfer.setData('application/x-solstice-composition',player.id);event.dataTransfer.setData('text/plain',player.spec+' '+player.className);event.dataTransfer.effectAllowed='move';row.classList.add('is-dragging');});
-    row.addEventListener('dragend',()=>{dragged=null;row.classList.remove('is-dragging');for(const target of root.querySelectorAll('.is-drop-target'))target.classList.remove('is-drop-target');});
+    row.addEventListener('dragend',()=>{dragged=null;row.classList.remove('is-dragging');clearDropTargets();});
     const select=button('',()=>{selected=selected===player.id?null:player.id;draw();root.querySelector('[data-player-select="'+player.id+'"]')?.focus();status.textContent=selected?'Choose an empty slot or use Move to for '+player.spec+' '+player.className+'.':'Selection cleared.';},'comp-player-select');
-    select.dataset.playerSelect=player.id;select.setAttribute('aria-pressed',String(selected===player.id));select.setAttribute('aria-label','Select '+player.spec+' '+player.className+' to move');
+    select.dataset.playerSelect=player.id;select.setAttribute('aria-pressed',String(selected===player.id));select.setAttribute('aria-label','Select '+(player.character?.name||player.spec+' '+player.className)+' to edit');
     const label=(player.spec==='Feral Combat'?(player.role==='Tank'?'Feral (Bear)':'Feral (Cat)'):player.spec)+' '+player.className;
-    select.title=label+' · '+player.role;
-    const identity=make('span');identity.append(make('strong',label));
+    select.title=[player.character?.name,label,player.role].filter(Boolean).join(' · ');
+    const identity=make('span');identity.append(make('strong',player.character?.name||label));
+    if(player.character)identity.append(make('small',label));
     const artwork=make('span',null,'comp-player-artwork');
     const roleIcon=tablerIcon(roleIcons[player.role],'comp-player-role');roleIcon.dataset.role=player.role;
     artwork.append(guildIcon('spec',player.spec,'',player.className),roleIcon);
@@ -338,7 +449,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     for(const player of pool)poolRows.append(playerCard(player));
     if(!pool.length)poolRows.append(make('p','Choose a specialization above to add a placeholder.','comp-empty-message'));
     unassigned.append(poolRows,button('Move selected to Unassigned',()=>{if(selected)move(selected,null);},'comp-return'));unassigned.lastElementChild.hidden=!selected||chosen?.group===null;unassigned.lastElementChild.disabled=!!locked;
-    for(const add of specButtons)add.disabled=!!locked||plan.players.length>=plan.size;
+    for(const add of specButtons){add.disabled=!!locked||plan.players.length>=plan.size;add.draggable=!add.disabled;}
     composition.replaceChildren(heading('Composition','chart-line'));
     for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
       const line=make('div',null,'comp-count');line.dataset.role=role;line.append(tablerIcon(roleIcons[role]),make('span',role),make('strong',String(plan.players.filter(player=>player.role===role).length)));composition.append(line);
@@ -346,7 +457,10 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     const total=make('div',null,'comp-count comp-total');total.append(tablerIcon('users'),make('span','Total'),make('strong',plan.players.length+' / '+plan.size));composition.append(total,make('small',assigned.length+' assigned · '+pool.length+' unassigned'));
     settings.hidden=!chosen;
     if(chosen){
-      settings.replaceChildren(heading('Selected Placeholder','adjustments-horizontal'),make('p',chosen.spec+' '+chosen.className));
+      settings.replaceChildren(heading('Selected seat','adjustments-horizontal'),make('p',chosen.character?.name||chosen.spec+' '+chosen.className));
+      if(!locked&&(chosen.character||matchingRoster(chosen).length)){
+        settings.append(button('Choose character',()=>chooseCharacter(chosen)));
+      }
       const field=(label,values,value,action)=>{const wrapper=make('label',label);const select=make('select');for(const [key,title] of values)select.add(new Option(title,key));select.value=String(value);select.disabled=!!locked;select.addEventListener('change',()=>{if(!locked)action(select.value);});wrapper.append(select);settings.append(wrapper);};
       field('Move to',[[0,'Unassigned'],...Array.from({length:plan.size/5},(_,i)=>[i+1,'Group '+(i+1)])],chosen.group??0,value=>move(chosen.id,Number(value)||null));
       field('Role',['Tank','Healer','Melee DPS','Ranged DPS'].map(role=>[role,role]),chosen.role,value=>{model.update(chosen.id,{role:value});commit('Role updated.');});
