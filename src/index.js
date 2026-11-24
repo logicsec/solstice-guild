@@ -138,6 +138,12 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
     }
     const reserve = clean(input.softReserve, 400);
     if (reserve && !/^https:\/\/[^\s]+$/i.test(reserve)) return reply({ error: 'Use an HTTPS soft-reserve link.' }, 400);
+    let team = null;
+    if (input.teamId != null && input.teamId !== '') {
+      if (typeof input.teamId !== 'string' || !/^[0-9a-f-]{36}$/.test(input.teamId)) return reply({error:'Choose a valid raid team.'},400);
+      team = await db.prepare('SELECT id,name FROM raid_teams WHERE id=?').bind(input.teamId).first();
+      if (!team) return reply({error:'Raid team not found. Refresh the team list and try again.'},404);
+    }
     const composition=input.compositionId ? await ownedRaidComposition(db,user,input.compositionId) : null;
     if(input.compositionId && !composition)return reply({error:'Saved composition not found.'},404);
     if(composition && composition.plan.size!==size)return reply({error:'Choose a saved composition with the same raid size.'},400);
@@ -146,6 +152,7 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
     if (!groupPlan) return reply({ error: 'Check the planned characters and group sizes.' }, 400);
     const settings = {
       groupPlan,
+      ...(team ? {team:{id:team.id,name:team.name}} : {}),
       ...(composition ? {composition:{id:composition.id,title:composition.title,plan:composition.plan}} : {}),
       roles: input.slots ? roles : null, review: input.review === true, waitlist: input.waitlist === true,
       requirements: clean(input.requirements, 500), softReserve: reserve,
@@ -1720,7 +1727,7 @@ async function openRaidView(view, id, navigate = true) {
       await renderRaidTeams(byId('raidList'),{
         request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,
         renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
-        renderCalendar:target=>renderGuildEvents(target,{eventTypes:${JSON.stringify(eventTypes)},raidInstances,request:(path,data)=>guildRequest('/api/guild-events'+path,data),createRaid:data=>raidRequest('',data),openRaid:id=>openRaidView('detail',id)}),
+        renderCalendar:target=>renderGuildEvents(target,{eventTypes:${JSON.stringify(eventTypes)},raidInstances,request:(path,data)=>guildRequest('/api/guild-events'+path,data),loadTeams:()=>guildRequest('/api/raid-teams'),createRaid:data=>raidRequest('',data),openRaid:id=>openRaidView('detail',id)}),
       });return;
     }
     if(view==='groupPlanner'){
@@ -1845,7 +1852,7 @@ async function openRaidView(view, id, navigate = true) {
       renderGuildEvents(eventsWidget,{
         eventTypes: ${JSON.stringify(eventTypes)}, raidInstances,
         request:(path,data)=>guildRequest('/api/guild-events'+path,data),
-        createRaid:data=>raidRequest('',data), openRaid:id=>openRaidView('detail',id),
+        loadTeams:()=>guildRequest('/api/raid-teams'),createRaid:data=>raidRequest('',data), openRaid:id=>openRaidView('detail',id),
         agendaOnly:true, limit:5, onViewAll:()=>openRaidView('calendar'),
       });
       if(data.pending)guildRequest('/api/raid-characters?dashboard=1&professions=1').then(details=>{if(revision===raidRevision)drawCoverage(details);}).catch(()=>{if(revision===raidRevision)coverage.querySelector('p').textContent='Profession data is temporarily unavailable.';});
@@ -1887,7 +1894,7 @@ async function openRaidView(view, id, navigate = true) {
       renderGuildEvents(list,{
         eventTypes: ${JSON.stringify(eventTypes)}, raidInstances,
         request: (path,data) => guildRequest('/api/guild-events'+path,data),
-        createRaid: data => raidRequest('',data),
+        loadTeams:()=>guildRequest('/api/raid-teams'),createRaid: data => raidRequest('',data),
         openRaid: id => openRaidView('detail',id),
       });
       return;

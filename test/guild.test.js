@@ -224,12 +224,27 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal(existingRaid.created_by,'Raider');
   assert.equal(existingRaid.ends_at,null);
   const endsAt = new Date(Date.parse(raidDraft.startsAt)+3600000).toISOString();
-  const inlineRaid = await post('/api/raids', {...raidDraft,fromEvents:true,title:'Guild raid night',endsAt});
+  const teamResponse = await post('/api/raid-teams',{action:'create',name:'Team A',description:'',size:10,accent:'#7b70ef'});
+  assert.equal(teamResponse.status,201);
+  const {id:teamId} = await teamResponse.json();
+  assert.equal((await post('/api/raids',{...raidDraft,teamId:'invalid'})).status,400);
+  assert.equal((await post('/api/raids',{...raidDraft,teamId:crypto.randomUUID()})).status,404);
+  const inlineRaid = await post('/api/raids', {...raidDraft,teamId,fromEvents:true,title:'Guild raid night',endsAt});
   assert.equal(inlineRaid.status,201);
   const inlineId = (await inlineRaid.json()).id;
   const eventsRaid = (await listEvents(memberOptions)).find(event => event.id === inlineId);
   assert.equal(eventsRaid.title,'Guild raid night');
   assert.equal(eventsRaid.ends_at,endsAt);
+  assert.equal(eventsRaid.team_id,teamId);
+  assert.equal(eventsRaid.team_name,'Team A');
+  const savedEventSettings = JSON.parse(db.prepare('SELECT settings FROM raids WHERE id=?').get(inlineId).settings);
+  assert.deepEqual(savedEventSettings.team,{id:teamId,name:'Team A'});
+  const weeklyDates = [raidDraft.startsAt,new Date(Date.parse(raidDraft.startsAt)+7*86400000).toISOString()];
+  const weeklyTeamRaid = await post('/api/raids',{...raidDraft,teamId,fromEvents:true,title:'Weekly team raid',dates:weeklyDates},member);
+  assert.equal(weeklyTeamRaid.status,201,'guild members can select a shared team without modifying its roster');
+  const weeklyRows = db.prepare('SELECT settings FROM raids WHERE title=?').all('Weekly team raid');
+  assert.equal(weeklyRows.length,2);
+  assert.ok(weeklyRows.every(row=>JSON.parse(row.settings).team.id===teamId),'each repeated occurrence retains the team');
   assert.equal((await post('/api/raids',{...raidDraft,fromEvents:true,endsAt:raidDraft.startsAt})).status,400);
 
   const nextWeek = new Date(Date.parse(raidDraft.startsAt)+7*86400000).toISOString();

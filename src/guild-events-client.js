@@ -1,7 +1,7 @@
 import { tablerIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 
-export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid, agendaOnly = false, limit = Infinity, onViewAll }) {
+export function renderGuildEvents(root, { eventTypes, raidInstances, request, createRaid, openRaid, loadTeams, agendaOnly = false, limit = Infinity, onViewAll }) {
   const make = (tag, text, className) => {
     const element = document.createElement(tag);
     if (text !== undefined) element.textContent = text;
@@ -109,6 +109,32 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   for (const [key, instance] of Object.entries(raidInstances)) raid.append(new Option(instance.name,key));
   const raidField = field('Raid instance',raid);
   raidField.hidden = true;
+  const team = make('select');
+  team.setAttribute('aria-label','Raid team');
+  team.append(new Option('No team (open raid)',''));
+  const teamField = field('Raid team',team);
+  const teamStatus = make('p',undefined,'guild-events-status');
+  teamStatus.setAttribute('role','status');
+  teamField.append(teamStatus);
+  teamField.hidden = true;
+  let teamsLoaded = false, teamsLoading = false;
+  async function fetchTeams() {
+    if (!loadTeams || teamsLoaded || teamsLoading) return;
+    teamsLoading = true;
+    team.disabled = true;
+    teamStatus.replaceChildren('Loading teams…');
+    try {
+      const {teams} = await loadTeams();
+      for (const entry of teams) team.append(new Option(entry.name,entry.id));
+      teamsLoaded = true;
+      teamStatus.replaceChildren(teams.length ? '' : 'Create a raid team in Raiding to select it here.');
+    } catch {
+      teamStatus.replaceChildren('Could not load raid teams. ',button('Retry',fetchTeams));
+    } finally {
+      teamsLoading = false;
+      team.disabled = form.elements.eventType.value !== 'Raid';
+    }
+  }
   for (const type of Object.keys(eventTypes)) {
     const label = make('label');
     const radio = make('input');
@@ -126,6 +152,9 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   function updateType() {
     const isRaid = form.elements.eventType.value === 'Raid';
     raidField.hidden = !isRaid;
+    teamField.hidden = !isRaid;
+    team.disabled = !isRaid || teamsLoading;
+    if (isRaid) fetchTeams();
     raid.required = isRaid;
     title.required = !isRaid;
     title.placeholder = isRaid ? 'Defaults to the raid name' : 'Deadmines run';
@@ -155,7 +184,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
   const submit = make('button','Create Event','raid-primary');
   const formStatus = make('p',undefined,'guild-events-status');
   formStatus.setAttribute('role','status');
-  form.append(field('Title',title),types,raidField,start.element,localTime,
+  form.append(field('Title',title),types,teamField,raidField,start.element,localTime,
     field('Repeat',repeat),weeksField,details,submit,formStatus);
   updateRepeat();
   side.append(agenda,form);
@@ -193,7 +222,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
     formStatus.textContent = '';
     try {
       const result = type === 'Raid'
-        ? await createRaid({...input, instance:raid.value, size:raidInstances[raid.value].size, notes:input.description, fromEvents:true})
+        ? await createRaid({...input, teamId:team.value || null, instance:raid.value, size:raidInstances[raid.value].size, notes:input.description, fromEvents:true})
         : await request('',input);
       form.reset();
       start.reset();
@@ -261,6 +290,7 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         name.append(make('strong',event.title));
         const metadata=make('div',undefined,'guild-event-meta');
         metadata.append(type,make('small','Created by '+(event.created_by || 'Unknown'),'guild-event-creator'));
+        if (event.team_name) metadata.append(make('small',event.team_name,'guild-event-team'));
         name.append(metadata);
         if (event.description) name.append(make('p',event.description,'guild-event-description'));
         const count = make('small',event.signups ? event.signups+' signed up' : 'No sign-ups yet','guild-event-count');
