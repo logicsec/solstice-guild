@@ -99,6 +99,9 @@ test('team workspace creates a team, assigns a guild character and updates the r
   const opened=[];const root=new Element('div');await render(root,{request,specs,openCharacter:(character,target)=>{opened.push(character);target.append(new Element('section','Character details'));}});
   find(root,e=>e.textContent==='+ New team').listeners.click();
   const dialog=find(root,e=>e.className==='team-create-page');assert.equal(dialog.hidden,false);
+  assert.equal(find(dialog,e=>e.tagName==='form').hidden,true);assert.ok(all(dialog).filter(e=>e.className==='team-size-card').every(e=>e.attributes['aria-pressed']==='false'));
+  assert.equal(find(dialog,e=>e.className==='team-create-next').hidden,true);
+  find(dialog,e=>e.attributes['aria-label']==='20-player raids').listeners.click();assert.equal(find(dialog,e=>e.className==='team-create-next').hidden,false);find(dialog,e=>e.textContent==='Next').listeners.click();assert.equal(find(dialog,e=>e.tagName==='form').hidden,false);
   find(dialog,e=>e.attributes['aria-label']==='Team name').value='Progression';
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
   assert.equal(dialog.hidden,true);assert.ok(find(root,e=>e.className==='team-setup'));
@@ -195,11 +198,13 @@ test('creation wizard selects region and ruleset, links a guild and previews and
  };
  const root=new Element('main');await render(root,{request,specs:{Mage:[['Arcane','Ranged DPS']]},raidInstances:{'barrow-deeps':{name:'Barrow Deeps',size:10},'hyjal-summit':{name:'Hyjal Summit',size:20},'onyxias-lair':{name:'Onyxia’s Lair',size:40}}});
  find(root,e=>e.textContent==='+ New team').listeners.click();const create=find(root,e=>e.className==='team-create-page');
- const cards=all(create).filter(e=>e.className==='team-size-card');assert.equal(cards.length,3);assert.equal(new URLSearchParams(location.search).get('teams'),'new');
+ const cards=all(create).filter(e=>e.className==='team-size-card');assert.equal(cards.length,3);assert.equal(find(create,e=>e.className==='team-size-features'),undefined,'cards list raids instead of generic features');assert.equal(new URLSearchParams(location.search).get('teams'),'new');
  assert.equal(find(cards[0],e=>e.tagName==='img').src,'/assets/raid-barrow-deeps.webp');assert.equal(find(cards[1],e=>e.className==='team-size-raids').textContent,'Hyjal Summit');assert.equal(find(cards[2],e=>e.className==='team-size-raids').textContent,'Onyxia’s Lair');
  cards[2].listeners.click();assert.equal(cards[2].attributes['aria-pressed'],'true');assert.equal(cards[1].attributes['aria-pressed'],'false');assert.equal(find(create,e=>e.className==='team-create-selection').textContent,'40-player team · WoW Forever');
+ find(create,e=>e.textContent==='Next').listeners.click();assert.equal(find(create,e=>e.className==='team-size-cards').hidden,true);assert.equal(find(create,e=>e.tagName==='form').hidden,false);
  const region=find(create,e=>e.attributes['aria-label']==='Team region');region.value='kr';region.listeners.change();assert.equal(find(create,e=>e.attributes['aria-label']==='Team ruleset').children.length,2);
  region.value='eu';region.listeners.change();const ruleset=find(create,e=>e.attributes['aria-label']==='Team ruleset');ruleset.value='15';find(create,e=>e.attributes['aria-label']==='Team name').value='RP team';
+ find(create,e=>e.textContent==='Back to raid sizes').listeners.click();assert.equal(find(create,e=>e.tagName==='form').hidden,true);find(create,e=>e.textContent==='Next').listeners.click();assert.equal(find(create,e=>e.attributes['aria-label']==='Team name').value,'RP team','going back preserves entered information');
  await find(create,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
  assert.ok(find(root,e=>e.className==='team-setup'));assert.ok(find(root,e=>e.textContent==='EU · RP-PvP'));
  find(root,e=>e.attributes['aria-label']==='Guild name').value='Solstice RP';find(root,e=>e.className==='team-link-guild').listeners.submit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));

@@ -757,13 +757,12 @@ body.raid-teams-active #raidMessage:empty { display:none; }
 .team-size-copy { display:flex; flex-direction:column; gap:7px; width:100%; padding:20px; }
 .team-size-game { color:var(--theme-secondary-color); font-size:11px; letter-spacing:.04em; }
 .team-size-title { color:var(--theme-light-text-emphasis); font-size:23px; line-height:1.25; }
-.team-size-raids { color:var(--theme-primary-text-emphasis); font-size:12px; line-height:1.6; }
-.team-size-features { display:grid; gap:7px; margin-top:8px; font-size:12px; line-height:1.5; }
-.team-size-features > span { display:flex; align-items:center; gap:7px; }
-.team-size-features svg { width:13px; height:13px; color:var(--theme-secondary-color); }
+.team-size-raids { color:var(--theme-primary-text-emphasis); font-size:12px; line-height:1.8; white-space:normal; }
 .team-create-page .team-create-form { float:none; width:min(680px,100%); padding:22px; border:1px solid var(--theme-border-color); border-radius:8px; background:var(--theme-secondary-bg); }
 .team-create-form h3 { margin:0 0 6px; }
 .team-create-actions > button { margin:0; }
 .team-create-selection { margin:0 0 14px; font-size:13px; color:var(--theme-primary-text-emphasis); }
 @media(max-width:1100px) { .team-size-cards { grid-template-columns:1fr; } .guild-app #raidList .team-size-card { flex-direction:row; } .team-size-art { width:38%; align-self:stretch; aspect-ratio:auto; flex-shrink:0; } .team-size-copy { padding:18px; } }
 @media(max-width:600px) { .guild-app #raidList .team-size-card { flex-direction:column; } .team-size-art { width:100%; aspect-ratio:16/9; } .team-create-form { padding:16px; } }
+
+.team-create-next { display:flex; justify-content:flex-end; margin-top:20px; }

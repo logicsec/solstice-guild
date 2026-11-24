@@ -25,6 +25,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   let filtersOpen=false;const rosterFilters={race:'',className:'',spec:'',minLevel:'',maxLevel:''};
   const status=el('p','','teams-status');status.setAttribute('role','status');
   const content=el('div',null,'teams-content');
+  let creationStep='size';
   const creationPage=el('section',null,'team-create-page');creationPage.hidden=true;creationPage.setAttribute('aria-label','Create raid team');
   const form=el('form',null,'team-create-form');const formTitle=el('h3','Your team');const selectedSize=el('p','','team-create-selection');const fields=el('div',null,'team-create-fields');
   const name=el('input');name.required=true;name.maxLength=60;name.placeholder='e.g. Solstice Progression';name.setAttribute('aria-label','Team name');
@@ -38,7 +39,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   const formStatus=el('p');formStatus.setAttribute('role','status');const save=btn('Create team',()=>{});save.type='submit';
   for(const [caption,input] of [['Team name',name],['Region',region],['Ruleset',ruleset]]){const field=el('label',caption);field.append(input);fields.append(field);}
   const extra=el('details',null,'team-create-extra');extra.append(el('summary','Description and banner color'));for(const [caption,input] of [['Description',description],['Banner color',accent]]){const field=el('label',caption);field.append(input);extra.append(field);}
-  const actions=el('div',null,'team-create-actions');actions.append(save,btn('Cancel',()=>{creating=false;path();drawLanding();}));
+  const actions=el('div',null,'team-create-actions');actions.append(btn('Back to raid sizes',()=>{creationStep='size';drawCreation();}),save,btn('Cancel',()=>{creating=false;path();drawLanding();}));
   form.append(formTitle,selectedSize,fields,extra,actions,formStatus);
   const characterDialog=el('dialog',null,'team-character-dialog');characterDialog.setAttribute('aria-label','Character details');
   const characterHeader=el('header',null,'team-character-dialog-header');const characterTitle=el('h3','Character details');const characterClose=btn('Back to team',()=>characterDialog.close());characterHeader.append(characterTitle,characterClose);
@@ -47,20 +48,25 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   const scheduleDialog=el('dialog',null,'team-schedule-dialog');scheduleDialog.setAttribute('aria-label','Set weekly raid times');
   root.replaceChildren(status,content,characterDialog,scheduleDialog);
   function path(){const url=new URL(location.href);url.searchParams.set('tool','raid');url.searchParams.set('view','raiding');if(teamId){url.searchParams.set('team',teamId);url.searchParams.set('section',section);url.searchParams.delete('teams');try{localStorage.setItem('solstice-working-raid-team',teamId);}catch{}}else{url.searchParams.delete('team');url.searchParams.delete('section');url.searchParams.set('teams',creating?'new':'all');}if(url.href!==location.href)history.pushState(null,'',url);}
-  function openForm(){creating=true;name.value='';description.value='';size.value='20';accent.value='#7b70ef';region.value='us';ruleset.value='2';drawRulesets();formStatus.textContent='';creationPage.hidden=false;path();drawCreation();}
+  function openForm(){creating=true;creationStep='size';name.value='';description.value='';size.value='';accent.value='#7b70ef';region.value='us';ruleset.value='2';drawRulesets();formStatus.textContent='';creationPage.hidden=false;path();drawCreation();}
   function drawCreation(){
-    creationPage.replaceChildren();const heading=el('header',null,'teams-landing-heading');const title=el('div');title.append(el('h2','Create a raid team'),el('p','Choose your raid size, then set up your team.'));heading.append(title,btn('All raid teams',()=>{creating=false;path();drawLanding();}));
+    creationPage.replaceChildren();const heading=el('header',null,'teams-landing-heading');const title=el('div');title.append(el('h2','Create a raid team'),el('p',creationStep==='size'?'Choose a raid size to continue.':'Enter your team information.'));heading.append(title,btn('All raid teams',()=>{creating=false;path();drawLanding();}));
     const cards=el('div',null,'team-size-cards');cards.setAttribute('role','group');cards.setAttribute('aria-label','Choose raid size');
-    function choose(value){size.value=String(value);selectedSize.textContent=value+'-player team · WoW Forever';for(const card of cards.children)card.setAttribute('aria-pressed',String(card.dataset.raidSize===String(value)));}
+    const continueActions=el('div',null,'team-create-next');const next=btn('Next',()=>{if(![10,20,40].includes(Number(size.value)))return;creationStep='details';drawCreation();name.focus();},'raid-primary');continueActions.append(next);
+    function choose(value){size.value=String(value);continueActions.hidden=creationStep!=='size';selectedSize.textContent=value+'-player team · WoW Forever';for(const card of cards.children)card.setAttribute('aria-pressed',String(card.dataset.raidSize===String(value)));}
     for(const value of [10,20,40]){
       const raids=Object.entries(raidInstances).filter(([,raid])=>raid.size===value);const card=btn('',()=>choose(value),'team-size-card');card.dataset.raidSize=String(value);card.setAttribute('aria-label',value+'-player raids');
       const art=el('span',null,'team-size-art');if(raids.length){const image=el('img');image.src='/assets/raid-'+raids[0][0]+'.webp';image.alt=raids[0][1].name;art.append(image);}const selected=el('span',null,'team-size-selected');selected.append(icon('check'));art.append(selected);
-      const body=el('span',null,'team-size-copy');body.append(el('span','WoW Forever','team-size-game'),el('strong',value+'-player raids','team-size-title'),el('small',raids.map(([,raid])=>raid.name).join(' · ')||'No raids configured for this size.','team-size-raids'));
-      const features=el('span',null,'team-size-features');for(const text of ['Guild roster and team setup','Group composition planner','Raid calendar and sign-ups']){const row=el('span');row.append(icon('check'),el('span',text));features.append(row);}body.append(features);card.append(art,body);cards.append(card);
+      const body=el('span',null,'team-size-copy');body.append(el('span','WoW Forever','team-size-game'),el('strong',value+'-player raids','team-size-title'),el('small',raids.map(([,raid])=>raid.name).join(' · ')||'No raids configured for this size.','team-size-raids'));
+      card.append(art,body);cards.append(card);
     }
-    choose(Number(size.value));creationPage.append(heading,cards,form);content.replaceChildren(creationPage);
+    const hasSize=[10,20,40].includes(Number(size.value));
+    for(const card of cards.children)card.setAttribute('aria-pressed','false');
+    if(hasSize)choose(Number(size.value));
+    continueActions.hidden=creationStep!=='size'||!hasSize;cards.hidden=creationStep!=='size';form.hidden=creationStep!=='details';
+    creationPage.append(heading,cards,continueActions,form);content.replaceChildren(creationPage);
   }
-  form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;formStatus.textContent='Creating…';try{const result=await request('',{action:'create',name:name.value.trim(),description:description.value.trim(),size:Number(size.value),accent:accent.value,region:region.value,ruleset:Number(ruleset.value)});teamId=result.id;section='setup';creating=false;creationPage.hidden=true;path();await load();}catch(error){formStatus.textContent=error.message;}finally{save.disabled=false;}});
+  form.addEventListener('submit',async event=>{event.preventDefault();if(creationStep!=='details'||![10,20,40].includes(Number(size.value))){creationStep='size';drawCreation();return;}save.disabled=true;formStatus.textContent='Creating…';try{const result=await request('',{action:'create',name:name.value.trim(),description:description.value.trim(),size:Number(size.value),accent:accent.value,region:region.value,ruleset:Number(ruleset.value)});teamId=result.id;section='setup';creating=false;creationPage.hidden=true;path();await load();}catch(error){formStatus.textContent=error.message;}finally{save.disabled=false;}});
   async function load(){
     const token=++revision;status.textContent='Loading raid teams…';content.inert=true;if(navigationRoot)navigationRoot.inert=true;
     try{const [result,list]=await Promise.all([request(teamId?'?team='+encodeURIComponent(teamId):''),teamId?request('').catch(()=>null):null]);if(token!==revision||!isCurrent())return;
