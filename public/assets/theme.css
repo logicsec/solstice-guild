@@ -69,17 +69,17 @@ code { color:var(--theme-code-color); }
 .guild-app [data-variant="info"] { --action-bg:color-mix(in srgb,var(--theme-info) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-info-text-emphasis); }
 .guild-app .planner-page #save { background:var(--theme-primary-action-bg); color:var(--theme-primary-text-emphasis); border-color:transparent; border-radius:999px; }
 .guild-app .raid-sidebar .guild-discord-card .guild-signout { background:var(--theme-danger-bg-subtle); color:var(--theme-danger-text-emphasis); border-color:transparent; border-radius:999px; }
-.guild-app #professionGrid button {
+.guild-app :is(#professionGrid,#auctionListings :where(.pager)) button {
  background:var(--theme-menu-selected-bg); color:var(--theme-menu-selected-color);
  border:1px solid transparent; border-radius:6px;
 }
-.guild-app #professionGrid button:hover { background:var(--theme-tertiary-bg); border-color:var(--theme-border-color-translucent); }
+.guild-app :is(#professionGrid,#auctionListings :where(.pager)) button:enabled:hover { background:var(--theme-tertiary-bg); border-color:var(--theme-border-color-translucent); }
 .guild-app #professionGrid button[aria-pressed="true"] {
  background:var(--theme-primary-action-bg); color:var(--theme-primary-text-emphasis);
  border-color:var(--theme-primary-border-subtle);
 }
-.guild-app #professionGrid button[aria-pressed="true"]:hover { background:color-mix(in srgb,var(--theme-primary-action-bg) 90%,var(--theme-primary-text-emphasis)); }
-.guild-app #professionGrid button:focus-visible { outline:2px solid var(--theme-link-color); outline-offset:2px; }
+.guild-app #professionGrid button[aria-pressed="true"]:enabled:hover { background:color-mix(in srgb,var(--theme-primary-action-bg) 90%,var(--theme-primary-text-emphasis)); }
+.guild-app :is(#professionGrid,#auctionListings :where(.pager)) button:focus-visible { outline:2px solid var(--theme-link-color); outline-offset:2px; }
 .guild-app #professionGrid button svg { color:inherit; }
 .guild-app .positive { color:var(--theme-success-text-emphasis); } .guild-app .negative { color:var(--theme-danger-text-emphasis); }
 [data-wow-class="Mage"] { --class-color:var(--theme-info-text-emphasis); }
