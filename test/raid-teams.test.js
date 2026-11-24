@@ -30,6 +30,7 @@ test('guild teams support bulk assignment, edits, mains/alts and enforce leader-
   t.mock.method(globalThis,'fetch',async(url,options)=>{
     if(url==='https://oauth.battle.net/token')return Response.json({access_token:'team-token',expires_in:3600});
     if(url==='https://us.api.blizzard.com/data/wow/playable-race/index?namespace=static-forever-us&locale=en_US')return Response.json({races:[{id:1,name:'Human'},{id:42,name:'Skyborne'}]});
+    if(url==='https://us.api.blizzard.com/data/wow/guild/solstice?namespace=profile-forever-us&locale=en_US')return Response.json({name:'Solstice',ruleset:{id:2}});
     assert.equal(url,'https://us.api.blizzard.com/data/wow/guild/solstice/roster?namespace=profile-forever-us&locale=en_US');
     assert.equal(options.headers.Authorization,'Bearer team-token');return Response.json(roster);
   });
@@ -41,6 +42,9 @@ test('guild teams support bulk assignment, edits, mains/alts and enforce leader-
     assert.equal((await send('',null,null)).status,401);
     const created=await send('',{action:'create',name:'Solstice',description:'Progression',size:20,accent:'#7b70ef'});assert.equal(created.status,201);const {id}=await created.json();const query='?team='+id;
     const listed=(await (await send('',null,'viewer')).json()).teams;assert.equal(listed.length,1);assert.equal(listed[0].canEdit,0);
+    assert.equal((await (await send(query)).json()).roster.source,'unlinked');
+    assert.equal((await send(query,{action:'linkGuild',guild:'Solstice'},'viewer')).status,403);
+    assert.equal((await send(query,{action:'linkGuild',guild:'Solstice'})).status,200);
     const initial=await (await send(query)).json();assert.equal(initial.roster.source,'blizzard');assert.equal(initial.roster.characters.length,2);assert.equal(initial.members.length,0);assert.equal(initial.roster.characters[1].race,'Skyborne','race catalog resolves Forever-specific races');
     const selection={action:'assign',characters:['blizzard:100','blizzard:101']};
     assert.equal((await send(query,selection,'viewer')).status,403);
@@ -92,12 +96,13 @@ test('team workspace creates a team, assigns a guild character and updates the r
     if(path.startsWith('?team='))return{team,roster:{guild:'Solstice',characters:[member,{key:'blizzard:101',name:'Dwarf Warrior',className:'Warrior',race:'Dwarf',spec:'Protection',role:'Tank',level:20}],source:'blizzard'},members:structuredClone(members)};
     return{teams:created?[team]:[]};
   };
-  const root=new Element('div');await render(root,{request,specs});
+  const opened=[];const root=new Element('div');await render(root,{request,specs,openCharacter:(character,target)=>{opened.push(character);target.append(new Element('section','Character details'));}});
   find(root,e=>e.textContent==='+ New team').listeners.click();
   const dialog=find(root,e=>e.className==='team-edit-dialog');assert.equal(dialog.open,true);
   find(dialog,e=>e.attributes['aria-label']==='Team name').value='Progression';
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
-  assert.equal(dialog.open,false);assert.ok(find(root,e=>e.className==='raid-card team-summary'));
+  assert.equal(dialog.open,false);assert.ok(find(root,e=>e.className==='team-setup'));
+  find(root,e=>e.textContent==='Skip to my team').listeners.click();assert.ok(find(root,e=>e.className==='raid-card team-summary'));
   find(root,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Guild Roster')).listeners.click();
   const checkbox=find(root,e=>e.attributes['aria-label']==='Select Astra Mortis');checkbox.checked=true;checkbox.listeners.change();
   await find(root,e=>e.textContent==='Assign to team').listeners.click();
@@ -115,13 +120,25 @@ test('team workspace creates a team, assigns a guild character and updates the r
   assert.ok(find(root,e=>e.textContent==='Showing 0 of 2 guild characters.'));
   find(root,e=>e.textContent==='Reset filters').listeners.click();
   assert.ok(find(root,e=>e.textContent==='Showing 2 of 2 guild characters.'));
+  const workspace=find(root,e=>e.className==='team-workspace');
+  const rows=find(root,e=>e.className==='team-table-scroll');rows.scrollTop=123;
+  const before=location.href;
+  find(root,e=>e.className==='team-character-link'&&e.textContent==='Astra Mortis').listeners.click();
+  const characterDialog=find(root,e=>e.className==='team-character-dialog');
+  assert.equal(characterDialog.open,true);
+  assert.equal(opened[0].slug,'astra-mortis');
+  assert.equal(location.href,before,'character inspection stays on the team URL');
+  find(characterDialog,e=>e.textContent==='Back to team').listeners.click();
+  assert.equal(characterDialog.open,false);
+  assert.equal(find(root,e=>e.className==='team-workspace'),workspace,'team content is preserved rather than rebuilt');
+  assert.equal(rows.scrollTop,123,'roster scroll position is preserved');
 
 });
 
 test('primary sidebar switches working teams, remembers selection and replaces the second menu',async()=>{
   const {renderRaidTeams}=await import('../src/raid-teams-client.js');
   const document={createElement:tag=>new Element(tag)};
-  const location={href:'https://solsticeguild.net/?tool=raid&view=raiding&team=team-a',search:'?tool=raid&view=raiding&team=team-a'};
+  const location={href:'https://solsticeguild.net/?tool=raid&view=raiding&team=team-a&section=report',search:'?tool=raid&view=raiding&team=team-a&section=report'};
   const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
   const stored=new Map();const localStorage={getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value)};
   const render=new Function('document','Option','location','history','localStorage','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,localStorage,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
@@ -137,9 +154,10 @@ test('primary sidebar switches working teams, remembers selection and replaces t
   assert.equal(find(root,e=>e.className==='team-workspace').children.length,1,'main workspace contains only content');
   assert.equal(find(root,e=>e.className==='team-navigation'),undefined,'second navigation column is removed');
   assert.equal(find(sidebar,e=>e.textContent==='Guild Calendar'),undefined,'raid menu has no duplicate calendar');
-  const report=find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Roster Report'));
-  report.listeners.click();assert.equal(new URLSearchParams(location.search).get('section'),'report');
-  assert.equal(find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Roster Report')).attributes['aria-current'],'true');
+  assert.equal(find(sidebar,e=>e.textContent==='Roster Report'),undefined);
+  assert.equal(find(root,e=>e.textContent==='View full roster report'),undefined);
+  assert.equal(new URLSearchParams(location.search).get('section'),'roster','old report links open the roster');
+  assert.equal(find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Roster')).attributes['aria-current'],'true');
   const select=find(sidebar,e=>e.attributes['aria-label']==='Working raid team');select.value='team-b';select.listeners.change();
   await new Promise(resolve=>setImmediate(resolve));
   assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Team B'));
@@ -156,4 +174,38 @@ test('primary sidebar switches working teams, remembers selection and replaces t
   assert.equal(find(sidebar,e=>e.className==='team-menu-item'),undefined,'team tools are hidden without a selected team');
   await render(root,options);
   assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Raid Teams'),'explicit All raid teams route stays on team list after reload');
+});
+
+test('creation wizard selects region and ruleset, links a guild and previews and saves raid nights',async()=>{
+ const {renderRaidTeams}=await import('../src/raid-teams-client.js');
+ const document={createElement:tag=>new Element(tag)},location={href:'https://solsticeguild.net/?tool=raid&view=raiding',search:'?tool=raid&view=raiding'};
+ const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
+ const render=new Function('document','Option','location','history','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
+ const team={id:'new-team',name:'RP team',size:20,accent:'#56789a',region:'eu',ruleset:15,guildSlug:null,guildName:null,canEdit:true,canManage:true,defaultRole:'Raider'};
+ const setup={joined:false,permissionConfirmed:false,schedules:[]};let created=false,savedSchedule;
+ const request=async(path='',input)=>{
+  if(input?.action==='create'){assert.equal(input.region,'eu');assert.equal(input.ruleset,15);created=true;return{id:team.id};}
+  if(input?.action==='linkGuild'){assert.equal(input.guild,'Solstice RP');team.guildSlug='solstice-rp';team.guildName='Solstice RP';return{ok:true};}
+  if(input?.action==='join'){setup.joined=true;return{ok:true};}
+  if(input?.action==='previewSchedule')return{dates:[{startsAt:new Date(Date.now()+86400000).toISOString(),endsAt:new Date(Date.now()+90000000).toISOString()}]};
+  if(input?.action==='schedule'){savedSchedule=input;setup.schedules=[{...input,id:'schedule'}];return{ok:true};}
+  if(input?.action==='permissions'){team.defaultRole=input.defaultRole;setup.permissionConfirmed=true;return{ok:true};}
+  if(path.startsWith('?team='))return{team,setup,roster:{guild:team.guildName,characters:[],source:team.guildSlug?'blizzard':'unlinked'},members:[]};
+  return{teams:created?[team]:[]};
+ };
+ const root=new Element('main');await render(root,{request,specs:{Mage:[['Arcane','Ranged DPS']]},raidInstances:{'hyjal-summit':{name:'Hyjal Summit',size:20}}});
+ find(root,e=>e.textContent==='+ New team').listeners.click();const create=find(root,e=>e.className==='team-edit-dialog');
+ const region=find(create,e=>e.attributes['aria-label']==='Team region');region.value='kr';region.listeners.change();assert.equal(find(create,e=>e.attributes['aria-label']==='Team ruleset').children.length,2);
+ region.value='eu';region.listeners.change();const ruleset=find(create,e=>e.attributes['aria-label']==='Team ruleset');ruleset.value='15';find(create,e=>e.attributes['aria-label']==='Team name').value='RP team';
+ await find(create,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
+ assert.ok(find(root,e=>e.className==='team-setup'));assert.ok(find(root,e=>e.textContent==='EU · RP-PvP'));
+ find(root,e=>e.attributes['aria-label']==='Guild name').value='Solstice RP';find(root,e=>e.className==='team-link-guild').listeners.submit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
+ assert.ok(find(root,e=>e.textContent==='Solstice RP linked · 0 guild characters'));
+ await find(root,e=>e.textContent==='Join this team').listeners.click();assert.ok(find(root,e=>e.textContent==='You are on this team.'));
+ find(root,e=>e.textContent==='Set raid times').listeners.click();const dialog=find(root,e=>e.className==='team-schedule-dialog');assert.equal(dialog.open,true);
+ const days=find(dialog,e=>e.className==='team-schedule-days');days.children[2].listeners.click();days.children[4].listeners.click();await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(find(dialog,e=>e.textContent==='Start raiding').disabled,false);
+ await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
+ assert.equal(dialog.open,false);assert.deepEqual(savedSchedule.days.map(day=>day.day),[2,4]);assert.equal(savedSchedule.instance,'hyjal-summit');
+ const permission=find(root,e=>e.attributes['aria-label']==='Default team member role');permission.value='Editor';await find(root,e=>e.textContent==='Save permissions').listeners.click();assert.equal(team.defaultRole,'Editor');assert.equal(setup.permissionConfirmed,true);
 });

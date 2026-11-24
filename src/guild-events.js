@@ -1,3 +1,4 @@
+import {ensureTeamRaidSchedule} from './team-schedules.js';
 import { sameOriginWrite } from './auth.js';
 
 export const eventTypes = {
@@ -35,6 +36,7 @@ export async function guildEventsApi(request, env, url, { discord_id: user, disp
     if (!Number.isFinite(from) || !Number.isFinite(to) || to <= from || to - from > 120 * 86400000) {
       return reply({ error: 'Choose a valid calendar range.' }, 400);
     }
+    await ensureTeamRaidSchedule(db);
     const start = new Date(from).toISOString();
     const end = new Date(to).toISOString();
     const creator = `COALESCE(event.creator_name, (

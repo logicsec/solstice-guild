@@ -132,6 +132,7 @@ export async function discordAuth(request, env, url) {
   } catch { /* Account sign-in remains available when server counts are unavailable. */ }
   const profile = {
     joinedAt:member.joined_at ?? null,
+    avatarUrl:typeof member.user.avatar==='string'&&/^[a-zA-Z0-9_]+$/.test(member.user.avatar)?'https://cdn.discordapp.com/avatars/'+member.user.id+'/'+member.user.avatar+'.png?size=128':null,
     server:guild ? {name:guild.name,memberCount:guild.approximate_member_count ?? null,
       onlineCount:guild.approximate_presence_count ?? null} : null,
     capturedAt:Date.now(),

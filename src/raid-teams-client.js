@@ -8,33 +8,46 @@ export function raidTeamSummary(members, mainsOnly=true){
   return {total:characters.length,roles,armor:Object.entries(armor).map(([name,classes])=>({name,classes,count:characters.filter(member=>classes.includes(member.className)).length})),itemLevels:{known:levels.length,average:levels.length?levels.reduce((a,b)=>a+b,0)/levels.length:null,min:levels.length?Math.min(...levels):null,max:levels.length?Math.max(...levels):null}};
 }
 
-export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,renderPlanner,navigationRoot}){
+export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,renderPlanner,navigationRoot,openCharacter,raidInstances={}}){
   const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;};
   const btn=(text,action,cls)=>{const node=el('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const icon=name=>tablerIcon(name);
+  const rulesets={2:'Normal',1:'PvP',3:'RP',15:'RP-PvP'};
+  const contextLabel=team=>(team.region||'us').toUpperCase()+' · '+(rulesets[team.ruleset||2]||'Normal');
   const roles=['Tank','Healer','Melee DPS','Ranged DPS'];
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target','Not set':'user-circle'};
   let teamId=new URLSearchParams(location.search).get('team');
   if(!teamId&&new URLSearchParams(location.search).get('teams')!=='all')try{teamId=localStorage.getItem('solstice-working-raid-team')||null;}catch{}
   let section=new URLSearchParams(location.search).get('section')||'roster';
-  if(!['roster','report','planner','professions','settings'].includes(section))section='roster';
+  if(!['roster','planner','professions','settings','setup'].includes(section))section='roster';
   let data=null,teams=[],tab='team',query='',mode='role',mainsOnly=true,selected=new Set(),revision=0,professions=null,saving=false;
   let filtersOpen=false;const rosterFilters={race:'',className:'',spec:'',minLevel:'',maxLevel:''};
   const status=el('p','','teams-status');status.setAttribute('role','status');
   const content=el('div',null,'teams-content');
   const dialog=el('dialog',null,'team-edit-dialog');dialog.setAttribute('aria-label','Create raid team');
-  const form=el('form');const formTitle=el('h3','New raid team');
+  const form=el('form');const formHero=el('header',null,'team-create-hero');formHero.append(el('span','WoW Forever','team-version'),el('h3','Create your raid team'),el('p','Choose where you play. Link your guild and build your roster next.'));const fields=el('div',null,'team-create-fields');
   const name=el('input');name.required=true;name.maxLength=60;name.placeholder='e.g. Solstice Progression';name.setAttribute('aria-label','Team name');
   const description=el('textarea');description.maxLength=500;description.setAttribute('aria-label','Team description');
   const size=el('select');size.setAttribute('aria-label','Team raid size');for(const value of [10,20,40])size.add(new Option(value+' players',value));
+  const region=el('select');region.setAttribute('aria-label','Team region');for(const value of ['us','eu','kr','tw'])region.add(new Option(value.toUpperCase(),value));region.value='us';
+  const ruleset=el('select');ruleset.setAttribute('aria-label','Team ruleset');
+  function drawRulesets(){const previous=ruleset.value||'2';ruleset.replaceChildren();for(const value of [2,1,3,15])if(!['kr','tw'].includes(region.value)||[2,1].includes(value))ruleset.add(new Option(rulesets[value],String(value)));ruleset.value=['kr','tw'].includes(region.value)&&!['1','2'].includes(previous)?'2':previous;}
+  region.addEventListener('change',drawRulesets);drawRulesets();
   const accent=el('input');accent.type='color';accent.value='#7b70ef';accent.setAttribute('aria-label','Banner color');
   const formStatus=el('p');formStatus.setAttribute('role','status');const save=btn('Create team',()=>{});save.type='submit';
-  for(const [label,input] of [['Team name',name],['Description',description],['Raid size',size],['Banner color',accent]]){const field=el('label',label);field.append(input);form.append(field);}
-  form.prepend(formTitle);form.append(save,btn('Cancel',()=>dialog.close()),formStatus);dialog.append(form);
-  root.replaceChildren(status,content,dialog);
+  for(const [caption,input] of [['Team name',name],['Region',region],['Ruleset',ruleset],['Raid size',size]]){const field=el('label',caption);field.append(input);fields.append(field);}
+  const extra=el('details',null,'team-create-extra');extra.append(el('summary','Description and banner color'));for(const [caption,input] of [['Description',description],['Banner color',accent]]){const field=el('label',caption);field.append(input);extra.append(field);}
+  const actions=el('div',null,'team-create-actions');actions.append(save,btn('Cancel',()=>dialog.close()));
+  form.append(formHero,fields,extra,actions,formStatus);dialog.append(form);
+  const characterDialog=el('dialog',null,'team-character-dialog');characterDialog.setAttribute('aria-label','Character details');
+  const characterHeader=el('header',null,'team-character-dialog-header');const characterTitle=el('h3','Character details');const characterClose=btn('Back to team',()=>characterDialog.close());characterHeader.append(characterTitle,characterClose);
+  const characterBody=el('div');characterDialog.append(characterHeader,characterBody);
+  characterDialog.addEventListener('close',()=>characterBody.replaceChildren());
+  const scheduleDialog=el('dialog',null,'team-schedule-dialog');scheduleDialog.setAttribute('aria-label','Set weekly raid times');
+  root.replaceChildren(status,content,dialog,characterDialog,scheduleDialog);
   function path(){const url=new URL(location.href);url.searchParams.set('tool','raid');url.searchParams.set('view','raiding');if(teamId){url.searchParams.set('team',teamId);url.searchParams.set('section',section);url.searchParams.delete('teams');try{localStorage.setItem('solstice-working-raid-team',teamId);}catch{}}else{url.searchParams.delete('team');url.searchParams.delete('section');url.searchParams.set('teams','all');}if(url.href!==location.href)history.pushState(null,'',url);}
-  function openForm(){name.value='';description.value='';size.value='20';accent.value='#7b70ef';formStatus.textContent='';dialog.showModal();name.focus();}
-  form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;formStatus.textContent='Creating…';try{const result=await request('',{action:'create',name:name.value.trim(),description:description.value.trim(),size:Number(size.value),accent:accent.value});teamId=result.id;section='roster';dialog.close();path();await load();}catch(error){formStatus.textContent=error.message;}finally{save.disabled=false;}});
+  function openForm(){name.value='';description.value='';size.value='20';accent.value='#7b70ef';region.value='us';ruleset.value='2';drawRulesets();formStatus.textContent='';dialog.showModal();name.focus();}
+  form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;formStatus.textContent='Creating…';try{const result=await request('',{action:'create',name:name.value.trim(),description:description.value.trim(),size:Number(size.value),accent:accent.value,region:region.value,ruleset:Number(ruleset.value)});teamId=result.id;section='setup';dialog.close();path();await load();}catch(error){formStatus.textContent=error.message;}finally{save.disabled=false;}});
   async function load(){
     const token=++revision;status.textContent='Loading raid teams…';content.inert=true;if(navigationRoot)navigationRoot.inert=true;
     try{const [result,list]=await Promise.all([request(teamId?'?team='+encodeURIComponent(teamId):''),teamId?request('').catch(()=>null):null]);if(token!==revision||!isCurrent())return;
@@ -44,14 +57,14 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   function drawLanding(){
     drawNavigation();content.replaceChildren();const heading=el('header',null,'teams-landing-heading');const title=el('div');title.append(el('h2','Raid Teams'),el('p','Build a roster, plan your composition, and prepare to raid together.'));heading.append(title,btn('+ New team',openForm));content.append(heading);
     const grid=el('div',null,'teams-grid');
-    for(const team of teams){const card=btn('',()=>{teamId=team.id;section='roster';selected.clear();path();load();},'team-tile');card.style.setProperty('--team-accent',team.accent);const avatar=el('span',team.name.charAt(0).toUpperCase(),'team-avatar');const text=el('span');text.append(el('strong',team.name),el('small','WoW Forever · '+team.mains+' mains · '+team.characters+' characters'),el('small',team.canEdit?'Team leader':'Guild team'));card.append(avatar,text,icon('shield-check'));grid.append(card);}
+    for(const team of teams){const card=btn('',()=>{teamId=team.id;section='roster';selected.clear();path();load();},'team-tile');card.style.setProperty('--team-accent',team.accent);const avatar=el('span',team.name.charAt(0).toUpperCase(),'team-avatar');const text=el('span');text.append(el('strong',team.name),el('small',contextLabel(team)+' · WoW Forever'),el('small',team.mains+' mains · '+team.characters+' characters'),el('small',team.canEdit?'Team leader':'Guild team'));card.append(avatar,text,icon('shield-check'));grid.append(card);}
     if(!teams.length)grid.append(el('p','Create your first raid team to start assigning guild characters.','teams-empty'));content.append(grid);
     const planner=btn('Open Group Planner',()=>{teamId=null;section='planner';drawStandalonePlanner();},'teams-planner-link');content.append(planner);
   }
   function drawStandalonePlanner(){drawNavigation();content.replaceChildren(btn('All raid teams',()=>{section='roster';drawLanding();}));const panel=el('div');content.append(panel);renderPlanner?.(panel,null);}
   async function loadProfiles(token){
     if(!data.members.length)return;
-    try{const result=await request('?team='+encodeURIComponent(teamId)+'&profiles=1');if(token!==revision||!isCurrent())return;data.members=result.members;if(['roster','report'].includes(section))for(const card of content.querySelectorAll('.team-summary'))card.replaceWith(summary());}catch{}
+    try{const result=await request('?team='+encodeURIComponent(teamId)+'&profiles=1');if(token!==revision||!isCurrent())return;data.members=result.members;if(section==='roster')for(const card of content.querySelectorAll('.team-summary'))card.replaceWith(summary());}catch{}
   }
   function navigate(next){section=next;selected.clear();path();drawWorkspace();}
   function drawNavigation(){
@@ -63,19 +76,19 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const select=el('select');select.id='workingRaidTeam';select.setAttribute('aria-label','Working raid team');select.add(new Option('Select a team',''));for(const team of teams)select.add(new Option(team.name,team.id));select.value=teamId||'';
     select.addEventListener('change',()=>{teamId=select.value||null;section='roster';tab='team';query='';selected.clear();for(const key of Object.keys(rosterFilters))rosterFilters[key]='';filtersOpen=false;path();load();});
     picker.append(avatar,select);navigationRoot.append(label,picker);
-    if(teamId&&data)for(const [key,label,symbol] of [['roster','Roster','users'],['report','Roster Report','clipboard-list'],['planner','Group Planner','layout-dashboard'],['professions','Team Professions','hammer'],['settings','Team Settings','settings']]){
+    if(teamId&&data)for(const [key,label,symbol] of [['roster','Roster','users'],['planner','Group Planner','layout-dashboard'],['professions','Team Professions','hammer'],['settings','Team Settings','settings'],['setup','Team Setup','clipboard-list']]){
       const item=btn('',()=>navigate(key),'team-menu-item');item.append(icon(symbol),el('span',label));item.setAttribute('aria-current',String(section===key));navigationRoot.append(item);
     }
     const all=btn('',()=>{teamId=null;section='roster';selected.clear();path();load();},'team-menu-all');all.append(icon('layout-dashboard'),el('span','All raid teams'));navigationRoot.append(all);
   }
   function drawWorkspace(){
     if(!isCurrent())return;content.replaceChildren();const team=data.team;content.style.setProperty('--team-accent',team.accent);
-    const banner=el('header',null,'team-banner');const identity=el('div',null,'team-banner-identity');identity.append(el('span',team.name.charAt(0).toUpperCase(),'team-avatar'));const text=el('div');text.append(el('h2',team.name),el('p','US · Normal'),el('span','WoW Forever','team-version'));identity.append(text);banner.append(identity);if(team.canEdit)banner.append(btn('Edit banner',()=>navigate('settings')));content.append(banner);
+    const banner=el('header',null,'team-banner');const identity=el('div',null,'team-banner-identity');identity.append(el('span',team.name.charAt(0).toUpperCase(),'team-avatar'));const text=el('div');text.append(el('h2',team.name),el('p',contextLabel(team)),el('span','WoW Forever','team-version'));identity.append(text);banner.append(identity);if(team.canManage??team.canEdit)banner.append(btn('Edit banner',()=>navigate('settings')));content.append(banner);
     drawNavigation();const layout=el('div',null,'team-workspace');
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
-    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',report:'clipboard-list',planner:'layout-dashboard',professions:'hammer',settings:'settings'}[section]||'users'),el('span',{roster:'Roster',report:'Roster Report',planner:'Group Planner',professions:'Professions',settings:'Settings'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
-    if(section==='roster'){heading.append(el('p','Your raid team and the wider guild roster.'));drawRoster(panel);}
-    else if(section==='report'){heading.append(el('p','Composition, armor distribution and available gear data.'));panel.append(summary());const classes=el('section',null,'raid-card team-class-report');classes.append(el('h3','Class breakdown'));for(const className of Object.keys(specs)){const count=data.members.filter(member=>member.className===className&&(!mainsOnly||member.isMain)).length;const row=el('div');row.append(guildIcon('class',className),el('span',className),el('strong',String(count)));classes.append(row);}panel.append(classes);}
+    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',planner:'layout-dashboard',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',planner:'Group Planner',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
+    if(section==='setup'){drawSetup(panel);}
+    else if(section==='roster'){heading.append(el('p','Your raid team and the wider guild roster.'));drawRoster(panel);}
     else if(section==='planner'){const target=el('div');panel.append(target);renderPlanner?.(target,teamId);}
     else if(section==='professions')drawProfessions(panel);
     else if(section==='settings')drawSettings(panel);
@@ -87,7 +100,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const bar=el('div',null,'team-composition-bar');for(const role of roles){const segment=el('span');segment.dataset.role=role;segment.style.width=(stats.total?stats.roles[role]/stats.total*100:0)+'%';segment.title=role+': '+stats.roles[role];bar.append(segment);}composition.append(bar);
     const counts=el('div',null,'team-summary-counts');for(const role of roles){const row=el('div');row.dataset.role=role;row.append(icon(roleIcons[role]),el('span',role==='Melee DPS'?'Melee':role==='Ranged DPS'?'Ranged':role==='Tank'?'Tanks':'Healers'),el('strong',String(stats.roles[role])));counts.append(row);}composition.append(counts);if(stats.roles['Not set'])composition.append(el('small',stats.roles['Not set']+' without a role set.'));card.append(composition);
     const gear=el('section');gear.append(el('strong','Item level'));if(!stats.itemLevels.known)gear.append(el('p','No gear data yet.'));else{gear.append(el('p',stats.itemLevels.average.toFixed(1)+' average','team-ilvl'),el('small',stats.itemLevels.min+'–'+stats.itemLevels.max+' · Data for '+stats.itemLevels.known+' of '+stats.total+' characters'));}card.append(gear);
-    const armor=el('section');armor.append(el('strong','Armor types'));for(const entry of stats.armor){const row=el('div',null,'team-armor-row');const title=el('div');title.append(el('span',entry.name),el('small',entry.count+' · '+(stats.total?Math.round(entry.count/stats.total*100):0)+'%'));const meter=el('div',null,'team-meter');const fill=el('span');fill.style.width=(stats.total?entry.count/stats.total*100:0)+'%';meter.append(fill);const icons=el('div',null,'team-armor-icons');for(const className of entry.classes)icons.append(guildIcon('class',className));row.append(title,meter,icons);armor.append(row);}armor.append(el('small','Expected armor by class.'));card.append(armor);if(section!=='report'){const footer=el('footer');footer.append(btn('View full roster report',()=>navigate('report')));card.append(footer);}return card;
+    const armor=el('section');armor.append(el('strong','Armor types'));for(const entry of stats.armor){const row=el('div',null,'team-armor-row');const title=el('div');title.append(el('span',entry.name),el('small',entry.count+' · '+(stats.total?Math.round(entry.count/stats.total*100):0)+'%'));const meter=el('div',null,'team-meter');const fill=el('span');fill.style.width=(stats.total?entry.count/stats.total*100:0)+'%';meter.append(fill);const icons=el('div',null,'team-armor-icons');for(const className of entry.classes)icons.append(guildIcon('class',className));row.append(title,meter,icons);armor.append(row);}armor.append(el('small','Expected armor by class.'));card.append(armor);return card;
   }
   function tabs(){const nav=el('div',null,'team-roster-tabs');for(const [value,label,symbol] of [['team','Raid Team','users'],['guild','Guild Roster','swords']]){const item=btn('',()=>{tab=value;query='';selected.clear();drawWorkspace();});item.append(icon(symbol),el('span',label));item.setAttribute('aria-selected',String(tab===value));nav.append(item);}return nav;}
   function drawRoster(panel){
@@ -112,14 +125,15 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     if(tab==='team'){const select=el('select');select.setAttribute('aria-label','Group roster by');select.add(new Option('Role','role'));select.add(new Option('Guild rank','rank'));select.value=mode;select.addEventListener('change',()=>{mode=select.value;drawRows(rows);});tools.append(select);}
     else tools.append(btn('Refresh guild roster',async()=>{try{status.textContent='Refreshing guild roster…';const result=await request('?team='+teamId,{action:'refresh'});await load();status.textContent=result.roster.warning||'Guild roster refreshed.';}catch(error){status.textContent=error.message;}}));list.append(tools,filterPanel,rows);drawRows(rows);
   }
-  function identity(character){const node=el('span',null,'team-character-identity');node.dataset.wowClass=character.className;node.append(guildIcon('class',character.className));if(character.spec)node.append(guildIcon('spec',character.spec,'',character.className));const name=btn(character.name,()=>{if(character.slug)location.href='/character?character='+encodeURIComponent(character.name)+'&name='+encodeURIComponent(character.slug);},'team-character-link');node.append(name);return node;}
-  async function change(input){if(saving)return;saving=true;if(navigationRoot)navigationRoot.inert=true;status.textContent='Saving team…';for(const control of content.querySelectorAll('button,input,select'))control.disabled=true;try{await request('?team='+teamId,input);selected.clear();await load();status.textContent='Team updated.';}catch(error){status.textContent=error.message;}finally{saving=false;if(navigationRoot&&isCurrent())navigationRoot.inert=false;if(isCurrent()&&data)drawWorkspace();}}
+  function identity(character){const node=el('span',null,'team-character-identity');node.dataset.wowClass=character.className;node.append(guildIcon('class',character.className));if(character.spec)node.append(guildIcon('spec',character.spec,'',character.className));const name=btn(character.name,()=>{if(openCharacter){characterTitle.textContent=character.name;openCharacter({...character,region:data.team.region||'us'},characterBody,()=>characterDialog.close());characterDialog.showModal();characterClose.focus();}else if(character.slug)location.href='/character?character='+encodeURIComponent(character.name)+'&name='+encodeURIComponent(character.slug);},'team-character-link');node.append(name);return node;}
+  async function change(input){if(saving)return;saving=true;if(navigationRoot)navigationRoot.inert=true;status.textContent='Saving team…';for(const control of content.querySelectorAll('button,input,select'))control.disabled=true;try{await request('?team='+teamId,input);selected.clear();await load();status.textContent='Team updated.';return true;}catch(error){status.textContent=error.message;return false;}finally{saving=false;if(navigationRoot&&isCurrent())navigationRoot.inert=false;if(isCurrent()&&data)drawWorkspace();}}
   function drawRows(target){
     const scrollTop=target.querySelector('.team-table-scroll')?.scrollTop??0;
     target.replaceChildren();const matches=character=>matchesGuildRosterFilter({...character,class_name:character.className},{...rosterFilters,query});
+    if(tab==='guild'&&data.roster.source==='unlinked'){target.append(el('p','Link your in-game guild to choose its members.'),btn('Link guild',()=>navigate('setup')));return;}
     if(tab==='guild'){
       const pool=data.roster.characters.filter(matches);const assigned=new Set(data.members.flatMap(member=>[member.key,member.guildKey].filter(Boolean)));
-      const banner=el('div',null,'team-guild-banner');banner.append(el('strong',data.roster.guild+' · US Normal'),el('small',data.roster.characters.length+' characters found · '+data.members.filter(member=>member.inGuild).length+' assigned to this team'+(data.roster.updatedAt?' · Synced '+new Date(data.roster.updatedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'')));if(data.roster.warning)banner.append(el('p',data.roster.warning));target.append(banner,el('p','Showing '+pool.length+' of '+data.roster.characters.length+' guild characters.','team-filter-count'));
+      const banner=el('div',null,'team-guild-banner');banner.append(el('strong',(data.roster.guild||'No guild linked')+' · '+contextLabel(data.team)),el('small',data.roster.characters.length+' characters found · '+data.members.filter(member=>member.inGuild).length+' assigned to this team'+(data.roster.updatedAt?' · Synced '+new Date(data.roster.updatedAt).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'}):'')));if(data.roster.warning)banner.append(el('p',data.roster.warning));target.append(banner,el('p','Showing '+pool.length+' of '+data.roster.characters.length+' guild characters.','team-filter-count'));
       const bulk=el('div',null,'team-bulk-actions');bulk.append(el('strong',selected.size+' selected'));const assign=btn('Assign to team',()=>change({action:'assign',characters:[...selected]}));assign.disabled=!selected.size||!data.team.canEdit;bulk.append(btn('Clear',()=>{selected.clear();drawRows(target);}),assign);target.append(bulk);
       const scroller=el('div',null,'team-table-scroll');const table=el('table');const head=el('thead');const heading=el('tr');
       for(const label of ['', 'Character','Spec','Level','ILVL','Rank','Status',''])heading.append(el('th',label));head.append(heading);table.append(head);const body=el('tbody');
@@ -144,8 +158,56 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     if(data.members.length&&!members.length)target.append(el('p','No team characters match your filters.','teams-empty'));
     if(!data.members.length)target.append(el('p','Open Guild Roster and assign characters to build this raid team.','teams-empty'));
   }
+  function openSchedule(){
+    scheduleDialog.replaceChildren();const form=el('form');const header=el('header');header.append(el('h3','When does your team raid?'),btn('Close',()=>scheduleDialog.close()));form.append(header,el('p','Choose your weekly nights. Preview the next eight weeks before creating events.'));
+    let kind='Progress',previewRevision=0;const selectedDays=new Map();
+    const kinds=el('div',null,'team-schedule-kinds');kinds.setAttribute('role','group');kinds.setAttribute('aria-label','Raid night type');for(const value of ['Progress','Farm','Optional','Off night']){const item=btn(value,()=>{kind=value;for(const choice of kinds.children)choice.setAttribute('aria-pressed',String(choice.textContent===kind));instanceField.hidden=kind==='Off night';instance.required=kind!=='Off night';preview();});item.setAttribute('aria-pressed',String(value===kind));kinds.append(item);}form.append(kinds);
+    const instance=el('select');instance.required=true;instance.setAttribute('aria-label','Scheduled raid instance');for(const [key,value] of Object.entries(raidInstances))instance.add(new Option(value.name+' · '+value.size+' players',key));instance.value=Object.entries(raidInstances).find(([,value])=>value.size===data.team.size)?.[0]||Object.keys(raidInstances)[0]||'';
+    const instanceField=el('label','Raid instance');instanceField.append(instance);form.append(instanceField);instance.addEventListener('change',()=>preview());
+    const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const days=el('div',null,'team-schedule-days');days.setAttribute('aria-label','Raid days');days.setAttribute('role','group');
+    const globalStart=el('input'),globalEnd=el('input');globalStart.type=globalEnd.type='time';globalStart.value='20:00';globalEnd.value='23:00';globalStart.setAttribute('aria-label','Default raid start time');globalEnd.setAttribute('aria-label','Default raid end time');
+    const zone=el('select');zone.setAttribute('aria-label','Raid time zone');const currentZone=Intl.DateTimeFormat().resolvedOptions().timeZone;for(const value of [...new Set([currentZone,'America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/London','Europe/Berlin','Asia/Seoul','Asia/Taipei','UTC'])])zone.add(new Option(value,value));zone.value=currentZone;
+    const times=el('div',null,'team-schedule-times');for(const [caption,input] of [['Start',globalStart],['End',globalEnd],['Time zone',zone]]){const label=el('label',caption);label.append(input);times.append(label);}
+    const perDay=el('div',null,'team-schedule-per-day');
+    function drawDays(){perDay.replaceChildren();for(const [day,selection] of [...selectedDays].sort(([a],[b])=>a-b)){const row=el('div');row.append(el('strong',weekdays[day]));for(const key of ['start','end']){const input=el('input');input.type='time';input.value=selection[key];input.required=true;input.setAttribute('aria-label',weekdays[day]+' '+key+' time');input.addEventListener('change',()=>{selection[key]=input.value;preview();});row.append(input);}perDay.append(row);}}
+    for(let day=0;day<7;day++){const item=btn(weekdays[day],()=>{if(selectedDays.has(day))selectedDays.delete(day);else selectedDays.set(day,{day,start:globalStart.value,end:globalEnd.value});item.setAttribute('aria-pressed',String(selectedDays.has(day)));drawDays();preview();});item.setAttribute('aria-pressed','false');days.append(item);}form.append(days,times,el('small','Each selected night can have its own start and end time.'),perDay);
+    for(const [input,key] of [[globalStart,'start'],[globalEnd,'end']])input.addEventListener('change',()=>{for(const selection of selectedDays.values())selection[key]=input.value;drawDays();preview();});zone.addEventListener('change',()=>preview());
+    const feedback=el('p','Select your raid days to preview the schedule.');feedback.setAttribute('role','status');const dates=el('details');dates.append(el('summary','See dates'));const list=el('div');dates.append(list);const save=btn('Start raiding',()=>{});save.type='submit';save.disabled=true;const actions=el('div',null,'team-create-actions');actions.append(save,btn('Cancel',()=>scheduleDialog.close()));form.append(feedback,dates,actions);
+    function input(){return{kind,instance:instance.value,timezone:zone.value,days:[...selectedDays.values()]};}
+    async function preview(){const token=++previewRevision;save.disabled=true;list.replaceChildren();if(!selectedDays.size){feedback.textContent='Select your raid days to preview the schedule.';return;}feedback.textContent='Checking dates…';try{const result=await request('?team='+teamId,{action:'previewSchedule',...input()});if(token!==previewRevision)return;feedback.textContent=kind==='Off night'?'These are non-raiding nights. No raid events will be created.':result.dates.length+' raids over the next 8 weeks. Future dates top up when the calendar opens.';for(const date of result.dates)list.append(el('p',new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short',timeZone:zone.value}).format(new Date(date.startsAt))+' – '+new Intl.DateTimeFormat(undefined,{timeStyle:'short',timeZone:zone.value}).format(new Date(date.endsAt))));save.disabled=kind!=='Off night'&&!result.dates.length;}catch(error){if(token===previewRevision)feedback.textContent=error.message;}}
+    form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;feedback.textContent='Saving raid nights…';const result=await change({action:'schedule',...input()});if(result)scheduleDialog.close();else{feedback.textContent=status.textContent;save.disabled=false;}});scheduleDialog.append(form);scheduleDialog.showModal();
+  }
+  function drawSetup(panel){
+    const team=data.team,setup=data.setup||{joined:false,schedules:[],permissionConfirmed:false};
+    const box=el('div',null,'team-setup');box.append(el('p','FIRST-TIME SETUP · WOW FOREVER','team-setup-eyebrow'),el('p','Link your guild, bring your raiders together, and get your raid nights on the calendar.'));
+    const completed=[!!team.guildSlug,setup.joined,data.members.length>0,setup.schedules.length>0,setup.permissionConfirmed];
+    const titles=['Link your guild','Add yourself to the team','Bring in your team','Set your raid times','Set what your team can do'];
+    const descriptions=['Bring in the guild roster from Battle.net.','Join this team with your Discord account.','Choose guild characters and share the team with your raiders.','Choose weekly raid nights and preview the dates.','Choose the permissions new team members receive.'];
+    const first=completed.findIndex(done=>!done);
+    for(let index=0;index<5;index++){
+      const step=el('details',null,'team-setup-step');step.open=index===first;step.dataset.complete=String(completed[index]);const summary=el('summary');summary.append(icon(completed[index]?'check':'user-circle'),el('strong',titles[index]),icon('chevron-down'));step.append(summary,el('p',descriptions[index]));
+      if(index===0){
+        step.append(el('small',contextLabel(team)));if(team.guildSlug)step.append(el('p',team.guildName+' linked · '+data.roster.characters.length+' guild characters'));
+        if(team.canManage??team.canEdit){const form=el('form',null,'team-link-guild');const guild=el('input');guild.required=true;guild.maxLength=100;guild.placeholder='In-game guild name';guild.value=team.guildName||'';guild.setAttribute('aria-label','Guild name');const link=btn(team.guildSlug?'Refresh guild link':'Link guild',()=>{});link.type='submit';form.append(guild,link);form.addEventListener('submit',event=>{event.preventDefault();change({action:'linkGuild',guild:guild.value});});step.append(form);}
+      }else if(index===1){step.append(setup.joined?el('p','You are on this team.'):btn('Join this team',()=>change({action:'join'})));}
+      else if(index===2){
+        step.append(el('p',data.members.length+' characters assigned to this team.'));if(team.canEdit)step.append(btn('Choose guild members',()=>{tab='guild';navigate('roster');}));
+        const invite=el('input');invite.readOnly=true;const url=new URL(location.href);url.searchParams.set('section','setup');invite.value=url.href;invite.setAttribute('aria-label','Team link');step.append(invite,el('small','Share this link with Solstice Discord members. They sign in and choose Join this team.'));
+      }else if(index===3){
+        for(const schedule of setup.schedules)step.append(el('p',schedule.kind+' · '+schedule.days.length+' nights a week · '+schedule.timezone));
+        if(team.canEdit)step.append(btn('Set raid times',openSchedule));
+      }else{
+        const permission=el('select');permission.setAttribute('aria-label','Default team member role');for(const value of ['Viewer','Raider','Editor','Officer'])permission.add(new Option(value,value));permission.value=team.defaultRole||'Raider';permission.disabled=!(team.canManage??team.canEdit);
+        step.append(permission,el('p','Viewer and Raider can view the team. Editor can manage its roster and raid times. Officer can also change team settings, guild links and permissions.'));
+        if(team.canManage??team.canEdit)step.append(btn('Save permissions',()=>change({action:'permissions',defaultRole:permission.value})));
+      }
+      box.append(step);
+    }
+    const progress=el('progress');progress.max=5;progress.value=completed.filter(Boolean).length;progress.setAttribute('aria-label','Team setup progress');box.append(progress,el('small',completed.filter(Boolean).length+' / 5 complete'),btn('Skip to my team',()=>navigate('roster')));panel.append(box);
+  }
   function drawSettings(panel){
-    if(!data.team.canEdit){panel.append(el('p','Only the team leader can change team settings.'));return;}
+    if(!(data.team.canManage??data.team.canEdit)){panel.append(el('p','Only team leaders and officers can change team settings.'));return;}
+    panel.append(el('p',contextLabel(data.team)+' · '+(data.team.guildName||'No guild linked')),btn('Open team setup',()=>navigate('setup')));
     const form=el('form',null,'team-settings-form');const inputs={};
     for(const [key,label,type,value] of [['name','Team name','text',data.team.name],['description','Description','text',data.team.description],['size','Raid size','select',data.team.size],['accent','Banner color','color',data.team.accent]]){const labelNode=el('label',label);const field=el(type==='select'?'select':'input');if(type==='select')for(const size of [10,20,40])field.add(new Option(size+' players',size));else field.type=type;field.value=String(value);field.maxLength=key==='name'?60:500;field.required=key==='name';inputs[key]=field;labelNode.append(field);form.append(labelNode);}
     const save=btn('Save settings',()=>{});save.type='submit';form.append(save);form.addEventListener('submit',event=>{event.preventDefault();change({action:'settings',name:inputs.name.value,description:inputs.description.value,size:Number(inputs.size.value),accent:inputs.accent.value});});panel.append(form);

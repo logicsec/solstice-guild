@@ -40,19 +40,20 @@ async function battleNetToken(env) {
   return token.access_token;
 }
 
-function requestCharacterProfile(token, slug, suffix = '', timeout = 10000) {
-  return fetch('https://us.api.blizzard.com/profile/wow/character/' + encodeURIComponent(slug) + suffix + '?namespace=profile-forever-us&locale=en_US', {
+function requestCharacterProfile(token, slug, suffix = '', timeout = 10000, region = 'us') {
+  if(!['us','eu','kr','tw'].includes(region))throw new Error('Invalid Blizzard region.');
+  return fetch('https://'+region+'.api.blizzard.com/profile/wow/character/' + encodeURIComponent(slug) + suffix + '?namespace=profile-forever-'+region+'&locale=en_US', {
     headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(timeout),
   });
 }
 
-export function publicRosterProfile(env, slug) {
+export function publicRosterProfile(env, slug, region = 'us') {
   if (!slug || !env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) return null;
-  const key = env.BLIZZARD_CLIENT_ID + ':' + slug;
+  const key = env.BLIZZARD_CLIENT_ID + ':' + region + ':' + slug;
   const cached = rosterProfileCache.get(key);
   if (cached?.expires > Date.now()) return cached.value;
   const value = (async () => {
-    const response = await requestCharacterProfile(await battleNetToken(env),slug,'',3000);
+    const response = await requestCharacterProfile(await battleNetToken(env),slug,'',3000,region);
     if (!response.ok) return null;
     const profile = await response.json();
     return { level:Number.isSafeInteger(profile.level) ? profile.level : null, guild:localized(profile.guild?.name), itemLevel:Number.isFinite(profile.equipped_item_level ?? profile.average_item_level) ? (profile.equipped_item_level ?? profile.average_item_level) : null };
@@ -79,7 +80,7 @@ function parseProfessions(data) {
   }))).filter(entry => entry.name) : null;
 }
 
-export async function guildProfessionSummary(env, slugs) {
+export async function guildProfessionSummary(env, slugs, region = 'us') {
   const coverage = new Map();
   let reviewed = 0;
   if (!slugs.length || !env.BLIZZARD_CLIENT_ID || !env.BLIZZARD_CLIENT_SECRET) return { reviewed, professions:[] };
@@ -89,7 +90,7 @@ export async function guildProfessionSummary(env, slugs) {
     const batch = slugs.slice(offset,offset+8);
     const profiles = await Promise.all(batch.map(async slug => {
       try {
-        const response = await requestCharacterProfile(token,slug,'/professions',3000);
+        const response = await requestCharacterProfile(token,slug,'/professions',3000,region);
         return response.ok ? parseProfessions(await response.json()) : null;
       } catch { return null; }
     }));
@@ -131,9 +132,9 @@ function parseTalents(data) {
   }));
 }
 
-async function loadCharacter(env, slug) {
+async function loadCharacter(env, slug, region = 'us') {
   const token = await battleNetToken(env);
-  const requestProfile = suffix => requestCharacterProfile(token,slug,suffix);
+  const requestProfile = suffix => requestCharacterProfile(token,slug,suffix,10000,region);
   const response = await requestProfile('');
   if (response.status === 404) return null;
   if (!response.ok) throw new Error('The Armory profile is temporarily unavailable.');
@@ -216,6 +217,8 @@ export async function armoryApi(request, env, url, member) {
   const db = env.DB;
   const configured = Boolean(env.BLIZZARD_CLIENT_ID && env.BLIZZARD_CLIENT_SECRET);
   if (request.method === 'GET') {
+    const region = url.searchParams.get('region') || 'us';
+    if(!['us','eu','kr','tw'].includes(region))return reply({error:'Choose a valid region.'},400);
     const query = url.searchParams.get('name');
     if (query !== null) {
       if (!configured) return reply({ error: 'The guild administrator needs to configure Blizzard API credentials.' }, 503);
@@ -225,7 +228,7 @@ export async function armoryApi(request, env, url, member) {
       if (['achievements','lifetime','reputations'].includes(section)) {
         const token = await battleNetToken(env);
         const suffix = section === 'reputations' ? '/reputations' : section === 'achievements' ? '/achievements' : '/achievements/statistics';
-        const response = await requestCharacterProfile(token,slug,suffix);
+        const response = await requestCharacterProfile(token,slug,suffix,10000,region);
         if (!response.ok) return reply({error:'This character’s '+section+' data is unavailable from Blizzard.'},response.status === 404 ? 404 : 502);
         const data = await response.json();
         if (section === 'reputations') return reply({reputations:sortedReputations(data)});
@@ -233,20 +236,20 @@ export async function armoryApi(request, env, url, member) {
           const lifetime = flattenLifetime(data);
           if (lifetime) {
             try {
-              const reputationsResponse = await requestCharacterProfile(token,slug,'/reputations');
+              const reputationsResponse = await requestCharacterProfile(token,slug,'/reputations',10000,region);
               const reputations = reputationsResponse.ok ? await reputationsResponse.json() : null;
               if (Array.isArray(reputations?.reputations)) lifetime.push({id:null,name:'Total reputations at Exalted',value:reputations.reputations.filter(row=>row.standing?.tier >= 7 || row.standing?.raw >= 42000).length,group:'Reputation'});
             } catch { /* Existing lifetime statistics remain usable. */ }
           }
           return reply({lifetime});
         }
-        const profileResponse = await requestCharacterProfile(token,slug);
+        const profileResponse = await requestCharacterProfile(token,slug,'',10000,region);
         if (!profileResponse.ok) return reply({error:'Character profile is unavailable.'},502);
         try { return reply({achievements:await characterAchievements(token,await profileResponse.json(),data)}); }
         catch { return reply({error:'Achievement definitions are temporarily unavailable. Please try again.'},502); }
       }
-      const character = await loadCharacter(env, slug);
-      if (character) {
+      const character = await loadCharacter(env, slug,region);
+      if (character && region==='us') {
         character.journey = await characterJourney(db,character).catch(() => null);
       }
       return character ? reply({ character }) : reply({ error: 'Character not found. Check the full name and make sure the level 10+ character has logged out of WoW.' }, 404);
@@ -308,10 +311,11 @@ export function parseGuildRoster(data,races={1:'Human',2:'Orc',3:'Dwarf',4:'Nigh
   }
   return {guild:localized(data?.guild?.name)||'Solstice',characters:characters.sort((a,b)=>a.name.localeCompare(b.name)),source:'blizzard',updatedAt:Date.now()};
 }
-export async function fetchGuildRoster(env) {
+export async function fetchGuildRoster(env,{region='us',guildSlug='solstice'}={}) {
+  if(!['us','eu','kr','tw'].includes(region)||typeof guildSlug!=='string'||!guildSlug||guildSlug.length>100)throw new Error('Invalid guild source.');
   if(!env.BLIZZARD_CLIENT_ID||!env.BLIZZARD_CLIENT_SECRET)throw new Error('Blizzard integration is not configured.');
   const token=await battleNetToken(env);
-  const response=await fetch('https://us.api.blizzard.com/data/wow/guild/solstice/roster?namespace=profile-forever-us&locale=en_US',{
+  const response=await fetch('https://'+region+'.api.blizzard.com/data/wow/guild/'+encodeURIComponent(guildSlug)+'/roster?namespace=profile-forever-'+region+'&locale=en_US',{
     headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000),
   });
   if(!response.ok)throw new Error('Blizzard guild roster returned HTTP '+response.status+'.');
@@ -319,8 +323,18 @@ export async function fetchGuildRoster(env) {
   if(!Array.isArray(data.members))throw new Error('Blizzard returned an incomplete guild roster.');
   let races;
   try{
-    const response=await fetch('https://us.api.blizzard.com/data/wow/playable-race/index?namespace=static-forever-us&locale=en_US',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)});
+    const response=await fetch('https://'+region+'.api.blizzard.com/data/wow/playable-race/index?namespace=static-forever-'+region+'&locale=en_US',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(5000)});
     if(response.ok){const catalog=await response.json();if(Array.isArray(catalog.races))races=Object.fromEntries(catalog.races.map(race=>[race.id,localized(race.name)]));}
   }catch{}
   return parseGuildRoster(data,races);
+}
+
+export async function fetchForeverGuild(env,region,guildSlug){
+  if(!['us','eu','kr','tw'].includes(region)||!guildSlug)throw new Error('Invalid guild source.');
+  const token=await battleNetToken(env);
+  const response=await fetch('https://'+region+'.api.blizzard.com/data/wow/guild/'+encodeURIComponent(guildSlug)+'?namespace=profile-forever-'+region+'&locale=en_US',{headers:{Authorization:'Bearer '+token},signal:AbortSignal.timeout(10000)});
+  if(!response.ok)throw new Error(response.status===404?'Guild not found in this region. Check its in-game name.':'Blizzard guild lookup is unavailable. Try again.');
+  const guild=await response.json();
+  if(!localized(guild.name)||!Number.isInteger(guild.ruleset?.id))throw new Error('Blizzard did not return the guild ruleset. Try again later.');
+  return {name:localized(guild.name),slug:guildSlug,ruleset:guild.ruleset.id};
 }

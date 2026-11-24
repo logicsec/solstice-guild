@@ -325,21 +325,22 @@ export function renderCharacterTalents(character) {
   return panel;
 }
 
-export function openCharacterSheet(player, event, organizer) {
-  if (location.pathname !== '/character') {
+export function openCharacterSheet(player, event, organizer, {target,onClose} = {}) {
+  if (!target && location.pathname !== '/character') {
     const params = new URLSearchParams({character:player.character});
     if (player.armorySlug) params.set('name',player.armorySlug);
+    if (player.region) params.set('region',player.region);
     if (event?.id) params.set('raid',event.id);
     location.href = '/character?'+params;
     return;
   }
-  document.body.classList.add('character-page-active');
-  document.title = player.character+' · Solstice';
-  document.querySelector('.character-page-root')?.remove();
+  const profileRequest=path=>armoryRequest(path+'&region='+encodeURIComponent(player.region||'us'));
+  if (!target) {document.body.classList.add('character-page-active');document.title = player.character+' · Solstice';}
+  (target || document).querySelector('.character-page-root')?.remove();
   const dialog = raidElement('section',null,'character-page-root');
   dialog.open = true;
   const backUrl = event?.id ? '/?tool=raid&view=detail&raid='+encodeURIComponent(event.id) : '/?tool=raid&view=guildDashboard';
-  dialog.close = () => { location.href = backUrl; };
+  dialog.close = () => { if(target){dialog.open=false;dialog.remove();onClose?.();}else location.href = backUrl; };
   const title = raidElement('h2',player.character);
   title.id = 'character-sheet-title';
   dialog.setAttribute('aria-labelledby',title.id);
@@ -362,7 +363,7 @@ export function openCharacterSheet(player, event, organizer) {
   title.append(level);
   const freshness = raidElement('div',null,'character-header-freshness');
   const freshnessText = raidElement('span','Loading Armory…');
-  const refreshButton = raidElement('button',null,'character-refresh');refreshButton.append(tablerIcon('refresh'),document.createTextNode('Refresh'));refreshButton.type='button';refreshButton.addEventListener('click',()=>location.reload());
+  const refreshButton = raidElement('button',null,'character-refresh');refreshButton.append(tablerIcon('refresh'),document.createTextNode('Refresh'));refreshButton.type='button';refreshButton.addEventListener('click',()=>target ? openCharacterSheet(player,event,organizer,{target,onClose}) : location.reload());
   freshness.append(freshnessText,refreshButton);identity.append(freshness);
   heading.append(headerModel,identity);
   const header = raidElement('header',null,'character-profile-hero guild-page-heading');
@@ -442,7 +443,7 @@ export function openCharacterSheet(player, event, organizer) {
     loadedSections.add(section);
     selected.replaceChildren(raidElement('p','Loading '+section+' from Blizzard…','character-data-note'));
     try {
-      const data = await armoryRequest('?name='+encodeURIComponent(player.armorySlug)+'&section='+section);
+      const data = await profileRequest('?name='+encodeURIComponent(player.armorySlug)+'&section='+section);
       if (!dialog.isConnected) return;
       selected.replaceChildren(section === 'achievements' ? renderCharacterAchievements(data.achievements) : section === 'reputations' ? renderCharacterReputations(data.reputations) : renderCharacterLifetime(data.lifetime));
     } catch (error) {
@@ -475,6 +476,8 @@ export function openCharacterSheet(player, event, organizer) {
   dialog.addEventListener('scroll',()=>{
     dialog.querySelector('.character-item-tooltip:popover-open')?.hidePopover();
   });
+  if(target) target.replaceChildren(dialog);
+  else {
   const main = document.querySelector('body > main');
   const siteShell = document.getElementById('raidPanel');
   const sidebar = siteShell?.querySelector('.raid-sidebar');
@@ -505,6 +508,7 @@ export function openCharacterSheet(player, event, organizer) {
     document.getElementById('raidTab').setAttribute('aria-pressed','true');
     document.getElementById('auctionTab').setAttribute('aria-pressed','false');
   } else main.append(dialog);
+  }
   if (player.armorySlug) {
     if ('IntersectionObserver' in window) {
       const observer = new IntersectionObserver(entries=>{
@@ -524,8 +528,8 @@ export function openCharacterSheet(player, event, organizer) {
   }
 
   if (!player.armorySlug) return;
-  armoryRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
-    if (!dialog.open) return;
+  profileRequest('?name='+encodeURIComponent(player.armorySlug)).then(({character})=>{
+    if (!dialog.open || !dialog.isConnected) return;
     const profile = renderArmoryProfile(character);
     overview.replaceChildren(profile.overview);
     equipment.replaceChildren(profile.equipment);
