@@ -62,6 +62,10 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
   const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,storageKey:'test'});
+  const raidSize=find(root,e=>e.attributes['aria-label']==='10 players');
+  raidSize.listeners.click();
+  assert.equal(raidSize.attributes['aria-pressed'],'true');
+  assert.equal(ui.model.snapshot().size,10);
   const main=find(root,e=>e.className==='comp-main');
   const toolbar=main.children[0];
   assert.equal(toolbar.className,'comp-picker');

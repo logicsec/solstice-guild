@@ -142,7 +142,7 @@ export function compositionCapabilities(plan) {
   return {utility:entries.slice(0,8).map(map),single:entries.slice(8,11).map(map),cooldowns:entries.slice(11).map(map),debuffs:debuffs.map(map).filter(e=>e.count>0)};
 }
 
-export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null}) {
+export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null, raidNames = {}}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
@@ -152,10 +152,25 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   let savedCompositions=[];
   let selected=null,dragged=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
-  const controls=make('div',null,'comp-controls');
-  const sizeLabel=make('label','Raid size');const size=make('select');size.setAttribute('aria-label','Raid size');
-  for(const value of [10,20,40])size.add(new Option(value+' players',value));size.value=String(model.snapshot().size);sizeLabel.append(size);
-  const saveStatus=make('small','Draft saved on this browser.','comp-save-status');
+  const controls=make('header',null,'comp-controls');
+  const planTitle=make('h3',null,'comp-plan-title');
+  const raidName=make('span',null,'comp-raid-name');
+  const sizes=make('div',null,'comp-sizes');
+  sizes.setAttribute('role','group');
+  sizes.setAttribute('aria-label','Raid size');
+  const sizeButtons=[10,20,40].map(value=>{
+    const item=button(String(value),()=>{
+      if(locked||model.snapshot().size===value)return;
+      try{model.resize(value);commit('Raid size updated.');}
+      catch(error){status.textContent=error.message;}
+    });
+    item.setAttribute('aria-label',value+' players');
+    sizes.append(item);
+    return [value,item];
+  });
+  const saveStatus=make('small',null,'comp-save-status');
+  const actions=make('div',null,'comp-actions');
+  let savedLocally=true;
   const status=make('p','','comp-status');status.setAttribute('role','status');status.setAttribute('aria-live','polite');
   const groups=make('div',null,'comp-groups');
   const groupsPanel=make('section',null,'raid-card comp-groups-panel');groupsPanel.append(heading('Raid Groups','users'),groups);
@@ -202,8 +217,8 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(raidNeeds,composition,settings);
   const layout=make('div',null,'comp-layout');layout.append(main,side);
   const issues=make('section',null,'raid-card comp-issues');
-  const savedBar=make('div',null,'comp-saved-bar');
-  const savedLabel=make('label','Saved compositions');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(savedLabel);savedBar.hidden=!request;
+  const savedBar=make('details',null,'comp-saved-bar');
+  const savedLabel=make('label');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(make('summary','Saved compositions'),savedLabel);savedBar.hidden=!request;
   const dialog=make('dialog',null,'comp-lock-dialog');dialog.setAttribute('aria-label','Lock in composition');
   const lockForm=make('form');const lockTitle=make('h3','Lock In Composition');
   const nameLabel=make('label','Composition name');const nameInput=make('input');nameInput.required=true;nameInput.maxLength=80;nameInput.placeholder='e.g. Hyjal balanced comp';nameLabel.append(nameInput);
@@ -219,7 +234,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const draftButton=button('Edit as draft',()=>{locked=null;savedSelect.value='';persist();draw();status.textContent='Editing a draft copy. The locked composition is unchanged.';});
   const clear=button('Clear all',()=>{if(locked)return;if(model.snapshot().players.length&&!window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');});
   function savedOptions(){savedSelect.replaceChildren(new Option('Choose a locked composition',''));for(const entry of savedCompositions)savedSelect.add(new Option(entry.title+' · '+entry.plan.players.length+'/'+entry.plan.size,entry.id));savedSelect.value=locked?.id??'';}
-  function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;size.value=String(entry.plan.size);persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
+  function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
   savedSelect.addEventListener('change',()=>{const entry=savedCompositions.find(entry=>entry.id===savedSelect.value);if(entry)openSaved(entry);});
   lockForm.addEventListener('submit',async event=>{
     event.preventDefault();if(!request||saveLocked.disabled)return;
@@ -234,10 +249,15 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     model.optimize();selected=null;commit('All placeholders distributed evenly across groups. You can still move anyone manually.');
   },'comp-optimize');
   optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
-  controls.append(sizeLabel,saveStatus,optimize,lockButton,draftButton,clear);
-  root.replaceChildren(savedBar,controls,status,layout,issues,dialog);
-  size.addEventListener('change',()=>{if(locked){size.value=String(model.snapshot().size);return;}try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
-  function persist(){try{localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));saveStatus.textContent=locked?'Locked: '+locked.title:'Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
+  actions.append(optimize,lockButton,draftButton,clear);
+  controls.append(planTitle,sizes,saveStatus,actions);
+  root.replaceChildren(controls,savedBar,status,layout,issues,dialog);
+  function persist(){
+    try{
+      localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));
+      savedLocally=true;
+    }catch{savedLocally=false;}
+  }
   function commit(message){persist();draw();status.textContent=message;}
   function move(id,group){if(locked){status.textContent='Choose Edit as draft before moving placeholders.';return;}try{const player=model.snapshot().players.find(player=>player.id===id);model.move(id,group);selected=null;commit(player.spec+' '+player.className+' moved to '+(group===null?'Unassigned':'Group '+group)+'.');}catch(error){draw();status.textContent=error.message;}}
   function destination(node,group){
@@ -270,7 +290,17 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   }
   function draw(){
     const plan=model.snapshot();const coverage=compositionBuffs(plan);const assigned=plan.players.filter(player=>player.group!==null);const chosen=plan.players.find(player=>player.id===selected);
-    lockButton.disabled=!!locked||!request;draftButton.hidden=!locked;optimize.disabled=!!locked;clear.disabled=!!locked;size.disabled=!!locked;
+    lockButton.disabled=!!locked||!request;draftButton.hidden=!locked;optimize.disabled=!!locked;clear.disabled=!!locked;
+    planTitle.replaceChildren(document.createTextNode('Your '+plan.size+'-player plan'));
+    if(raidNames[plan.size]){
+      raidName.textContent=' · '+raidNames[plan.size];
+      planTitle.append(raidName);
+    }
+    saveStatus.textContent=assigned.length+' of '+plan.size+' placed · '+(locked?'Locked: '+locked.title:savedLocally?'Saved in this browser':'Browser save unavailable');
+    for(const [value,item] of sizeButtons){
+      item.disabled=!!locked;
+      item.setAttribute('aria-pressed',String(value===plan.size));
+    }
     groups.replaceChildren();
     for(let group=1;group<=plan.size/5;group++){
       const members=assigned.filter(player=>player.group===group);const card=make('section',null,'comp-group');destination(card,group);

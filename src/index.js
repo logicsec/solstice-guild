@@ -415,7 +415,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-0be0835fb792" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-0be0835fb792&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-89cc59526a18" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-89cc59526a18&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1466,6 +1466,7 @@ raidForm.elements.repeatWeekly.addEventListener('change', () => {
 });
 for (const field of roleSlotFields) field.addEventListener('input', groupPlanner.draw);
 const raidInstances = ${JSON.stringify(raidInstances)};
+const compositionRaidNames = Object.fromEntries(Object.values(raidInstances).map(raid=>[raid.size,raid.name]));
 raidForm.elements.instance.addEventListener('change',()=>{
   const size = raidInstances[raidForm.elements.instance.value]?.size ?? 10;
   raidForm.elements.size.value = size;
@@ -1516,7 +1517,7 @@ function raidError(error) {
 function raidReset(view, id) {
   document.body.classList.toggle('guild-dashboard-active',view === 'guildDashboard');
   document.body.classList.toggle('raid-teams-active',view === 'raiding');
-  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding';
+  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding' || view === 'groupPlanner';
   byId('raidTeamNavigation').hidden = view !== 'raiding';
   if(view === 'raiding') document.querySelector('.guild-menu-group').open=false;
   document.querySelector('[data-raid-view=raiding]').setAttribute('aria-expanded',String(view === 'raiding'));
@@ -1563,6 +1564,17 @@ function raidStats(target, values) {
     box.append(raidElement('small', name), raidElement('strong', value));
     target.append(box);
   }
+}
+function raidSectionBanner(title, description, actionLabel, onAction) {
+  const banner = guildOverviewBanner(title, description);
+  banner.classList.add('raid-section-banner');
+  if (onAction) {
+    const action = raidElement('button',actionLabel,'raid-primary');
+    action.type = 'button';
+    action.addEventListener('click',onAction);
+    banner.append(action);
+  }
+  return banner;
 }
 function guildOverviewBanner(title, description, actionLabel, onAction, { stats = [] } = {}) {
   const hero = raidElement('section',null,'guild-dashboard-hero character-banner guild-page-heading');
@@ -1729,14 +1741,15 @@ async function openRaidView(view, id, navigate = true) {
   try {
     if (view === 'raiding') {
       await renderRaidTeams(byId('raidList'),{
-        request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,
+        request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,renderRaidBanner:raidSectionBanner,
         openCharacter:(character,target,onClose)=>openCharacterSheet({...character,character:character.name,armorySlug:character.slug,class_name:character.className},null,false,{target,onClose}),
-        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
+        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,raidNames:compositionRaidNames,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
       });return;
     }
     if(view==='groupPlanner'){
-      byId('raidTitle').textContent='Group Planner';
-      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});return;
+      const planner = raidElement('div');
+      byId('raidList').append(raidSectionBanner('Group Planner','Solstice · US Normal · WoW Forever'),planner);
+      renderRaidComposition(planner,{specs:armorySpecs,raidNames:compositionRaidNames,request:data=>guildRequest('/api/raid-compositions',data)});return;
     }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));

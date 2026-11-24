@@ -401,12 +401,21 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 /* Original class and spec artwork from hastecraft/forever-icons. */
 .guild-symbol.forever-icon { display:inline-block; flex-shrink:0; width:24px; height:24px; background-image:url('/assets/forever-identities.webp?v=1'); background-size:600% 600%; background-repeat:no-repeat; border-radius:3px; vertical-align:middle; }
 /* Raid composition: placeholder groups, picker and live buff coverage. */
-.comp-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 8px; }
-.comp-controls label { display:flex; align-items:center; gap:10px; margin:0; }
-.comp-controls select { width:140px; margin:0; }
-.comp-controls > button { margin-inline-start:auto; }
-.comp-save-status { color:var(--theme-secondary-color); }
-.comp-status { min-height:20px; margin:6px 0 12px; font-size:13px; }
+.comp-controls,.comp-sizes,.comp-actions { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+.comp-controls { gap:8px 14px; margin:0 0 8px; }
+.comp-controls .comp-plan-title { margin:0; color:var(--theme-light-text-emphasis); font-size:18px; line-height:1.3; }
+.comp-raid-name,.comp-save-status { color:var(--theme-secondary-color); }
+.comp-save-status { font-size:12px; }
+.comp-actions { margin-inline-start:auto; }
+.guild-app #raidList .comp-controls button {
+ min-height:28px; margin:0; padding:4px 8px; border-radius:4px; font-size:12px; line-height:1.2;
+}
+.guild-app #raidList .comp-sizes button { min-width:32px; background:transparent; color:var(--theme-menu-selected-color); }
+.guild-app #raidList .comp-sizes button:is(:hover,[aria-pressed="true"]) { background:var(--theme-primary-action-bg); color:var(--theme-primary-text-emphasis); }
+.comp-controls button:focus-visible,.comp-saved-bar summary:focus-visible { outline:2px solid var(--theme-link-color); outline-offset:2px; }
+.comp-status { margin:4px 0 10px; font-size:12px; }
+.comp-status:empty { display:none; }
+@media(pointer:coarse) { .guild-app #raidList .comp-controls button { min-height:40px; } }
 .comp-layout { display:grid; grid-template-columns:minmax(0,3fr) minmax(280px,1fr); gap:20px; align-items:start; }
 .comp-main,.comp-sidebar { min-width:0; display:grid; gap:16px; }
 .guild-app #raidList :is(.comp-layout,.comp-issues) .raid-card,.guild-app #raidList .comp-issues { margin:0; padding:16px; }
@@ -498,12 +507,10 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-seat-hint { display:block; margin-top:16px; font-size:11px; }
 @media(max-width:1350px) { .comp-groups { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:900px) { .comp-layout { grid-template-columns:minmax(0,1fr) 270px; gap:12px; } }
-@media(max-width:720px) { .comp-layout { display:flex; flex-direction:column; } .comp-sidebar { width:100%; grid-template-columns:minmax(0,1fr); } .comp-main { width:100%; } .comp-controls > button { margin-inline-start:0; } .comp-save-status { flex-basis:100%; order:1; } }
+@media(max-width:720px) { .comp-layout { display:flex; flex-direction:column; } .comp-sidebar { width:100%; grid-template-columns:minmax(0,1fr); } .comp-main { width:100%; } .comp-actions { margin-inline-start:0; } }
 @media(max-width:460px) { .comp-groups { gap:8px; } .comp-group { padding:7px; } .comp-player-select > .tabler-icon { display:none; } }
 
 /* Compact group summaries and reusable locked compositions. */
-.comp-controls > button { margin-inline-start:0; }
-.comp-controls > .comp-optimize { margin-inline-start:auto; }
 .comp-optimize,.comp-lock { display:inline-flex; align-items:center; gap:6px; }
 .comp-optimize > svg { width:15px; height:15px; }
 .comp-group h4 { gap:5px; margin-bottom:6px; }
@@ -528,9 +535,9 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-buff-chip { display:inline-block; margin:0 4px 3px 0; padding:1px 5px; border-radius:3px; background:var(--theme-success-bg-subtle); color:var(--theme-success-text-emphasis); font-size:10px; line-height:1.5; cursor:help; }
 .comp-buff-chip[data-state="missing"] { background:var(--theme-warning-bg-subtle); color:var(--theme-warning-text-emphasis); }
 .comp-group-no-buffs { font-size:10px; }
-.comp-saved-bar { margin-bottom:12px; }
-.comp-saved-bar > label { display:flex; flex-wrap:wrap; gap:10px; align-items:center; font-size:13px; }
-.comp-saved-bar select { width:min(380px,100%); margin:0; }
+.comp-saved-bar { margin:0 0 14px; }
+.comp-saved-bar summary { width:max-content; cursor:pointer; color:var(--theme-menu-selected-color); font-size:12px; }
+.comp-saved-bar select { width:min(320px,100%); margin:6px 0 0; }
 .guild-app .comp-lock-dialog { width:min(480px,calc(100vw - 32px)); box-sizing:border-box; max-height:calc(100dvh - 40px); overflow:auto; padding:22px; background:var(--theme-secondary-bg); color:var(--theme-body-color); border:1px solid var(--theme-border-color); border-radius:8px; }
 .comp-lock-dialog form { float:none; width:100%; }
 .comp-lock-dialog h3 { margin:0 0 12px; }
@@ -538,9 +545,13 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-lock-dialog input { display:block; width:100%; box-sizing:border-box; margin-top:7px; }
 .comp-lock-dialog button { margin-right:8px; }
 .comp-lock-dialog p { line-height:1.6; font-size:13px; }
-@media(max-width:720px) { .comp-controls > .comp-optimize { margin-inline-start:0; } }
 /* Raid teams: team list and contextual roster workspace. */
-body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
+.guild-app #raidPanel .raid-section-banner {
+ display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:14px;
+ min-height:120px; margin:0 0 12px; padding:20px 0;
+}
+.raid-section-banner::after,.raid-section-banner .guild-dashboard-crest { display:none; }
+.guild-app .raid-section-banner > .raid-primary { margin:0; }
 .teams-status:empty { display:none; }
 .teams-status { margin:0 0 12px; font-size:13px; color:var(--theme-secondary-color); }
 .teams-landing-heading { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:8px 0 22px; }
@@ -554,12 +565,6 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 .team-tile > svg { color:var(--theme-info-text-emphasis); }
 .team-avatar { display:flex; align-items:center; justify-content:center; flex:none; width:48px; height:48px; border-radius:5px; font-size:28px; font-weight:700; color:#fff; background:var(--team-accent,var(--theme-purple)); }
 .teams-empty { padding:22px 0; color:var(--theme-secondary-color); }
-.team-banner { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 20px 26px; margin-bottom:16px; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--team-accent) 20%,transparent),transparent 75%); border-bottom:1px solid var(--theme-border-color); }
-.team-banner-identity { display:flex; gap:14px; align-items:center; }
-.team-banner .team-avatar { width:72px; height:72px; font-size:40px; }
-.team-banner h2 { font-size:27px; line-height:1.2; margin:0 0 7px; }
-.team-banner p { display:inline; font-size:12px; margin:0 8px 0 0; }
-.team-version { display:inline-block; font-size:11px; padding:3px 6px; background:var(--theme-tertiary-bg); color:var(--theme-light-text-emphasis); border-radius:3px; }
 .team-workspace { display:grid; grid-template-columns:minmax(0,1fr); align-items:start; }
 .team-panel { min-width:0; }
 .team-section-heading { padding:4px 0 18px; }
@@ -647,7 +652,7 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 .team-class-report strong { margin-inline-start:auto; }
 @media(max-width:1550px) { .team-roster-layout { grid-template-columns:minmax(0,1fr) 250px; gap:14px; } .team-member-fields { margin-inline-start:0; width:100%; } .team-panel .comp-groups { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:1150px) { .team-roster-layout { grid-template-columns:minmax(0,1fr); } .team-summary { position:static !important; width:100%; max-width:none; } .team-summary > section:last-child { display:block; } .team-roster-layout > .team-summary { display:grid; grid-template-columns:1fr 1fr; } .team-summary > header { grid-column:1/-1; } .team-summary > section:last-child { grid-column:1/-1; } .team-panel .comp-layout { grid-template-columns:1fr; } }
-@media(max-width:720px) { .team-workspace { grid-template-columns:1fr; } .team-banner { padding:15px 0; } .team-banner .team-avatar { width:50px; height:50px; font-size:28px; } .team-banner h2 { font-size:23px; } .teams-landing-heading { align-items:flex-start; } .teams-grid { grid-template-columns:1fr; } .team-profession-row { grid-template-columns:24px 115px minmax(0,1fr) 12px; gap:8px; font-size:12px; } }
+@media(max-width:720px) { .team-workspace { grid-template-columns:1fr; } .teams-landing-heading { align-items:flex-start; } .teams-grid { grid-template-columns:1fr; } .team-profession-row { grid-template-columns:24px 115px minmax(0,1fr) 12px; gap:8px; font-size:12px; } }
 
 .team-section-heading h3 { display:flex; align-items:center; gap:9px; }
 .team-section-heading h3 > svg { width:20px; height:20px; color:var(--team-accent,var(--theme-primary-text-emphasis)); }
