@@ -120,9 +120,9 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     drawNavigation();const layout=el('div',null,'team-workspace');
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
     if(section==='planner'){renderPlanner?.(panel,teamId);return;}
-    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
+    if(section==='roster'){drawRoster(panel);return;}
+    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
     if(section==='setup'){drawSetup(panel);}
-    else if(section==='roster'){heading.append(el('p','Your raid team and the wider guild roster.'));drawRoster(panel);}
     else if(section==='professions')drawProfessions(panel);
     else if(section==='settings')drawSettings(panel);
   }
