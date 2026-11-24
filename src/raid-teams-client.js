@@ -8,10 +8,19 @@ export function raidTeamSummary(members, mainsOnly=true){
   return {total:characters.length,roles,armor:Object.entries(armor).map(([name,classes])=>({name,classes,count:characters.filter(member=>classes.includes(member.className)).length})),itemLevels:{known:levels.length,average:levels.length?levels.reduce((a,b)=>a+b,0)/levels.length:null,min:levels.length?Math.min(...levels):null,max:levels.length?Math.max(...levels):null}};
 }
 
-export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,renderPlanner,navigationRoot,openCharacter,raidInstances={}}){
+export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,renderPlanner,renderRaidBanner,navigationRoot,openCharacter,raidInstances={}}){
   const el=(tag,text,cls)=>{const node=document.createElement(tag);if(text!=null)node.textContent=text;if(cls)node.className=cls;return node;};
   const btn=(text,action,cls)=>{const node=el('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const icon=name=>tablerIcon(name);
+  const banner=(title,description,actionLabel,onAction)=>{
+    if(renderRaidBanner)return renderRaidBanner(title,description,actionLabel,onAction);
+    const header=el('header',null,'guild-page-heading raid-section-banner');
+    const intro=el('div');
+    intro.append(el('p','Alliance Guild','eyebrow'),el('h2',title),el('p',description));
+    header.append(intro);
+    if(onAction)header.append(btn(actionLabel,onAction,'raid-primary'));
+    return header;
+  };
   const rulesets={2:'Normal',1:'PvP',3:'RP',15:'RP-PvP'};
   const contextLabel=team=>(team.region||'us').toUpperCase()+' · '+(rulesets[team.ruleset||2]||'Normal');
   const roles=['Tank','Healer','Melee DPS','Ranged DPS'];
@@ -51,7 +60,8 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   function openForm(){creating=true;creationStep='size';name.value='';description.value='';size.value='';accent.value='#7b70ef';region.value='us';ruleset.value='2';drawRulesets();formStatus.textContent='';creationPage.hidden=false;path();drawCreation();}
   function drawCreation(){
     creationPage.dataset.step=creationStep;
-    creationPage.replaceChildren();const heading=el('header',null,'teams-landing-heading');const title=el('div');title.append(el('h2','Create a raid team'),el('p',creationStep==='size'?'Choose a raid size to continue.':'Enter your team information.'));heading.append(title,btn('All raid teams',()=>{creating=false;path();drawLanding();}));
+    creationPage.replaceChildren();
+    const heading=banner('Create a raid team',creationStep==='size'?'Choose a raid size to continue.':'Enter your team information.','All raid teams',()=>{creating=false;path();drawLanding();});
     const cards=el('div',null,'team-size-cards');cards.setAttribute('role','group');cards.setAttribute('aria-label','Choose raid size');
     const continueActions=el('div',null,'team-create-next');const next=btn('Next',()=>{if(![10,20,40].includes(Number(size.value)))return;creationStep='details';drawCreation();name.focus();},'raid-primary');continueActions.append(next);
     function choose(value){size.value=String(value);continueActions.hidden=creationStep!=='size';selectedSize.textContent=value+'-player team · WoW Forever';for(const card of cards.children)card.setAttribute('aria-pressed',String(card.dataset.raidSize===String(value)));}
@@ -75,7 +85,8 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     }catch(error){if(token===revision&&isCurrent()){status.textContent=error.message;data=null;drawNavigation();content.replaceChildren(btn('Retry',load),btn('All teams',()=>{teamId=null;path();load();}));}}finally{if(token===revision&&isCurrent()){content.inert=false;if(navigationRoot)navigationRoot.inert=false;}}
   }
   function drawLanding(){
-    drawNavigation();content.replaceChildren();const heading=el('header',null,'teams-landing-heading');const title=el('div');title.append(el('h2','Raid Teams'),el('p','Build a roster, plan your composition, and prepare to raid together.'));heading.append(title,btn('+ New team',openForm));content.append(heading);
+    drawNavigation();
+    content.replaceChildren(banner('Raid Teams','Build a roster, plan your composition, and prepare to raid together.','+ New team',openForm));
     const grid=el('div',null,'teams-grid');
     for(const team of teams){const card=btn('',()=>{teamId=team.id;section='roster';selected.clear();path();load();},'team-tile');card.style.setProperty('--team-accent',team.accent);const avatar=el('span',team.name.charAt(0).toUpperCase(),'team-avatar');const text=el('span');text.append(el('strong',team.name),el('small',contextLabel(team)+' · WoW Forever'),el('small',team.mains+' mains · '+team.characters+' characters'),el('small',team.canEdit?'Team leader':'Guild team'));card.append(avatar,text,icon('shield-check'));grid.append(card);}
     if(!teams.length)grid.append(el('p','Create your first raid team to start assigning guild characters.','teams-empty'));content.append(grid);
@@ -101,13 +112,19 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   }
   function drawWorkspace(){
     if(!isCurrent())return;content.replaceChildren();const team=data.team;content.style.setProperty('--team-accent',team.accent);
-    const banner=el('header',null,'team-banner');const identity=el('div',null,'team-banner-identity');identity.append(el('span',team.name.charAt(0).toUpperCase(),'team-avatar'));const text=el('div');text.append(el('h2',team.name),el('p',contextLabel(team)),el('span','WoW Forever','team-version'));identity.append(text);banner.append(identity);if(team.canManage??team.canEdit)banner.append(btn('Edit banner',()=>navigate('settings')));content.append(banner);
+    const teamContext=contextLabel(team)+' · WoW Forever';
+    const canEditBanner=(team.canManage??team.canEdit)&&section!=='settings';
+    content.append(banner(
+      section==='planner'?'Group Planner':team.name,
+      section==='planner'?team.name+' · '+teamContext:teamContext,
+      'Edit banner',canEditBanner?()=>navigate('settings'):null,
+    ));
     drawNavigation();const layout=el('div',null,'team-workspace');
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
-    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',planner:'layout-dashboard',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',planner:'Group Planner',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
+    if(section==='planner'){renderPlanner?.(panel,teamId);return;}
+    const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({roster:'users',professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{roster:'Roster',professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
     if(section==='setup'){drawSetup(panel);}
     else if(section==='roster'){heading.append(el('p','Your raid team and the wider guild roster.'));drawRoster(panel);}
-    else if(section==='planner'){const target=el('div');panel.append(target);renderPlanner?.(target,teamId);}
     else if(section==='professions')drawProfessions(panel);
     else if(section==='settings')drawSettings(panel);
   }

@@ -168,6 +168,12 @@ test('primary sidebar switches working teams, remembers selection and replaces t
   assert.equal(stored.get('solstice-working-raid-team'),'team-b');
   find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Group Planner')).listeners.click();
   assert.equal(planned,'team-b','planner receives the selected team');
+  const plannerBanner=find(root,e=>e.className==='guild-page-heading raid-section-banner');
+  assert.ok(find(plannerBanner,e=>e.tagName==='h2'&&e.textContent==='Group Planner'));
+  assert.ok(find(plannerBanner,e=>e.tagName==='p'&&e.textContent.includes('Team B')));
+  find(sidebar,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Team Settings')).listeners.click();
+  assert.ok(find(root,e=>e.className==='guild-page-heading raid-section-banner'));
+
   location.href='https://solsticeguild.net/?tool=raid&view=raiding';location.search='?tool=raid&view=raiding';
   await render(root,options);
   assert.equal(find(sidebar,e=>e.attributes['aria-label']==='Working raid team').value,'team-b','returning to Raiding restores the last working team');
