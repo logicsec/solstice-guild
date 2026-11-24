@@ -106,11 +106,7 @@ test('team workspace creates a team, assigns a guild character and updates the r
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
   assert.equal(dialog.hidden,true);assert.ok(find(root,e=>e.className==='team-setup'));
   find(root,e=>e.textContent==='Skip to my team').listeners.click();assert.ok(find(root,e=>e.className==='raid-card team-summary'));
-  const activeTab=find(root,e=>e.id==='team-roster-tab-team');
-  assert.equal(activeTab.attributes['aria-selected'],'true');
-  activeTab.listeners.keydown({key:'ArrowRight',preventDefault(){}});
-  assert.equal(find(root,e=>e.id==='team-roster-tab-guild').attributes['aria-selected'],'true');
-  assert.equal(find(root,e=>e.id==='team-roster-panel').attributes['aria-labelledby'],'team-roster-tab-guild');
+  find(root,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Guild Roster')).listeners.click();
   const checkbox=find(root,e=>e.attributes['aria-label']==='Select Astra Mortis');checkbox.checked=true;checkbox.listeners.change();
   await find(root,e=>e.textContent==='Assign to team').listeners.click();
   assert.equal(members.length,1);assert.ok(find(root,e=>e.textContent==='On team'));

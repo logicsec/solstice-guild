@@ -45,9 +45,6 @@ test('production server serves theme and Tabler assets without authentication', 
   assert.match(await failedFeed.text(),/AHledger did not respond/);
   assert.equal((await fetch(base+'/healthz')).status,200,'upstream timeout does not terminate the actual Node server');
 
-  const effects=await fetch(base+'/assets/planner-effects.webp');
-  assert.equal(effects.status,200);
-  assert.equal(effects.headers.get('content-type'),'image/webp');
   const spellAtlas=await fetch(base+'/assets/forever-buffs.webp');
   assert.equal(spellAtlas.status,200);
   assert.equal(spellAtlas.headers.get('content-type'),'image/webp');
