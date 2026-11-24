@@ -56,20 +56,20 @@ code { color:var(--theme-code-color); }
 .guild-app .raid-sidebar #guildCharacterOptions > button:is(:hover,:focus-visible,[aria-selected="true"]) { background:var(--theme-primary-bg-subtle); box-shadow:inset 0 0 0 1px var(--theme-primary-border-subtle); }
 .guild-app .raid-sidebar #raidMenu :is(button,a),.guild-menu-group > summary { color:var(--theme-secondary-color); }
 .guild-app .raid-sidebar #raidMenu :is([aria-current="true"],[aria-current="page"]),.guild-menu-group[open] > summary { background:var(--theme-primary-bg-subtle); color:var(--theme-primary-text-emphasis); border-radius:999px; }
-/* Soft pill actions; equipment, talent, roster, and selector controls keep their own layouts. */
+/* Filled actions retain the established palette and control-specific states. */
 .button,.guild-app :is(button,a.raid-primary):not(.character-talent-node,.character-slot-button,.gear-slot,.picker-row,.guild-character-row,.guild-dashboard-entry,.guild-upcoming-event,.guild-character-switch,.guild-discord-trigger) {
- --action-bg:var(--theme-primary-bg-subtle); --action-ink:var(--theme-primary-text-emphasis);
+ --action-bg:color-mix(in srgb,var(--theme-primary) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-primary-text-emphasis);
  background:var(--action-bg); color:var(--action-ink); border-color:transparent; border-radius:999px; box-shadow:none;
 }
-.button:hover,.guild-app :is(button,a.raid-primary):not(.character-talent-node,.character-slot-button,.gear-slot,.picker-row,.guild-character-row,.guild-dashboard-entry,.guild-upcoming-event,.guild-character-switch,.guild-discord-trigger):hover { background:color-mix(in srgb,var(--action-bg) 75%,var(--action-ink) 10%); color:var(--action-ink); border-color:transparent; }
-.guild-app :is(#activate,[data-variant="success"]) { --action-bg:var(--theme-success-bg-subtle); --action-ink:var(--theme-success-text-emphasis); }
-.guild-app :is(#delete,#removeItem,[data-variant="danger"],.danger),.button.danger { --action-bg:var(--theme-danger-bg-subtle); --action-ink:var(--theme-danger-text-emphasis); }
-.guild-app :is(#previous,#prev,#next,[data-variant="secondary"]),.button.outline { --action-bg:var(--theme-secondary-bg-subtle); --action-ink:var(--theme-secondary-text-emphasis); }
-.guild-app :is(#refreshCraft,#refresh,[data-variant="info"]) { --action-bg:var(--theme-info-bg-subtle); --action-ink:var(--theme-info-text-emphasis); }
-.guild-app .planner-page #save { background:var(--theme-primary-bg-subtle); color:var(--theme-primary-text-emphasis); border-color:transparent; border-radius:999px; }
+.button:hover,.guild-app :is(button,a.raid-primary):not(.character-talent-node,.character-slot-button,.gear-slot,.picker-row,.guild-character-row,.guild-dashboard-entry,.guild-upcoming-event,.guild-character-switch,.guild-discord-trigger):hover { background:color-mix(in srgb,var(--action-bg) 88%,var(--action-ink)); color:var(--action-ink); border-color:transparent; }
+.guild-app :is(#activate,[data-variant="success"]) { --action-bg:color-mix(in srgb,var(--theme-success) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-success-text-emphasis); }
+.guild-app :is(#delete,#removeItem,[data-variant="danger"],.danger,.raid-control-danger,.team-remove,.comp-clear),.button.danger { --action-bg:color-mix(in srgb,var(--theme-danger) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-danger-text-emphasis); }
+.guild-app :is(#previous,#prev,#next,[data-variant="secondary"]),.button.outline { --action-bg:color-mix(in srgb,var(--theme-secondary) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-secondary-text-emphasis); }
+.guild-app :is(#refreshCraft,#refresh,[data-variant="info"]) { --action-bg:color-mix(in srgb,var(--theme-info) 20%,var(--theme-secondary-bg)); --action-ink:var(--theme-info-text-emphasis); }
+.guild-app .planner-page #save { background:color-mix(in srgb,var(--theme-primary) 20%,var(--theme-secondary-bg)); color:var(--theme-primary-text-emphasis); border-color:transparent; border-radius:999px; }
 .guild-app .raid-sidebar .guild-discord-card .guild-signout { background:var(--theme-danger-bg-subtle); color:var(--theme-danger-text-emphasis); border-color:transparent; border-radius:999px; }
-.guild-app #professionGrid button { background:var(--theme-secondary-bg-subtle); color:var(--theme-secondary-text-emphasis); border-color:transparent; border-radius:999px; }
-.guild-app #professionGrid button[aria-pressed="true"] { background:var(--theme-primary-bg-subtle); color:var(--theme-primary-text-emphasis); border-color:transparent; }
+.guild-app #professionGrid button { background:color-mix(in srgb,var(--theme-secondary) 20%,var(--theme-secondary-bg)); color:var(--theme-secondary-text-emphasis); border-color:transparent; border-radius:999px; }
+.guild-app #professionGrid button[aria-pressed="true"] { background:color-mix(in srgb,var(--theme-primary) 20%,var(--theme-secondary-bg)); color:var(--theme-primary-text-emphasis); border-color:transparent; }
 .guild-app .positive { color:var(--theme-success-text-emphasis); } .guild-app .negative { color:var(--theme-danger-text-emphasis); }
 [data-wow-class="Mage"] { --class-color:var(--theme-info-text-emphasis); }
 [data-wow-class="Warlock"] { --class-color:var(--theme-purple-text-emphasis); }
@@ -337,7 +337,7 @@ body.guild-app #raidPanel > .raid-content {
 .guild-app #raidList .guild-event-count { font-size:10px; color:var(--theme-secondary-color); }
 .guild-app #raidList .guild-event-actions { display:flex; align-items:center; flex-wrap:wrap; justify-content:flex-end; gap:5px; margin:0; }
 .guild-app #raidList .guild-event-actions button { width:auto; min-height:24px; padding:3px 8px; font-size:10px; line-height:1.5; }
-.guild-app #raidList .guild-event-actions .raid-control-danger { background:var(--theme-danger-bg-subtle); color:var(--theme-danger-text-emphasis); }
+.guild-app #raidList .guild-event-actions .raid-control-danger { background:color-mix(in srgb,var(--theme-danger) 20%,var(--theme-secondary-bg)); color:var(--theme-danger-text-emphasis); }
 .guild-app #raidList .guild-agenda-timezone { margin:0; padding:10px 16px; border-top:1px solid var(--theme-border-color); font-size:10px; }
 .guild-app #raidList .guild-events-agenda > .guild-events-status:not(:empty) { padding:10px 16px; }
 .guild-app #raidList .guild-events-agenda > div > p { padding:8px 16px; font-size:12px; }
@@ -601,7 +601,7 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 .team-member-fields select { width:125px; min-height:30px; margin:0; font-size:11px; padding:4px 6px; }
 .guild-app #raidList .team-main-toggle,.guild-app #raidList .team-remove { font-size:10px; min-height:27px; padding:4px 6px; }
 .guild-app #raidList .team-main-toggle[aria-pressed="true"] { color:var(--theme-warning-text-emphasis); background:var(--theme-warning-bg-subtle); }
-.guild-app #raidList .team-remove { color:var(--theme-danger-text-emphasis); background:var(--theme-danger-bg-subtle); }
+.guild-app #raidList .team-remove { color:var(--theme-danger-text-emphasis); background:color-mix(in srgb,var(--theme-danger) 20%,var(--theme-secondary-bg)); }
 .team-guild-banner { display:grid; gap:8px; border:1px solid var(--theme-border-color); border-radius:8px; padding:15px; margin-bottom:12px; font-size:13px; }
 .team-guild-banner small { color:var(--theme-secondary-color); }
 .team-bulk-actions { display:flex; align-items:center; gap:8px; padding:10px; background:var(--theme-purple-bg-subtle); font-size:12px; }
@@ -724,15 +724,6 @@ body.raid-teams-active #raidMessage:empty { display:none; }
 .team-schedule-per-day > div { display:grid; grid-template-columns:40px 1fr 1fr; align-items:center; gap:12px; }
 @media(max-width:600px) { .team-create-fields { grid-template-columns:1fr; } .team-setup { padding:14px; } .team-setup-step { padding:12px; } .team-schedule-times { grid-template-columns:1fr 1fr; } .team-schedule-times > label:last-child { grid-column:1/-1; } }
 
-/* Filled action buttons: light primary, solid slate secondary, 8px corners. */
-body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.button,.raid-primary,[role="button"]) { border-radius:8px !important; }
-body :is(button,.button,.raid-primary):not(.raid-sidebar *):not(.comp-player-select):not(.comp-player-move):not(.comp-player-remove):not(.team-tile):not(.character-slot-button) { background-color:#34434a !important; background-image:none; color:#f2f6f8 !important; border-color:#45565d !important; box-shadow:none; }
-body :is(button,.button,.raid-primary):not(.raid-sidebar *):not(.comp-player-select):not(.comp-player-move):not(.comp-player-remove):not(.team-tile):not(.character-slot-button):hover { background-color:#41545c !important; }
-body :is(.raid-primary,button[type="submit"],.team-create-actions > button:first-child):not(.raid-sidebar *) { background-color:#f4f7fa !important; color:#17363e !important; border-color:#f4f7fa !important; }
-body :is(.raid-primary,button[type="submit"],.team-create-actions > button:first-child):not(.raid-sidebar *):hover { background-color:#dce8ed !important; }
-body :is(button,.button):is([aria-pressed="true"],[aria-selected="true"]):not(.raid-sidebar *) { background-color:#496874 !important; color:#fff !important; border-color:#77939c !important; }
-body :is(.raid-control-danger,.team-remove,.comp-clear):not(.raid-sidebar *) { background-color:#623343 !important; color:#ffc5d4 !important; border-color:#855064 !important; }
-body button:disabled { opacity:.5; cursor:not-allowed; }
 /* Discord account menu uses live profile and guild statistics. */
 .guild-app .raid-sidebar .guild-discord-card { width:min(300px,calc(100vw - 32px)); padding:12px; background:#1e292a; border:1px solid #385050; border-radius:8px; }
 .guild-discord-card-head { display:flex; align-items:center; gap:10px; padding:12px; margin:-12px -12px 0; background:#244841; }
