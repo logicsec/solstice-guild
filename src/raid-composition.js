@@ -126,7 +126,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   let model=createCompositionPlan(specs,initial);
   let locked=initial?.lockedId?{id:initial.lockedId,title:'Loading saved composition…'}:null;
   let savedCompositions=[];
-  let chosenClass='Warrior',selected=null,dragged=null,expandedCategory=null;
+  let selected=null,dragged=null,expandedCategory=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
   const controls=make('div',null,'comp-controls');
   const sizeLabel=make('label','Raid size');const size=make('select');size.setAttribute('aria-label','Raid size');
@@ -136,11 +136,45 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const groups=make('div',null,'comp-groups');
   const groupsPanel=make('section',null,'raid-card comp-groups-panel');groupsPanel.append(heading('Raid Groups','users'),groups);
   const unassigned=make('section',null,'raid-card comp-unassigned');
-  const picker=make('section',null,'raid-card comp-picker');
+  const picker=make('div',null,'comp-picker');
+  picker.setAttribute('role','group');
+  picker.setAttribute('aria-label','Add a specialization');
+  const specButtons=[];
+  for(const className of ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid']){
+    const family=make('div',null,'comp-spec-family');
+    family.dataset.wowClass=className;
+    family.setAttribute('role','group');
+    family.setAttribute('aria-label',className);
+    for(const [spec,defaultRole] of specs[className]??[]){
+      const feral=spec==='Feral Combat';
+      const roles=feral?['Melee DPS','Tank']:[defaultRole];
+      for(const role of roles){
+        const label=feral?(role==='Tank'?'Feral (Bear)':'Feral (Cat)'):spec;
+        const add=button('',()=>{
+          if(locked)return;
+          try{
+            model.add(className,spec,role);
+            commit(label+' '+className+' added to Unassigned.');
+          }catch(error){status.textContent=error.message;}
+        },'comp-add-spec');
+        add.title=label+' '+className+' · '+role;
+        add.setAttribute('aria-label','Add '+label+' '+className+' to Unassigned');
+        add.append(guildIcon('spec',spec,'',className));
+        if(feral){
+          const badge=tablerIcon(roleIcons[role],'comp-spec-role');
+          badge.setAttribute('aria-hidden','true');
+          add.append(badge);
+        }
+        family.append(add);
+        specButtons.push(add);
+      }
+    }
+    if(family.children.length)picker.append(family);
+  }
   const composition=make('section',null,'raid-card comp-composition');
   const settings=make('section',null,'raid-card comp-settings');
-  const main=make('div',null,'comp-main');main.append(groupsPanel,unassigned);
-  const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(picker,composition,settings);
+  const main=make('div',null,'comp-main');main.append(picker,groupsPanel,unassigned);
+  const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(composition,settings);
   const layout=make('div',null,'comp-layout');layout.append(main,side);
   const issues=make('section',null,'raid-card comp-issues');
   const categories=make('section',null,'raid-card comp-categories');
@@ -250,18 +284,9 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     const pool=plan.players.filter(player=>player.group===null);unassigned.replaceChildren(heading('Unassigned ('+pool.length+')','users'));
     const poolRows=make('div',null,'comp-pool');destination(poolRows,null);
     for(const player of pool)poolRows.append(playerCard(player));
-    if(!pool.length)poolRows.append(make('p','Select a class and specialization to add a placeholder.','comp-empty-message'));
+    if(!pool.length)poolRows.append(make('p','Choose a specialization above to add a placeholder.','comp-empty-message'));
     unassigned.append(poolRows,button('Move selected to Unassigned',()=>{if(selected)move(selected,null);},'comp-return'));unassigned.lastElementChild.hidden=!selected||chosen?.group===null;unassigned.lastElementChild.disabled=!!locked;
-    picker.replaceChildren(heading('Add Characters','user-circle'),make('label','Class'));
-    const classes=make('div',null,'comp-classes');
-    for(const className of ['Warrior','Paladin','Hunter','Rogue','Priest','Shaman','Mage','Warlock','Druid']){
-      const item=button('',()=>{chosenClass=className;draw();root.querySelector('[data-class="'+className+'"]')?.focus();},'comp-class');item.dataset.class=className;item.dataset.wowClass=className;item.setAttribute('aria-pressed',String(chosenClass===className));item.append(guildIcon('class',className),make('span',className));classes.append(item);
-    }
-    picker.append(classes,make('label','Specialization'));
-    for(const [name,role] of specs[chosenClass])for(const selectedRole of name==='Feral Combat'?['Melee DPS','Tank']:[role]){
-      const label=name==='Feral Combat'?(selectedRole==='Tank'?'Feral (Bear)':'Feral (Cat)'):name;
-      const add=button('',()=>{if(locked)return;try{model.add(chosenClass,name,selectedRole);commit(label+' '+chosenClass+' added to Unassigned.');}catch(error){status.textContent=error.message;}},'comp-add-spec');add.dataset.wowClass=chosenClass;add.disabled=!!locked||plan.players.length>=plan.size;add.setAttribute('aria-label','Add '+label+' '+chosenClass+' to Unassigned');add.append(guildIcon('spec',name,'',chosenClass),make('span',label),tablerIcon(roleIcons[selectedRole]),tablerIcon('plus'));picker.append(add);
-    }
+    for(const add of specButtons)add.disabled=!!locked||plan.players.length>=plan.size;
     composition.replaceChildren(heading('Composition','chart-line'));
     for(const role of ['Tank','Healer','Melee DPS','Ranged DPS']){
       const line=make('div',null,'comp-count');line.dataset.role=role;line.append(tablerIcon(roleIcons[role]),make('span',role),make('strong',String(plan.players.filter(player=>player.role===role).length)));composition.append(line);
