@@ -537,7 +537,6 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 .team-tile small { font-weight:400; color:var(--theme-secondary-color); }
 .team-tile > svg { color:var(--theme-info-text-emphasis); }
 .team-avatar { display:flex; align-items:center; justify-content:center; flex:none; width:48px; height:48px; border-radius:5px; font-size:28px; font-weight:700; color:#fff; background:var(--team-accent,var(--theme-purple)); }
-.teams-planner-link { margin-top:22px; }
 .teams-empty { padding:22px 0; color:var(--theme-secondary-color); }
 .team-banner { display:flex; align-items:center; justify-content:space-between; gap:20px; padding:22px 20px 26px; margin-bottom:16px; background:radial-gradient(ellipse at top,color-mix(in srgb,var(--team-accent) 20%,transparent),transparent 75%); border-bottom:1px solid var(--theme-border-color); }
 .team-banner-identity { display:flex; gap:14px; align-items:center; }
@@ -621,13 +620,12 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 .team-profession-row small { color:var(--theme-secondary-color); }
 .team-profession-detail { display:flex; align-items:center; justify-content:space-between; padding:10px 12px 10px 38px; font-size:12px; background:var(--theme-secondary-bg); }
 .team-settings-form { width:min(600px,100%); }
-.team-settings-form label,.team-edit-dialog label { display:block; margin:12px 0; font-size:13px; }
-.team-settings-form :is(input,select),.team-edit-dialog :is(input,select,textarea) { display:block; box-sizing:border-box; width:100%; margin-top:6px; }
-.team-settings-form input[type="color"],.team-edit-dialog input[type="color"] { width:90px; height:38px; padding:4px; }
-.team-edit-dialog { box-sizing:border-box; width:min(480px,calc(100vw - 32px)); max-height:calc(100dvh - 40px); overflow:auto; padding:24px; background:var(--theme-secondary-bg); color:var(--theme-body-color); border:1px solid var(--theme-border-color); border-radius:8px; }
-.team-edit-dialog form { float:none; width:100%; }
-.team-edit-dialog h3 { margin:0 0 18px; }
-.team-edit-dialog button { margin-right:8px; }
+.team-settings-form label,.team-create-page label { display:block; margin:12px 0; font-size:13px; }
+.team-settings-form :is(input,select),.team-create-page :is(input,select,textarea) { display:block; box-sizing:border-box; width:100%; margin-top:6px; }
+.team-settings-form input[type="color"],.team-create-page input[type="color"] { width:90px; height:38px; padding:4px; }
+.team-create-page form { float:none; width:100%; }
+.team-create-page h3 { margin:0 0 18px; }
+.team-create-page button { margin-right:8px; }
 .team-class-report { margin-top:20px; }
 .team-class-report > div { display:flex; align-items:center; gap:10px; padding:8px 0; font-size:13px; }
 .team-class-report strong { margin-inline-start:auto; }
@@ -686,10 +684,6 @@ body.raid-teams-active #raidPanel > .raid-content { background-image:none; }
 /* The raid workspace starts immediately below the page edge. */
 body.raid-teams-active #raidPanel > .raid-content { padding-top:16px; }
 body.raid-teams-active #raidMessage:empty { display:none; }
-.guild-app .team-edit-dialog { width:min(600px,calc(100vw - 32px)); padding:0 24px 24px; }
-.team-create-hero { padding:90px 24px 22px; margin:0 -24px 20px; background:linear-gradient(0deg,var(--theme-secondary-bg),#17181e22),url('/assets/solstice-twilight.webp') center/cover; }
-.team-create-hero h3 { margin:12px 0 8px; font-size:26px; }
-.team-create-hero p { margin:0; line-height:1.6; font-size:14px; }
 .team-create-fields { display:grid; grid-template-columns:1fr 1fr; gap:0 16px; }
 .team-create-fields > label:first-child { grid-column:1/-1; }
 .team-create-extra { margin-top:14px; }
@@ -749,3 +743,27 @@ body.raid-teams-active #raidMessage:empty { display:none; }
 .team-delete-danger { max-width:640px; padding:18px; margin-top:28px; border:1px solid var(--theme-danger-border-subtle); border-radius:8px; background:var(--theme-secondary-bg); }
 .team-delete-danger h4 { margin:0 0 8px; color:var(--theme-danger-text-emphasis); }
 .team-delete-danger p { line-height:1.6; font-size:13px; }
+
+/* Team creation starts with image-led choices from the configured raid catalog. */
+.team-create-page { min-width:0; }
+.team-size-cards { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin:8px 0 24px; }
+.guild-app #raidList .team-size-card { display:flex; flex-direction:column; min-width:0; width:100%; padding:0; margin:0; overflow:hidden; border:1px solid var(--theme-border-color); border-radius:8px; background:var(--theme-secondary-bg); color:var(--theme-body-color); text-align:left; font-weight:400; box-shadow:none; }
+.guild-app #raidList .team-size-card:hover { background:var(--theme-secondary-bg); border-color:var(--theme-light-border-subtle); }
+.guild-app #raidList .team-size-card[aria-pressed="true"] { border-color:var(--theme-primary); box-shadow:0 0 0 1px var(--theme-primary); }
+.team-size-art { position:relative; display:block; width:100%; aspect-ratio:16/9; overflow:hidden; background:var(--theme-tertiary-bg); }
+.team-size-art > img { display:block; width:100%; height:100%; object-fit:cover; }
+.team-size-selected { display:none; position:absolute; top:14px; right:14px; align-items:center; justify-content:center; width:28px; height:28px; border-radius:50%; background:var(--theme-primary); color:#fff; }
+.team-size-card[aria-pressed="true"] .team-size-selected { display:flex; }
+.team-size-copy { display:flex; flex-direction:column; gap:7px; width:100%; padding:20px; }
+.team-size-game { color:var(--theme-secondary-color); font-size:11px; letter-spacing:.04em; }
+.team-size-title { color:var(--theme-light-text-emphasis); font-size:23px; line-height:1.25; }
+.team-size-raids { color:var(--theme-primary-text-emphasis); font-size:12px; line-height:1.6; }
+.team-size-features { display:grid; gap:7px; margin-top:8px; font-size:12px; line-height:1.5; }
+.team-size-features > span { display:flex; align-items:center; gap:7px; }
+.team-size-features svg { width:13px; height:13px; color:var(--theme-secondary-color); }
+.team-create-page .team-create-form { float:none; width:min(680px,100%); padding:22px; border:1px solid var(--theme-border-color); border-radius:8px; background:var(--theme-secondary-bg); }
+.team-create-form h3 { margin:0 0 6px; }
+.team-create-actions > button { margin:0; }
+.team-create-selection { margin:0 0 14px; font-size:13px; color:var(--theme-primary-text-emphasis); }
+@media(max-width:1100px) { .team-size-cards { grid-template-columns:1fr; } .guild-app #raidList .team-size-card { flex-direction:row; } .team-size-art { width:38%; align-self:stretch; aspect-ratio:auto; flex-shrink:0; } .team-size-copy { padding:18px; } }
+@media(max-width:600px) { .guild-app #raidList .team-size-card { flex-direction:column; } .team-size-art { width:100%; aspect-ratio:16/9; } .team-create-form { padding:16px; } }

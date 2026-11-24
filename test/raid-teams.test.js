@@ -98,10 +98,10 @@ test('team workspace creates a team, assigns a guild character and updates the r
   };
   const opened=[];const root=new Element('div');await render(root,{request,specs,openCharacter:(character,target)=>{opened.push(character);target.append(new Element('section','Character details'));}});
   find(root,e=>e.textContent==='+ New team').listeners.click();
-  const dialog=find(root,e=>e.className==='team-edit-dialog');assert.equal(dialog.open,true);
+  const dialog=find(root,e=>e.className==='team-create-page');assert.equal(dialog.hidden,false);
   find(dialog,e=>e.attributes['aria-label']==='Team name').value='Progression';
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
-  assert.equal(dialog.open,false);assert.ok(find(root,e=>e.className==='team-setup'));
+  assert.equal(dialog.hidden,true);assert.ok(find(root,e=>e.className==='team-setup'));
   find(root,e=>e.textContent==='Skip to my team').listeners.click();assert.ok(find(root,e=>e.className==='raid-card team-summary'));
   find(root,e=>e.tagName==='button'&&find(e,c=>c.textContent==='Guild Roster')).listeners.click();
   const checkbox=find(root,e=>e.attributes['aria-label']==='Select Astra Mortis');checkbox.checked=true;checkbox.listeners.change();
@@ -184,7 +184,7 @@ test('creation wizard selects region and ruleset, links a guild and previews and
  const team={id:'new-team',name:'RP team',size:20,accent:'#56789a',region:'eu',ruleset:15,guildSlug:null,guildName:null,canEdit:true,canManage:true,defaultRole:'Raider'};
  const setup={joined:false,permissionConfirmed:false,schedules:[]};let created=false,savedSchedule;
  const request=async(path='',input)=>{
-  if(input?.action==='create'){assert.equal(input.region,'eu');assert.equal(input.ruleset,15);created=true;return{id:team.id};}
+  if(input?.action==='create'){assert.equal(input.region,'eu');assert.equal(input.ruleset,15);assert.equal(input.size,40);team.size=input.size;created=true;return{id:team.id};}
   if(input?.action==='linkGuild'){assert.equal(input.guild,'Solstice RP');team.guildSlug='solstice-rp';team.guildName='Solstice RP';return{ok:true};}
   if(input?.action==='join'){setup.joined=true;return{ok:true};}
   if(input?.action==='previewSchedule')return{dates:[{startsAt:new Date(Date.now()+86400000).toISOString(),endsAt:new Date(Date.now()+90000000).toISOString()}]};
@@ -193,8 +193,11 @@ test('creation wizard selects region and ruleset, links a guild and previews and
   if(path.startsWith('?team='))return{team,setup,roster:{guild:team.guildName,characters:[],source:team.guildSlug?'blizzard':'unlinked'},members:[]};
   return{teams:created?[team]:[]};
  };
- const root=new Element('main');await render(root,{request,specs:{Mage:[['Arcane','Ranged DPS']]},raidInstances:{'hyjal-summit':{name:'Hyjal Summit',size:20}}});
- find(root,e=>e.textContent==='+ New team').listeners.click();const create=find(root,e=>e.className==='team-edit-dialog');
+ const root=new Element('main');await render(root,{request,specs:{Mage:[['Arcane','Ranged DPS']]},raidInstances:{'barrow-deeps':{name:'Barrow Deeps',size:10},'hyjal-summit':{name:'Hyjal Summit',size:20},'onyxias-lair':{name:'Onyxia’s Lair',size:40}}});
+ find(root,e=>e.textContent==='+ New team').listeners.click();const create=find(root,e=>e.className==='team-create-page');
+ const cards=all(create).filter(e=>e.className==='team-size-card');assert.equal(cards.length,3);assert.equal(new URLSearchParams(location.search).get('teams'),'new');
+ assert.equal(find(cards[0],e=>e.tagName==='img').src,'/assets/raid-barrow-deeps.webp');assert.equal(find(cards[1],e=>e.className==='team-size-raids').textContent,'Hyjal Summit');assert.equal(find(cards[2],e=>e.className==='team-size-raids').textContent,'Onyxia’s Lair');
+ cards[2].listeners.click();assert.equal(cards[2].attributes['aria-pressed'],'true');assert.equal(cards[1].attributes['aria-pressed'],'false');assert.equal(find(create,e=>e.className==='team-create-selection').textContent,'40-player team · WoW Forever');
  const region=find(create,e=>e.attributes['aria-label']==='Team region');region.value='kr';region.listeners.change();assert.equal(find(create,e=>e.attributes['aria-label']==='Team ruleset').children.length,2);
  region.value='eu';region.listeners.change();const ruleset=find(create,e=>e.attributes['aria-label']==='Team ruleset');ruleset.value='15';find(create,e=>e.attributes['aria-label']==='Team name').value='RP team';
  await find(create,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
@@ -206,7 +209,7 @@ test('creation wizard selects region and ruleset, links a guild and previews and
  const days=find(dialog,e=>e.className==='team-schedule-days');days.children[2].listeners.click();days.children[4].listeners.click();await new Promise(resolve=>setImmediate(resolve));
  assert.equal(find(dialog,e=>e.textContent==='Start raiding').disabled,false);
  await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
- assert.equal(dialog.open,false);assert.deepEqual(savedSchedule.days.map(day=>day.day),[2,4]);assert.equal(savedSchedule.instance,'hyjal-summit');
+ assert.equal(dialog.open,false);assert.deepEqual(savedSchedule.days.map(day=>day.day),[2,4]);assert.equal(savedSchedule.instance,'onyxias-lair');
  const permission=find(root,e=>e.attributes['aria-label']==='Default team member role');permission.value='Editor';await find(root,e=>e.textContent==='Save permissions').listeners.click();assert.equal(team.defaultRole,'Editor');assert.equal(setup.permissionConfirmed,true);
 });
 
