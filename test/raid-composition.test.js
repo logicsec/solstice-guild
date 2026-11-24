@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createCompositionPlan,compositionBuffs,renderRaidComposition} from '../src/raid-composition.js';
+import {createCompositionPlan,compositionBuffs,compositionCapabilities,renderRaidComposition} from '../src/raid-composition.js';
 import {armorySpecs} from '../src/armory.js';
 
 test('composition placeholders start unassigned, enforce capacity, resize and restore safely',()=>{
@@ -60,7 +60,7 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();
   const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,storageKey:'test'});
   const main=find(root,e=>e.className==='comp-main');
   const toolbar=main.children[0];
@@ -72,21 +72,26 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.ok(find(toolbar,e=>e.attributes['aria-label']==='Add Feral (Cat) Druid to Unassigned'));
   find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,null);
-  const intellect=()=>find(root,e=>e.className==='comp-buff'&&e.dataset.buffName==='Arcane Intellect');
+  const sidebar=find(root,e=>e.className==='comp-sidebar');
+  assert.equal(sidebar.children[0].className,'raid-card comp-raid-needs');
+  assert.equal(sidebar.children[1].className,'raid-card comp-composition');
+  assert.equal(find(root,e=>e.className==='comp-analysis'),undefined);
+  const intellect=()=>find(sidebar,e=>e.dataset.buffName==='Arcane Intellect');
+  const interrupts=()=>find(sidebar,e=>e.dataset.capability==='Interrupts').lastElementChild.textContent;
   assert.equal(intellect().dataset.state,'missing','unassigned Mage does not cover raid intellect');
-  const intellectCategory=()=>find(root,e=>e.className==='comp-category-toggle'&&find(e,n=>n.textContent==='Intellect'));
-  assert.equal(intellectCategory().dataset.coverage,'missing','missing category uses red status');
+  assert.equal(interrupts(),'0','unassigned Mage does not cover interrupts');
   find(root,e=>e.dataset.playerSelect==='1').listeners.click();
   find(root,e=>e.attributes['aria-label']==='Group 1, empty slot 1, place selected placeholder').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,1);
-  assert.equal(intellect().dataset.state,'covered','placing a Mage updates the bottom buff panel');
-  assert.equal(intellectCategory().dataset.coverage,'covered','covered category uses green status');
+  assert.equal(intellect().dataset.state,'covered','placing a Mage updates the sidebar');
+  assert.equal(interrupts(),'1');
   let group=all(root).filter(e=>e.className==='comp-group')[1];
   group.listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer:{getData:()=> '1'}});
   assert.equal(ui.model.snapshot().players[0].group,2);
   const pool=find(root,e=>e.className==='comp-pool');pool.listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer:{getData:()=> '1'}});
   assert.equal(ui.model.snapshot().players[0].group,null);
   assert.equal(intellect().dataset.state,'missing','moving back to Unassigned removes raid coverage');
+  assert.equal(interrupts(),'0');
   const restored=render(new Element('main'),{specs:armorySpecs,storageKey:'test'});
   assert.deepEqual(restored.model.snapshot(),ui.model.snapshot());
   find(root,e=>e.dataset.playerSelect==='1').listeners.click();
@@ -100,10 +105,6 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(ui.model.snapshot().players.length,0,'Unassigned X removes the placeholder');
   assert.equal(JSON.parse(storage.get('test')).players.length,0,'deletion is saved');
 
-  intellectCategory().listeners.click();
-  const spellRow=find(root,e=>e.className==='comp-buff comp-category-detail');
-  assert.ok(find(spellRow,e=>e.className==='comp-spell-icon'),'expanded categories use spell artwork');
-  assert.ok(find(spellRow,e=>e.className==='comp-scope'),'expanded categories show raid or group scope');
   find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
 });
 
@@ -128,7 +129,7 @@ test('auto-optimize evenly assigns every placeholder and preserves identity, rol
 test('Lock In saves an immutable account copy, freezes placements, and allows a separate editable draft',async()=>{
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   let saved;
   const request=async data=>data?{composition:saved={id:'saved-1',title:data.title,plan:structuredClone(data.plan)}}:{compositions:[]};
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,request,storageKey:'locked-test'});

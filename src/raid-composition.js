@@ -107,26 +107,50 @@ export function compositionBuffs(plan) {
   });
 }
 
+export function compositionCapabilities(plan) {
+  // Baseline class utility; pet-dependent dispels are excluded. Counts are providers,
+  // not simultaneous casts. Talent cooldowns assume the named specialization.
+  // Priest updates: https://news.blizzard.com/en-us/article/24301514/
+  const assigned=plan.players.filter(p=>p.group!==null);
+  const count=predicate=>assigned.filter(predicate).length;
+  const classes=(...names)=>p=>names.includes(p.className);
+  const entries=[
+    ['Interrupts',classes('Warrior','Rogue','Mage','Shaman'),0,'Pummel / Shield Bash, Kick, Counterspell, Earth Shock'],
+    ['Magic dispels',classes('Priest','Paladin'),1,'Dispel Magic / Cleanse; friendly magic removal'],
+    ['Curse removal',classes('Mage','Druid'),2,'Remove Lesser Curse / Remove Curse'],
+    ['Poison cures',classes('Druid','Paladin','Shaman'),3,'Cure / Abolish Poison, Cleanse, Poison Cleansing Totem'],
+    ['Disease cures',classes('Priest','Paladin','Shaman'),4,'Cure / Abolish Disease, Cleanse, Disease Cleansing Totem'],
+    ['Purge',classes('Shaman','Priest'),5,'Purge / offensive Dispel Magic; pet-dependent effects excluded'],
+    ['Tranq Shot',classes('Hunter'),6,'Tranquilizing Shot; requires learning the ability'],
+    ['Battle res',classes('Druid'),7,'Rebirth; Soulstone is not counted as a direct battle resurrection'],
+    ['Fear Ward',classes('Priest'),8,'Fear Ward'],
+    ['Power Infusion',p=>p.className==='Priest'&&p.spec==='Discipline',9,'Power Infusion; assumes the Discipline talent'],
+    ['Innervate',classes('Druid'),10,'Innervate'],
+    ['Healing',p=>p.className==='Druid'||p.className==='Priest'&&p.spec==='Shadow'||p.className==='Paladin'&&p.spec==='Holy',11,'Tranquility, Shadow Priest Vampiric Embrace, Holy Paladin Divine Favor; assumes specialization talents'],
+    ['Defensives',classes('Warrior','Paladin','Mage','Rogue','Druid'),12,'Shield Wall, Divine Shield, Ice Block, Evasion or Barkskin; personal defensives, not raid mitigation'],
+  ];
+  const debuffs=[
+    ['Major armor reduction',classes('Warrior','Rogue'),13,'Sunder Armor / Expose Armor; alternatives do not stack'],
+    ['Faerie Fire',classes('Druid'),14,'Faerie Fire'],
+    ['Hunter’s Mark',classes('Hunter'),15,'Hunter’s Mark'],
+    ['Curse of the Elements',classes('Warlock'),16,'One planned curse per Warlock; other curses are not counted'],
+    ['Attack power reduction',p=>p.className==='Warrior'||p.className==='Druid'&&p.spec==='Feral Combat',17,'Demoralizing Shout / Roar; alternative effects do not stack'],
+    ['Thunder Clap',classes('Warrior'),18,'Attack-speed reduction'],
+    ['Insect Swarm',classes('Druid'),19,'Insect Swarm; baseline Forever ability'],
+  ];
+  const map=([name,predicate,iconIndex,description])=>({name,count:count(predicate),iconIndex,description});
+  return {utility:entries.slice(0,8).map(map),single:entries.slice(8,11).map(map),cooldowns:entries.slice(11).map(map),debuffs:debuffs.map(map).filter(e=>e.count>0)};
+}
+
 export function renderRaidComposition(root, {specs, storageKey = 'solstice-composition-v1', request = null}) {
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
-  function buffLine(buff, compact = false) {
-    const row=make('div',null,compact?'comp-buff comp-category-detail':'comp-buff');
-    row.dataset.buffName=buff.name;row.title=buff.name+' — '+buff.description;
-    row.dataset.state=buff.complete?'covered':buff.covered?'partial':buff.available?'alternative':'missing';
-    const icon=make('span',null,'comp-spell-icon');icon.setAttribute('aria-hidden','true');icon.title=buff.name;
-    icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
-    const info=make('div');info.append(make('strong',buff.shortName));if(!compact)info.append(make('small',buff.description));
-    const state=buff.complete?'Covered':buff.covered?'Group '+buff.groups.join(', '):buff.available?'Alternative':'Missing';
-    const badge=make('span',buff.scope,'comp-scope');badge.dataset.scope=buff.scope;
-    row.append(icon,info,make('small',state,'comp-buff-state'),badge);return row;
-  }
   let initial;try{initial=JSON.parse(localStorage.getItem(storageKey));}catch{}
   let model=createCompositionPlan(specs,initial);
   let locked=initial?.lockedId?{id:initial.lockedId,title:'Loading saved composition…'}:null;
   let savedCompositions=[];
-  let selected=null,dragged=null,expandedCategory=null;
+  let selected=null,dragged=null;
   const roleIcons={'Tank':'shield-check','Healer':'heart','Melee DPS':'swords','Ranged DPS':'target'};
   const controls=make('div',null,'comp-controls');
   const sizeLabel=make('label','Raid size');const size=make('select');size.setAttribute('aria-label','Raid size');
@@ -171,15 +195,13 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     }
     if(family.children.length)picker.append(family);
   }
+  const raidNeeds=make('section',null,'raid-card comp-raid-needs');
   const composition=make('section',null,'raid-card comp-composition');
   const settings=make('section',null,'raid-card comp-settings');
   const main=make('div',null,'comp-main');main.append(picker,groupsPanel,unassigned);
-  const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(composition,settings);
+  const side=make('aside',null,'comp-sidebar');side.setAttribute('aria-label','Composition controls');side.append(raidNeeds,composition,settings);
   const layout=make('div',null,'comp-layout');layout.append(main,side);
   const issues=make('section',null,'raid-card comp-issues');
-  const categories=make('section',null,'raid-card comp-categories');
-  const buffs=make('section',null,'raid-card comp-buffs');
-  const analysis=make('div',null,'comp-analysis');analysis.append(categories,buffs);
   const savedBar=make('div',null,'comp-saved-bar');
   const savedLabel=make('label','Saved compositions');const savedSelect=make('select');savedSelect.setAttribute('aria-label','Saved compositions');savedSelect.add(new Option('Choose a locked composition',''));savedLabel.append(savedSelect);savedBar.append(savedLabel);savedBar.hidden=!request;
   const dialog=make('dialog',null,'comp-lock-dialog');dialog.setAttribute('aria-label','Lock in composition');
@@ -213,7 +235,7 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   },'comp-optimize');
   optimize.replaceChildren(tablerIcon('sparkles'),document.createTextNode('Auto-Optimize'));optimize.title='Redistribute all placeholders evenly, spreading roles, classes and group buff providers.';
   controls.append(sizeLabel,saveStatus,optimize,lockButton,draftButton,clear);
-  root.replaceChildren(savedBar,controls,status,layout,issues,analysis,dialog);
+  root.replaceChildren(savedBar,controls,status,layout,issues,dialog);
   size.addEventListener('change',()=>{if(locked){size.value=String(model.snapshot().size);return;}try{model.resize(Number(size.value));commit('Raid size updated.');}catch(error){size.value=String(model.snapshot().size);status.textContent=error.message;}});
   function persist(){try{localStorage.setItem(storageKey,JSON.stringify({...model.snapshot(),lockedId:locked?.id??null}));saveStatus.textContent=locked?'Locked: '+locked.title:'Draft saved on this browser.';}catch{saveStatus.textContent='Draft could not be saved on this browser.';}}
   function commit(message){persist();draw();status.textContent=message;}
@@ -313,17 +335,68 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     if(assigned.length && !assigned.some(player=>player.role==='Healer'))issue('No healers assigned','Add a healer to the assigned raid composition.');
     for(const buff of coverage.filter(buff=>buff.scope==='Group'&&buff.covered&&!buff.complete))issue(buff.name+' covers Group '+buff.groups.join(', '),'Move or add a provider to cover the remaining occupied groups.','info');
     if(!issueCount)issues.append(make('p','Core buffs, tanks and healers are represented. Review group coverage for your encounter.','comp-success'));
-    categories.replaceChildren(heading('Buff Categories','wand'));buffs.replaceChildren(heading('All Raid Buffs','sparkles'));
-    const list=make('div',null,'comp-buff-list');
-    for(const category of [...new Set(coverage.map(buff=>buff.category))]){
-      const entries=coverage.filter(buff=>buff.category===category);
-      const section=make('div',null,'comp-category');
-      const toggle=button('',()=>{expandedCategory=expandedCategory===category?null:category;draw();},'comp-category-toggle');toggle.setAttribute('aria-expanded',String(expandedCategory===category));toggle.dataset.coverage=entries.every(buff=>buff.covered)?'covered':'missing';toggle.append(make('span',category),make('strong',entries.filter(buff=>buff.covered).length+' / '+entries.length),tablerIcon('chevron-down'));section.append(toggle);
-      if(expandedCategory===category)for(const buff of entries)section.append(buffLine(buff,true));categories.append(section);
-    }
-    for(const buff of coverage)list.append(buffLine(buff));
-    buffs.append(list,make('p','Coverage uses assigned placeholders. Greater Blessings are planned by class; one blessing per Paladin. A Shaman provides one air totem. Talent, form, Imp and totem requirements must be met in game.','comp-buff-note'));
+    drawRaidNeeds(coverage,compositionCapabilities(plan));
   }
+
+  function drawRaidNeeds(coverage, capabilities) {
+    raidNeeds.replaceChildren(make('h3','What the raid needs'));
+    const section = (label,countLabel) => {
+      const block = make('section');
+      const title = make('h4',label);
+      if (countLabel) title.append(make('strong',countLabel));
+      block.append(title);
+      raidNeeds.append(block);
+      return block;
+    };
+    const raidBuffs = coverage.filter(buff=>buff.scope==='Raid');
+    const raid = section('Raid-wide buffs',raidBuffs.filter(buff=>!buff.covered).length+' missing');
+    const icons = make('div',null,'comp-buff-icons');
+    for (const buff of raidBuffs) {
+      const icon = make('span',null,'comp-spell-icon comp-buff-icon');
+      icon.dataset.buffName=buff.name;
+      icon.dataset.state=buff.covered?'covered':'missing';
+      icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
+      icon.title=buff.name+' · '+buff.providers+' provider'+(buff.providers===1?'':'s')+' · '+buff.description;
+      icon.setAttribute('role','img');
+      icon.setAttribute('aria-label',icon.title);
+      icons.append(icon);
+    }
+    raid.append(icons);
+    const effectIcon = entry => {
+      const icon = make('span',null,'comp-effect-icon');
+      icon.style.backgroundPosition=(entry.iconIndex%5*25)+'% '+(Math.floor(entry.iconIndex/5)*100/3)+'%';
+      return icon;
+    };
+    const debuffs = section('Debuffs on the boss',capabilities.debuffs.length+' covered');
+    const debuffIcons = make('div',null,'comp-buff-icons');
+    for (const entry of capabilities.debuffs) {
+      const icon=effectIcon(entry);
+      icon.title=entry.name+' · '+entry.count+' providers · '+entry.description;
+      icon.setAttribute('role','img');
+      icon.setAttribute('aria-label',icon.title);
+      debuffIcons.append(icon);
+    }
+    debuffs.append(capabilities.debuffs.length?debuffIcons:make('small','None yet.'));
+    for (const [label,entries] of [['Utility',capabilities.utility],['Single target',capabilities.single],['Cooldowns',capabilities.cooldowns]]) {
+      const block=section(label);
+      const grid=make('div',null,'comp-capabilities');
+      for (const entry of entries) {
+        const row=make('div',null,'comp-capability');
+        row.dataset.capability=entry.name;
+        row.dataset.available=String(entry.count>0);
+        row.title=entry.description;
+        const icon=effectIcon(entry);
+        icon.setAttribute('aria-hidden','true');
+        const count=make('strong',String(entry.count));
+        count.setAttribute('aria-label',entry.count+' assigned providers');
+        row.append(icon,make('span',entry.name),count);
+        grid.append(row);
+      }
+      block.append(grid);
+    }
+    raidNeeds.append(make('small','Coverage updates when players are placed in raid groups.','comp-seat-hint'));
+  }
+
   persist();draw();
   if(request)request().then(result=>{
     savedCompositions=[...savedCompositions,...(result.compositions??[])].filter((entry,index,all)=>all.findIndex(other=>other.id===entry.id)===index);savedOptions();
