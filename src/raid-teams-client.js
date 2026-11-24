@@ -59,9 +59,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const grid=el('div',null,'teams-grid');
     for(const team of teams){const card=btn('',()=>{teamId=team.id;section='roster';selected.clear();path();load();},'team-tile');card.style.setProperty('--team-accent',team.accent);const avatar=el('span',team.name.charAt(0).toUpperCase(),'team-avatar');const text=el('span');text.append(el('strong',team.name),el('small',contextLabel(team)+' · WoW Forever'),el('small',team.mains+' mains · '+team.characters+' characters'),el('small',team.canEdit?'Team leader':'Guild team'));card.append(avatar,text,icon('shield-check'));grid.append(card);}
     if(!teams.length)grid.append(el('p','Create your first raid team to start assigning guild characters.','teams-empty'));content.append(grid);
-    const planner=btn('Open Group Planner',()=>{teamId=null;section='planner';drawStandalonePlanner();},'teams-planner-link');content.append(planner);
   }
-  function drawStandalonePlanner(){drawNavigation();content.replaceChildren(btn('All raid teams',()=>{section='roster';drawLanding();}));const panel=el('div');content.append(panel);renderPlanner?.(panel,null);}
   async function loadProfiles(token){
     if(!data.members.length)return;
     try{const result=await request('?team='+encodeURIComponent(teamId)+'&profiles=1');if(token!==revision||!isCurrent())return;data.members=result.members;if(section==='roster')for(const card of content.querySelectorAll('.team-summary'))card.replaceWith(summary());}catch{}
