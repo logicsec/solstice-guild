@@ -2,7 +2,7 @@ import { matchesGuildRosterFilter } from './guild-roster-filters.js';
 import { raidTeamsApi, guildRoster, guildRosterProfessions } from './raid-teams-api.js';
 import { raidTeamSummary, renderRaidTeams } from './raid-teams-client.js';
 import { raidCompositionsApi, ownedRaidComposition } from './raid-compositions-api.js';
-import { createCompositionPlan, compositionBuffs, renderRaidComposition } from './raid-composition.js';
+import { createCompositionPlan, compositionBuffs, compositionCapabilities, renderRaidComposition } from './raid-composition.js';
 import { tablerIcon, guildIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
@@ -415,7 +415,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-90ac5467bef2" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-90ac5467bef2&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-15ed8d479424" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-15ed8d479424&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1466,6 +1466,7 @@ raidForm.elements.repeatWeekly.addEventListener('change', () => {
 });
 for (const field of roleSlotFields) field.addEventListener('input', groupPlanner.draw);
 const raidInstances = ${JSON.stringify(raidInstances)};
+const compositionRaidNames = Object.fromEntries(Object.values(raidInstances).map(raid=>[raid.size,raid.name]));
 raidForm.elements.instance.addEventListener('change',()=>{
   const size = raidInstances[raidForm.elements.instance.value]?.size ?? 10;
   raidForm.elements.size.value = size;
@@ -1516,7 +1517,7 @@ function raidError(error) {
 function raidReset(view, id) {
   document.body.classList.toggle('guild-dashboard-active',view === 'guildDashboard');
   document.body.classList.toggle('raid-teams-active',view === 'raiding');
-  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding';
+  document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding' || view === 'groupPlanner';
   byId('raidTeamNavigation').hidden = view !== 'raiding';
   if(view === 'raiding') document.querySelector('.guild-menu-group').open=false;
   document.querySelector('[data-raid-view=raiding]').setAttribute('aria-expanded',String(view === 'raiding'));
@@ -1731,12 +1732,12 @@ async function openRaidView(view, id, navigate = true) {
       await renderRaidTeams(byId('raidList'),{
         request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,
         openCharacter:(character,target,onClose)=>openCharacterSheet({...character,character:character.name,armorySlug:character.slug,class_name:character.className},null,false,{target,onClose}),
-        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
+        renderPlanner:(target,teamId,defaultSize)=>renderRaidComposition(target,{specs:armorySpecs,defaultSize,raidNames:compositionRaidNames,chooseRaid:true,getCharacter:activePlannerCharacter,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
       });return;
     }
     if(view==='groupPlanner'){
       byId('raidTitle').textContent='Group Planner';
-      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});return;
+      renderRaidComposition(byId('raidList'),{specs:armorySpecs,raidNames:compositionRaidNames,chooseRaid:true,getCharacter:activePlannerCharacter,request:data=>guildRequest('/api/raid-compositions',data)});return;
     }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));
@@ -2006,6 +2007,7 @@ ${renderCharacterLifetime.toString()}
 ${renderCharacterReputations.toString()}
 ${createCompositionPlan.toString()}
 ${compositionBuffs.toString()}
+${compositionCapabilities.toString()}
 ${renderRaidComposition.toString()}
 ${matchesGuildRosterFilter.toString()}
 ${raidTeamSummary.toString()}
@@ -2647,6 +2649,9 @@ function writeRoute(tool, view, raid) {
   if (url.href !== location.href) history.pushState(null,'',url);
 }
 let guildCharacterChoices = [];
+function activePlannerCharacter() {
+  return guildCharacterChoices.find(item=>item.name===byId('guildCharacter').value);
+}
 function rememberGuildCharacter(name) {
   const character = guildCharacterChoices.find(item=>item.name === name);
   if (!character) return;
@@ -2708,6 +2713,7 @@ function notifyGuildCharacter(name) {
     const url = new URL(location.href);url.searchParams.set('character',name);history.replaceState(null,'',url);
   }
   document.dispatchEvent(new CustomEvent('guild-character-change',{detail:{name}}));
+  document.querySelector('.comp-selection')?.dispatchEvent(new Event('planner-character-change'));
   if (activeRaid && !signupForm.elements.character.value) {
     const index = savedCharacters.findIndex(item=>item.name === name);
     if (index >= 0) { byId('signupCharacter').value=String(index);byId('signupCharacter').dispatchEvent(new Event('change')); }
