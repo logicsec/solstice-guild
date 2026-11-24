@@ -62,7 +62,14 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
   const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,()=>new Element('span'),()=>new Element('svg'));
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,storageKey:'test'});
-  find(root,e=>e.dataset.class==='Mage').listeners.click();
+  const main=find(root,e=>e.className==='comp-main');
+  const toolbar=main.children[0];
+  assert.equal(toolbar.className,'comp-picker');
+  assert.equal(main.children[1].className,'raid-card comp-groups-panel');
+  assert.equal(toolbar.children.length,Object.keys(armorySpecs).length);
+  assert.equal(find(root,e=>e.className==='comp-sidebar').children.some(e=>e===toolbar),false);
+  assert.ok(find(toolbar,e=>e.attributes['aria-label']==='Add Feral (Bear) Druid to Unassigned'));
+  assert.ok(find(toolbar,e=>e.attributes['aria-label']==='Add Feral (Cat) Druid to Unassigned'));
   find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,null);
   const intellect=()=>find(root,e=>e.className==='comp-buff'&&e.dataset.buffName==='Arcane Intellect');
@@ -126,7 +133,6 @@ test('Lock In saves an immutable account copy, freezes placements, and allows a 
   const request=async data=>data?{composition:saved={id:'saved-1',title:data.title,plan:structuredClone(data.plan)}}:{compositions:[]};
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,request,storageKey:'locked-test'});
   await Promise.resolve();
-  find(root,e=>e.dataset.class==='Mage').listeners.click();
   find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
   find(root,e=>e.textContent==='Lock In').listeners.click();
   assert.match(find(root,e=>e.className==='comp-status').textContent,/Assign every/);
@@ -138,6 +144,7 @@ test('Lock In saves an immutable account copy, freezes placements, and allows a 
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
   assert.equal(dialog.open,false);assert.equal(saved.title,'Hyjal caster comp');
   assert.equal(find(root,e=>e.className==='comp-optimize').disabled,true);
+  assert.ok(all(root).filter(e=>e.className==='comp-add-spec').every(button=>button.disabled));
   assert.equal(find(root,e=>e.className==='comp-player').draggable,false);
   assert.equal(find(root,e=>e.className==='comp-remove').disabled,true);
   find(root,e=>e.textContent==='Edit as draft').listeners.click();
