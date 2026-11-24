@@ -19,11 +19,18 @@ test('locked composition snapshots validate capacity, remain immutable and are p
     assert.equal((await send({title:'Comp',plan:{...plan,players:[{...plan.players[0],spec:'Unknown'}]}})).status,400);
     const created=await send({title:'Caster comp',plan});assert.equal(created.status,201);
     const original=(await created.json()).composition;
+    const character={key:'astra',name:'Astra Mortis'};
+    const named={...plan.players[0],character};
+    assert.equal((await send({title:'Duplicate',plan:{...plan,players:[named,named]}})).status,400);
+
     assert.equal((await (await send()).json()).compositions.length,1);
     assert.deepEqual((await (await send(null,'bob')).json()).compositions,[]);
     assert.equal(await ownedRaidComposition(db,'bob',original.id),null);
-    const second=await send({id:original.id,title:'New version',plan:{...plan,players:[{...plan.players[0],group:2}]}});
-    assert.equal(second.status,201);assert.notEqual((await second.json()).composition.id,original.id);
+    const second=await send({id:original.id,title:'New version',plan:{...plan,players:[{...named,group:2}]}});
+    assert.equal(second.status,201);
+    const saved=(await second.json()).composition;
+    assert.notEqual(saved.id,original.id);
+    assert.deepEqual(saved.plan.players[0].character,character);
     assert.deepEqual(await ownedRaidComposition(db,'alice',original.id),original,'saving a new version cannot overwrite the locked snapshot');
   }finally{sqlite.close();}
 });

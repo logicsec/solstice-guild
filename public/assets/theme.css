@@ -467,6 +467,10 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
  background:transparent; box-shadow:none; color:var(--theme-menu-selected-color);
 }
 .comp-add-spec .forever-icon { width:28px; height:28px; border-radius:3px; }
+.comp-spec-family[data-roster-match="missing"] { border-color:var(--theme-border-color); }
+.comp-add-spec[data-roster-match="missing"] :is(.forever-icon,.comp-spec-role) { filter:grayscale(1); opacity:.55; }
+.comp-roster-hint { margin:-9px 0 0; font-size:12px; color:var(--theme-secondary-color); }
+
 .guild-app #raidList .comp-picker .comp-add-spec:hover:not(:disabled) { border-color:var(--class-color,var(--theme-link-color)); }
 .comp-picker .comp-add-spec:focus-visible { outline:2px solid var(--theme-link-color); outline-offset:2px; }
 .comp-picker .comp-add-spec:disabled { opacity:.45; }
@@ -554,6 +558,7 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-lock-dialog label { display:block; margin:16px 0; }
 .comp-lock-dialog input { display:block; width:100%; box-sizing:border-box; margin-top:7px; }
 .comp-lock-dialog button { margin-right:8px; }
+.comp-character-dialog select { display:block; width:100%; box-sizing:border-box; margin:10px 0 14px; }
 .comp-lock-dialog p { line-height:1.6; font-size:13px; }
 /* Raid teams: team list and contextual roster workspace. */
 .guild-app #raidPanel .raid-section-banner {

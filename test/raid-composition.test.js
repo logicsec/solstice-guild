@@ -110,6 +110,36 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(JSON.parse(storage.get('test')).players.length,0,'deletion is saved');
 
   find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
+  const teamRoot=new Element('main');
+  const team=render(teamRoot,{specs:armorySpecs,storageKey:'team',roster:[
+    {key:'astra',name:'Astra Mortis',className:'Mage',spec:'Arcane',role:'Ranged DPS'},
+    {key:'bear',name:'Bear Tank',className:'Druid',spec:'Feral Combat',role:'Tank'},
+  ]});
+  const teamIcon=keyword=>find(teamRoot,e=>e.className==='comp-add-spec'&&e.attributes['aria-label']?.startsWith(keyword));
+  assert.equal(teamIcon('Add Arcane Mage').dataset.rosterMatch,'available');
+  assert.match(teamIcon('Add Arcane Mage').title,/Astra Mortis/);
+  assert.equal(teamIcon('Add Fire Mage').dataset.rosterMatch,'missing');
+  assert.equal(teamIcon('Add Feral (Bear)').dataset.rosterMatch,'available');
+  assert.equal(teamIcon('Add Feral (Cat)').dataset.rosterMatch,'missing');
+  assert.equal(teamIcon('Add Fire Mage').disabled,false);
+  const dataTransfer={setData(){},getData(){return '';}};
+  const dropInFirstGroup=()=>find(teamRoot,e=>e.className==='comp-group').listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer});
+  teamIcon('Add Arcane Mage').listeners.dragstart({dataTransfer});
+  dropInFirstGroup();
+  const characterDialog=find(teamRoot,e=>e.className==='comp-lock-dialog comp-character-dialog');
+  assert.equal(characterDialog.open,true);
+  find(characterDialog,e=>e.attributes['aria-label']==='Team roster character').value='astra';
+  find(characterDialog,e=>e.textContent==='Save seat').listeners.click();
+  assert.equal(characterDialog.open,false);
+  assert.deepEqual(team.model.snapshot().players[0].character,{key:'astra',name:'Astra Mortis'});
+  assert.match(storage.get('team'),/Astra Mortis/);
+  assert.ok(find(teamRoot,e=>e.tagName==='strong'&&e.textContent==='Astra Mortis'));
+  teamIcon('Add Arcane Mage').listeners.dragstart({dataTransfer});
+  dropInFirstGroup();
+  assert.equal(characterDialog.open,false,'an already assigned character is unavailable for a second seat');
+  assert.equal(team.model.snapshot().players[1].character,undefined);
+
+
 });
 
 test('auto-optimize evenly assigns every placeholder and preserves identity, roles and buff choices',()=>{

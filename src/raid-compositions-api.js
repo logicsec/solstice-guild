@@ -6,7 +6,7 @@ export function lockedCompositionPlan(input) {
   if(!input || ![10,20,40].includes(input.size) || !Array.isArray(input.players) || !input.players.length || input.players.length>input.size)return null;
   if(input.players.some(player=>!player || !['Tank','Healer','Melee DPS','Ranged DPS'].includes(player.role)))return null;
   const plan=createCompositionPlan(armorySpecs,input).snapshot();
-  if(plan.players.length!==input.players.length || plan.players.some(player=>player.group===null))return null;
+  if(plan.players.length!==input.players.length || plan.players.some((player,index)=>player.group===null || (input.players[index].character!=null && !player.character)))return null;
   return plan;
 }
 export async function ownedRaidComposition(db,owner,id) {

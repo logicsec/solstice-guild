@@ -147,7 +147,7 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
     const composition=input.compositionId ? await ownedRaidComposition(db,user,input.compositionId) : null;
     if(input.compositionId && !composition)return reply({error:'Saved composition not found.'},404);
     if(composition && composition.plan.size!==size)return reply({error:'Choose a saved composition with the same raid size.'},400);
-    const planned=composition ? composition.plan.players.map((player,index)=>({name:player.spec+' '+player.className+' '+(index+1),className:player.className,role:player.role,group:player.group})) : input.groupPlan ?? [];
+    const planned=composition ? composition.plan.players.map((player,index)=>({name:player.character?.name ?? (player.spec+' '+player.className+' '+(index+1)),className:player.className,role:player.role,group:player.group})) : input.groupPlan ?? [];
     const groupPlan = normalizeGroupPlan(planned, size, raidClasses, raidRoles);
     if (!groupPlan) return reply({ error: 'Check the planned characters and group sizes.' }, 400);
     const settings = {
@@ -415,7 +415,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-b195649649a9" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-b195649649a9&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-9bfab8f02e6a" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-9bfab8f02e6a&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1743,7 +1743,7 @@ async function openRaidView(view, id, navigate = true) {
       await renderRaidTeams(byId('raidList'),{
         request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,renderRaidBanner:raidSectionBanner,
         openCharacter:(character,target,onClose)=>openCharacterSheet({...character,character:character.name,armorySlug:character.slug,class_name:character.className},null,false,{target,onClose}),
-        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,raidNames:compositionRaidNames,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
+        renderPlanner:(target,teamId,roster)=>renderRaidComposition(target,{specs:armorySpecs,roster,raidNames:compositionRaidNames,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
       });return;
     }
     if(view==='groupPlanner'){
