@@ -101,6 +101,8 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   assert.equal((await signIn(invite)).headers.get('location'), '/?login=membership');
   isMember = true;
   assert.equal((await signIn('//bad.example/')).headers.get('location'), '/');
+  const betaReturn='/beta?tool=raid&view=raiding&teams=all';
+  assert.equal((await signIn(betaReturn)).headers.get('location'),betaReturn,'Discord sign-in returns to beta review');
   const loginStarted = Date.now();
   const success = await signIn(invite);
   assert.equal(success.headers.get('location'), invite);

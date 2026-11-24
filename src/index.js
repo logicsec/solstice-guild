@@ -1,8 +1,9 @@
+import {betaPage,bootBetaWorkspace,renderBetaGuildHub} from './beta.js';
 import { matchesGuildRosterFilter } from './guild-roster-filters.js';
 import { raidTeamsApi, guildRoster, guildRosterProfessions } from './raid-teams-api.js';
 import { raidTeamSummary, renderRaidTeams } from './raid-teams-client.js';
 import { raidCompositionsApi, ownedRaidComposition } from './raid-compositions-api.js';
-import { createCompositionPlan, compositionBuffs, renderRaidComposition } from './raid-composition.js';
+import { createCompositionPlan, compositionBuffs, compositionCapabilities, renderRaidComposition } from './raid-composition.js';
 import { tablerIcon, guildIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
@@ -1514,6 +1515,7 @@ function raidError(error) {
   }
 }
 function raidReset(view, id) {
+  document.querySelector('[data-beta-nav=roster]')?.setAttribute('aria-current','false');
   document.body.classList.toggle('guild-dashboard-active',view === 'guildDashboard');
   document.body.classList.toggle('raid-teams-active',view === 'raiding');
   document.querySelector('#sharedRaidContent > .raid-heading').hidden = view === 'guildDashboard' || view === 'raiding';
@@ -1722,21 +1724,21 @@ async function openRaidView(view, id, navigate = true) {
   }
   const showGuildRoster = view === 'guildCharacters';
   if (showGuildRoster) view = 'guildDashboard';
-  if (navigate) writeRoute('raid', view, id);
+  if (navigate) writeRoute('raid', showGuildRoster&&location.pathname.startsWith('/beta')?'guildCharacters':view, id);
   setView('raid');
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
     if (view === 'raiding') {
       await renderRaidTeams(byId('raidList'),{
-        request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,
+        request:(path,data)=>guildRequest('/api/raid-teams'+path,data),specs:armorySpecs,beta:location.pathname.startsWith('/beta'),isCurrent:()=>revision===raidRevision,navigationRoot:byId('raidTeamNavigation'),raidInstances,
         openCharacter:(character,target,onClose)=>openCharacterSheet({...character,character:character.name,armorySlug:character.slug,class_name:character.className},null,false,{target,onClose}),
-        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
+        renderPlanner:(target,teamId)=>renderRaidComposition(target,{specs:armorySpecs,beta:location.pathname.startsWith('/beta'),storageKey:teamId?'solstice-composition-v1:'+teamId:'solstice-composition-v1',request:data=>guildRequest('/api/raid-compositions',data)}),
       });return;
     }
     if(view==='groupPlanner'){
       byId('raidTitle').textContent='Group Planner';
-      renderRaidComposition(byId('raidList'),{specs:armorySpecs,request:data=>guildRequest('/api/raid-compositions',data)});return;
+      renderRaidComposition(byId('raidList'),{specs:armorySpecs,beta:location.pathname.startsWith('/beta'),request:data=>guildRequest('/api/raid-compositions',data)});return;
     }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));
@@ -1766,6 +1768,12 @@ async function openRaidView(view, id, navigate = true) {
       byId('rosterFilter').value = '';
       renderRaid(data);
       return;
+    }
+    if (view === 'guildDashboard' && location.pathname.startsWith('/beta')) {
+      document.querySelector('#sharedRaidContent > .raid-heading').hidden=true;
+      document.querySelector('[data-beta-nav=roster]')?.setAttribute('aria-current',String(showGuildRoster));
+      document.querySelector('#raidMenu > [data-raid-view=guildDashboard]')?.setAttribute('aria-current',String(!showGuildRoster));
+      await renderBetaGuildHub(byId('raidList'),{request:guildRequest,specs:armorySpecs,rosterOnly:showGuildRoster,isCurrent:()=>revision===raidRevision,navigate:(view,navigate=true,id)=>openRaidView(view,id,navigate),openCharacter:(character,target)=>openCharacterSheet(character,null,false,{target})});return;
     }
     if (view === 'guildDashboard') {
       const root = byId('raidList');
@@ -2004,8 +2012,11 @@ ${renderCharacterTalents.toString()}
 ${renderCharacterAchievements.toString()}
 ${renderCharacterLifetime.toString()}
 ${renderCharacterReputations.toString()}
+${bootBetaWorkspace.toString()}
+${renderBetaGuildHub.toString()}
 ${createCompositionPlan.toString()}
 ${compositionBuffs.toString()}
+${compositionCapabilities.toString()}
 ${renderRaidComposition.toString()}
 ${matchesGuildRosterFilter.toString()}
 ${raidTeamSummary.toString()}
@@ -2637,7 +2648,7 @@ async function copyRaidInvite(button,field) {
 byId('copyReadinessInvite').addEventListener('click',()=>copyRaidInvite(byId('copyReadinessInvite'),byId('readinessInviteLink')));
 byId('copyRaid').addEventListener('click',()=>copyRaidInvite(byId('copyRaid'),byId('raidLink')));
 function writeRoute(tool, view, raid) {
-  const url = new URL('/',location.origin);
+  const url = new URL(location.pathname.startsWith('/beta')?'/beta':'/',location.origin);
   if (raid) {
     url.search = new URLSearchParams({tool:'raid',view:'detail',raid});
   } else {
@@ -2931,8 +2942,9 @@ export default {
     } catch {
       return new Response('Guild Chronicle storage is unavailable. Check that migrations have run.', { status: 503 });
     }
-    if (!session && request.method === 'GET' && ['/character','/gear-planner'].includes(pathname)) return Response.redirect(url.origin+'/auth/discord?next='+encodeURIComponent(pathname+url.search),303);
+    if (!session && request.method === 'GET' && ['/character','/gear-planner','/beta','/beta/'].includes(pathname)) return Response.redirect(url.origin+'/auth/discord?next='+encodeURIComponent(pathname+url.search),303);
     if (!session) return Response.json({ error: 'Sign in with Discord to continue.' }, { status: 401, headers: { 'Cache-Control': 'no-store' } });
+    if (['/beta','/beta/'].includes(pathname) && request.method === 'GET') return new Response(betaPage(page),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store','Referrer-Policy':'same-origin'}});
     if (pathname === '/gear-planner' && request.method === 'GET') return new Response(gearPlannerPage(page),{headers:{'Content-Type':'text/html; charset=utf-8','Cache-Control':'private, no-store'}});
     if (pathname === '/api/raid-teams') {
       try { return await raidTeamsApi(request,env,url,session); }
