@@ -1,0 +1,28 @@
+{
+  "source": "https://wow.zamimg.com/images/wow/icons/medium/",
+  "copyright": "World of Warcraft spell artwork \u00a9 Blizzard Entertainment",
+  "columns": 5,
+  "rows": 4,
+  "icons": [
+    "ability_kick",
+    "spell_holy_dispelmagic",
+    "spell_nature_removecurse",
+    "spell_nature_nullifypoison",
+    "spell_nature_nullifydisease",
+    "spell_nature_purge",
+    "spell_nature_drowsy",
+    "spell_nature_reincarnation",
+    "spell_holy_excorcism",
+    "spell_holy_powerinfusion",
+    "spell_nature_lightning",
+    "spell_nature_tranquility",
+    "spell_holy_powerwordshield",
+    "ability_warrior_sunder",
+    "spell_nature_faeriefire",
+    "ability_hunter_snipershot",
+    "spell_shadow_chilltouch",
+    "ability_warrior_warcry",
+    "spell_nature_thunderclap",
+    "spell_nature_insectswarm"
+  ]
+}

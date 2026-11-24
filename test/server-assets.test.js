@@ -45,6 +45,23 @@ test('production server serves theme and Tabler assets without authentication', 
   assert.match(await failedFeed.text(),/AHledger did not respond/);
   assert.equal((await fetch(base+'/healthz')).status,200,'upstream timeout does not terminate the actual Node server');
 
+  const betaGuest=await fetch(base+'/beta',{redirect:'manual'});
+  assert.equal(betaGuest.status,303);
+  assert.match(betaGuest.headers.get('location'),/auth\/discord\?next=%2Fbeta/);
+  const preview=await fetch(base+'/beta',{headers:{Cookie:'__Host-solstice-session='+token}});
+  assert.equal(preview.status,200);
+  assert.equal(preview.headers.get('cache-control'),'private, no-store');
+  const previewHtml=await preview.text();
+  assert.match(previewHtml,/class="guild-app beta-workspace"/);
+  assert.match(previewHtml,/assets\/beta.css/);
+  assert.match(previewHtml,/bootBetaWorkspace\(\);\s*route\(\);/);
+  for(const match of previewHtml.matchAll(/<script(?: [^>]*)?>([\s\S]*?)<\/script>/g))new Function(match[1]);
+  const production=await fetch(base+'/?tool=raid',{headers:{Cookie:'__Host-solstice-session='+token}});
+  const productionHtml=await production.text();
+  assert.doesNotMatch(productionHtml,/class="guild-app beta-workspace"|href="\/assets\/beta.css/);
+  const betaStyles=await fetch(base+'/assets/beta.css');assert.equal(betaStyles.status,200);assert.match(await betaStyles.text(),/Google Sans/);
+  const effects=await fetch(base+'/assets/planner-effects.webp');assert.equal(effects.status,200);assert.equal(Buffer.from(await effects.arrayBuffer()).toString('ascii',8,12),'WEBP');
+
   const spellAtlas=await fetch(base+'/assets/forever-buffs.webp');
   assert.equal(spellAtlas.status,200);
   assert.equal(spellAtlas.headers.get('content-type'),'image/webp');
