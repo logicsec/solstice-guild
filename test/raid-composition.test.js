@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import {createCompositionPlan,compositionBuffs,renderRaidComposition} from '../src/raid-composition.js';
+import {createCompositionPlan,compositionBuffs,compositionCapabilities,renderRaidComposition} from '../src/raid-composition.js';
 import {armorySpecs} from '../src/armory.js';
 
 test('composition placeholders start unassigned, enforce capacity, resize and restore safely',()=>{
@@ -60,20 +60,21 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();
   const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,storageKey:'test'});
-  find(root,e=>e.dataset.class==='Mage').listeners.click();
   find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,null);
-  const intellect=()=>find(root,e=>e.className==='comp-buff'&&e.dataset.buffName==='Arcane Intellect');
+  const columns=find(root,e=>e.className==='comp-layout');
+  assert.deepEqual(columns.children.map(e=>e.className),['raid-card comp-issues','comp-main','comp-sidebar']);
+  assert.equal(all(root).filter(e=>e.className==='comp-group').length,2);
+  const intellect=()=>find(root,e=>e.dataset.buffName==='Arcane Intellect');
+  const interrupts=()=>find(root,e=>e.dataset.capability==='Interrupts').lastElementChild.textContent;
   assert.equal(intellect().dataset.state,'missing','unassigned Mage does not cover raid intellect');
-  const intellectCategory=()=>find(root,e=>e.className==='comp-category-toggle'&&find(e,n=>n.textContent==='Intellect'));
-  assert.equal(intellectCategory().dataset.coverage,'missing','missing category uses red status');
-  find(root,e=>e.dataset.playerSelect==='1').listeners.click();
+  assert.equal(interrupts(),'0');
   find(root,e=>e.attributes['aria-label']==='Group 1, empty slot 1, place selected placeholder').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,1);
-  assert.equal(intellect().dataset.state,'covered','placing a Mage updates the bottom buff panel');
-  assert.equal(intellectCategory().dataset.coverage,'covered','covered category uses green status');
+  assert.equal(intellect().dataset.state,'covered','placing a Mage updates the right-hand buff panel');
+  assert.equal(interrupts(),'1');
   let group=all(root).filter(e=>e.className==='comp-group')[1];
   group.listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer:{getData:()=> '1'}});
   assert.equal(ui.model.snapshot().players[0].group,2);
@@ -93,11 +94,15 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(ui.model.snapshot().players.length,0,'Unassigned X removes the placeholder');
   assert.equal(JSON.parse(storage.get('test')).players.length,0,'deletion is saved');
 
-  intellectCategory().listeners.click();
-  const spellRow=find(root,e=>e.className==='comp-buff comp-category-detail');
-  assert.ok(find(spellRow,e=>e.className==='comp-spell-icon'),'expanded categories use spell artwork');
-  assert.ok(find(spellRow,e=>e.className==='comp-scope'),'expanded categories show raid or group scope');
-  find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
+  find(root,e=>e.attributes['aria-label']==='20 players').listeners.click();
+  assert.equal(all(root).filter(e=>e.className==='comp-group').length,4);
+  const icon=find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned');
+  icon.listeners.dragstart({dataTransfer:{setData(){}}});
+  group=all(root).filter(e=>e.className==='comp-group')[2];
+  group.listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer:{getData:()=>''}});
+  assert.equal(ui.model.snapshot().players.at(-1).group,3);
+  find(root,e=>find(e,c=>c.textContent==='Clear lineup')&&e.tagName==='button').listeners.click();
+  assert.equal(ui.model.snapshot().players.length,0);
 });
 
 test('auto-optimize evenly assigns every placeholder and preserves identity, roles and buff choices',()=>{
@@ -121,18 +126,17 @@ test('auto-optimize evenly assigns every placeholder and preserves identity, rol
 test('Lock In saves an immutable account copy, freezes placements, and allows a separate editable draft',async()=>{
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   let saved;
   const request=async data=>data?{composition:saved={id:'saved-1',title:data.title,plan:structuredClone(data.plan)}}:{compositions:[]};
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,request,storageKey:'locked-test'});
   await Promise.resolve();
-  find(root,e=>e.dataset.class==='Mage').listeners.click();
   find(root,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
-  find(root,e=>e.textContent==='Lock In').listeners.click();
+  find(root,e=>e.className==='comp-lock').listeners.click();
   assert.match(find(root,e=>e.className==='comp-status').textContent,/Assign every/);
   find(root,e=>e.className==='comp-optimize').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,1);
-  find(root,e=>e.textContent==='Lock In').listeners.click();
+  find(root,e=>e.className==='comp-lock').listeners.click();
   const dialog=find(root,e=>e.className==='comp-lock-dialog');assert.equal(dialog.open,true);
   find(dialog,e=>e.tagName==='input').value='Hyjal caster comp';
   await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
@@ -145,4 +149,43 @@ test('Lock In saves an immutable account copy, freezes placements, and allows a 
   find(root,e=>e.attributes['aria-label']==='Move Arcane Mage to Unassigned').listeners.click({stopPropagation(){}});
   assert.equal(ui.model.snapshot().players[0].group,null);
   assert.equal(saved.plan.players[0].group,1,'editing the draft cannot change the saved snapshot');
+});
+
+
+test('a shared lineup round-trips without replacing the recipient’s local draft',async()=>{
+  const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
+  const storage=new Map();
+  const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
+  let copied;
+  const window={location:{href:'https://guild.example/?tool=raid&view=groupPlanner'},navigator:{clipboard:{async writeText(value){copied=value;}}}};
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,window,createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
+  const sender=new Element('main');
+  const plan=render(sender,{specs:armorySpecs,storageKey:'sender'});
+  find(sender,e=>e.attributes['aria-label']==='Add Arcane Mage to Unassigned').listeners.click();
+  find(sender,e=>e.attributes['aria-label']==='Group 1, empty slot 1, place selected placeholder').listeners.click();
+  find(sender,e=>e.className==='comp-share').listeners.click();
+  await Promise.resolve();
+  assert.match(copied,/view=groupPlanner#lineup=/);
+  const own=JSON.stringify({size:40,players:[]});
+  storage.set('recipient',own);
+  window.location.href=copied;
+  const received=render(new Element('main'),{specs:armorySpecs,storageKey:'recipient'});
+  assert.deepEqual(received.model.snapshot(),plan.model.snapshot());
+  assert.equal(storage.get('recipient'),own);
+});
+
+test('raid selection shows the active character’s buffs and opens the selected raid size',()=>{
+  const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
+  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}}, {},{},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
+  const root=new Element('main');
+  const raidNames={10:'Barrow Deeps',20:'Hyjal Summit',40:'Onyxia’s Lair'};
+  const ui=render(root,{specs:armorySpecs,raidNames,chooseRaid:true,getCharacter:()=>({name:'Dawn Mage',class_name:'Mage',spec:'Arcane'})});
+  assert.equal(all(root).filter(e=>e.className==='comp-selection-row').length,3);
+  assert.ok(find(root,e=>e.textContent==='Arcane Intellect'));
+  const hyjal=find(root,e=>e.className==='comp-selection-row'&&find(e,c=>c.textContent==='Hyjal Summit'));
+  hyjal.listeners.click();
+  assert.equal(ui.model.snapshot().size,20);
+  assert.equal(all(root).filter(e=>e.className==='comp-group').length,4);
+  find(root,e=>e.className==='comp-back').listeners.click();
+  assert.ok(find(root,e=>e.className==='comp-selection'));
 });
