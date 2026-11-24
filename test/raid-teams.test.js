@@ -235,4 +235,5 @@ test('only creators see team deletion and confirmed deletion returns to the team
  approved=true;await find(root,e=>e.tagName==='button'&&e.textContent==='Delete team').listeners.click();assert.equal(deletions,1);
  assert.ok(find(root,e=>e.tagName==='h2'&&e.textContent==='Raid Teams'));
  assert.equal(stored.has('solstice-working-raid-team'),false);assert.equal(new URLSearchParams(location.search).has('team'),false);
+ assert.equal(find(root,e=>e.className==='teams-status').textContent,'','successful deletion leaves no notice above the page header');
 });

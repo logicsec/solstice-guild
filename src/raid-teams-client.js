@@ -141,7 +141,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     filterPanel.append(btn('Reset filters',()=>{for(const key of Object.keys(rosterFilters))rosterFilters[key]='';race.value='';className.value='';minimum.value='';maximum.value='';specOptions();apply();}));
 
     if(tab==='team'){const select=el('select');select.setAttribute('aria-label','Group roster by');select.add(new Option('Role','role'));select.add(new Option('Guild rank','rank'));select.value=mode;select.addEventListener('change',()=>{mode=select.value;drawRows(rows);});tools.append(select);}
-    else tools.append(btn('Refresh guild roster',async()=>{try{status.textContent='Refreshing guild roster…';const result=await request('?team='+teamId,{action:'refresh'});await load();status.textContent=result.roster.warning||'Guild roster refreshed.';}catch(error){status.textContent=error.message;}}));list.append(tools,filterPanel,rows);drawRows(rows);
+    else tools.append(btn('Refresh guild roster',async()=>{try{status.textContent='Refreshing guild roster…';await request('?team='+teamId,{action:'refresh'});await load();}catch(error){status.textContent=error.message;}}));list.append(tools,filterPanel,rows);drawRows(rows);
   }
   function identity(character){const node=el('span',null,'team-character-identity');node.dataset.wowClass=character.className;node.append(guildIcon('class',character.className));if(character.spec)node.append(guildIcon('spec',character.spec,'',character.className));const name=btn(character.name,()=>{if(openCharacter){characterTitle.textContent=character.name;openCharacter({...character,region:data.team.region||'us'},characterBody,()=>characterDialog.close());characterDialog.showModal();characterClose.focus();}else if(character.slug)location.href='/character?character='+encodeURIComponent(character.name)+'&name='+encodeURIComponent(character.slug);},'team-character-link');node.append(name);return node;}
   async function change(input){if(saving)return;saving=true;if(navigationRoot)navigationRoot.inert=true;status.textContent='Saving team…';for(const control of content.querySelectorAll('button,input,select'))control.disabled=true;try{await request('?team='+teamId,input);selected.clear();await load();return true;}catch(error){status.textContent=error.message;return false;}finally{saving=false;if(navigationRoot&&isCurrent())navigationRoot.inert=false;if(isCurrent()&&data)drawWorkspace();}}
@@ -231,7 +231,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     try{
       await request('?team='+teamId,{action:'delete',confirmName:team.name});
       try{if(localStorage.getItem('solstice-working-raid-team')===teamId)localStorage.removeItem('solstice-working-raid-team');localStorage.removeItem('solstice-composition-v1:'+teamId);}catch{}
-      teamId=null;data=null;section='roster';selected.clear();path();await load();status.textContent='Team deleted.';
+      teamId=null;data=null;section='roster';selected.clear();path();await load();
     }catch(error){status.textContent=error.message;}finally{saving=false;if(isCurrent()){content.inert=false;if(navigationRoot)navigationRoot.inert=false;}}
   }
   function drawSettings(panel){
