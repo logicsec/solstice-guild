@@ -77,11 +77,11 @@ export function compositionBuffs(plan) {
   ];
   const assigned = plan.players.filter(player=>player.group !== null);
   const occupied = [...new Set(assigned.map(player=>player.group))].sort((a,b)=>a-b);
-  return rules.map(([name,category,className,scope,spec,description,choice,value])=>{
+  return rules.map(([name,category,className,scope,spec,description,choice,value],iconIndex)=>{
     const candidates=assigned.filter(player=>player.className === className && (!spec || player.spec === spec));
     const providers=candidates.filter(player=>!choice || player[choice] === value);
     const groups=scope === 'Raid' && providers.length ? occupied : [...new Set(providers.map(player=>player.group))].sort((a,b)=>a-b);
-    return {name,category,className,scope,spec,description,groups,providers:providers.length,available:candidates.length>0,covered:providers.length>0,complete:providers.length>0 && (scope === 'Raid' || groups.length === occupied.length),choice,value};
+    return {name,category,className,scope,spec,description,iconIndex,groups,providers:providers.length,available:candidates.length>0,covered:providers.length>0,complete:providers.length>0 && (scope === 'Raid' || groups.length === occupied.length),choice,value};
   });
 }
 
@@ -89,6 +89,16 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
   const make=(tag,text,cls)=>{const node=document.createElement(tag);if(text != null)node.textContent=text;if(cls)node.className=cls;return node;};
   const button=(text,action,cls)=>{const node=make('button',text,cls);node.type='button';node.addEventListener('click',action);return node;};
   const heading=(text,icon)=>{const h=make('h3');h.append(tablerIcon(icon,'card-header-icon'),document.createTextNode(text));return h;};
+  function buffLine(buff, compact = false) {
+    const row=make('div',null,compact?'comp-buff comp-category-detail':'comp-buff');
+    row.dataset.state=buff.complete?'covered':buff.covered?'partial':buff.available?'alternative':'missing';
+    const icon=make('span',null,'comp-spell-icon');icon.setAttribute('aria-hidden','true');icon.title=buff.name;
+    icon.style.backgroundPosition=(buff.iconIndex%5*25)+'% '+(Math.floor(buff.iconIndex/5)*25)+'%';
+    const info=make('div');info.append(make('strong',buff.name));if(!compact)info.append(make('small',buff.description));
+    const state=buff.complete?'Covered':buff.covered?'Group '+buff.groups.join(', '):buff.available?'Alternative':'Missing';
+    const badge=make('span',buff.scope,'comp-scope');badge.dataset.scope=buff.scope;
+    row.append(icon,info,make('small',state,'comp-buff-state'),badge);return row;
+  }
   let initial;try{initial=JSON.parse(localStorage.getItem(storageKey));}catch{}
   const model=createCompositionPlan(specs,initial);
   let chosenClass='Warrior',selected=null,dragged=null,expandedCategory=null;
@@ -192,16 +202,10 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     for(const category of [...new Set(coverage.map(buff=>buff.category))]){
       const entries=coverage.filter(buff=>buff.category===category);
       const section=make('div',null,'comp-category');
-      const toggle=button('',()=>{expandedCategory=expandedCategory===category?null:category;draw();},'comp-category-toggle');toggle.setAttribute('aria-expanded',String(expandedCategory===category));toggle.append(make('span',category),make('strong',entries.filter(buff=>buff.covered).length+' / '+entries.length),tablerIcon('chevron-down'));section.append(toggle);
-      if(expandedCategory===category)for(const buff of entries)section.append(make('small',(buff.covered?'Available: ':'Missing: ')+buff.name,'comp-category-detail'));categories.append(section);
+      const toggle=button('',()=>{expandedCategory=expandedCategory===category?null:category;draw();},'comp-category-toggle');toggle.setAttribute('aria-expanded',String(expandedCategory===category));toggle.dataset.coverage=entries.every(buff=>buff.covered)?'covered':'missing';toggle.append(make('span',category),make('strong',entries.filter(buff=>buff.covered).length+' / '+entries.length),tablerIcon('chevron-down'));section.append(toggle);
+      if(expandedCategory===category)for(const buff of entries)section.append(buffLine(buff,true));categories.append(section);
     }
-    for(const buff of coverage){
-      const row=make('div',null,'comp-buff');row.dataset.state=buff.complete?'covered':buff.covered?'partial':buff.available?'alternative':'missing';
-      const info=make('div');info.append(make('strong',buff.name),make('small',buff.description));
-      const state=buff.complete?'Covered':buff.covered?'Group '+buff.groups.join(', '):buff.available?'Alternative':'Missing';
-      const badge=make('span',buff.scope,'comp-scope');badge.dataset.scope=buff.scope;
-      row.append(guildIcon('class',buff.className),info,make('small',state,'comp-buff-state'),badge);list.append(row);
-    }
+    for(const buff of coverage)list.append(buffLine(buff));
     buffs.append(list,make('p','Coverage uses assigned placeholders. Greater Blessings are planned by class; one blessing per Paladin. A Shaman provides one air totem. Talent, form, Imp and totem requirements must be met in game.','comp-buff-note'));
   }
   persist();draw();

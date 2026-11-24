@@ -1,0 +1,29 @@
+{
+  "source": "https://github.com/hastecraft/forever-icons/releases/download/v1.2.1/forever-icons-WOW-70959patch1.60.1_Retail.zip",
+  "columns": 5,
+  "rows": 5,
+  "textures": [
+    "spell_holy_wordfortitude",
+    "spell_magic_greaterblessingofkings",
+    "spell_nature_regeneration",
+    "spell_holy_magicalsentry",
+    "spell_holy_fistofjustice",
+    "spell_holy_sealofwisdom",
+    "spell_holy_sealofsalvation",
+    "spell_holy_prayerofhealing02",
+    "spell_holy_divinespirit",
+    "ability_warrior_battleshout",
+    "ability_trueshot",
+    "spell_nature_moonglow",
+    "spell_nature_unyeildingstamina",
+    "spell_nature_windfury",
+    "spell_nature_invisibilitytotem",
+    "spell_nature_earthbindtotem",
+    "spell_nature_manaregentotem",
+    "spell_shadow_siphonmana",
+    "spell_shadow_burningspirit",
+    "spell_holy_devotionaura",
+    "spell_holy_auraoflight",
+    "spell_fire_sealoffire"
+  ]
+}

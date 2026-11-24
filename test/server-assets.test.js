@@ -45,6 +45,10 @@ test('production server serves theme and Tabler assets without authentication', 
   assert.match(await failedFeed.text(),/AHledger did not respond/);
   assert.equal((await fetch(base+'/healthz')).status,200,'upstream timeout does not terminate the actual Node server');
 
+  const spellAtlas=await fetch(base+'/assets/forever-buffs.webp');
+  assert.equal(spellAtlas.status,200);
+  assert.equal(spellAtlas.headers.get('content-type'),'image/webp');
+  assert.equal(Buffer.from(await spellAtlas.arrayBuffer()).toString('ascii',8,12),'WEBP');
   const atlas=await fetch(base+'/assets/forever-identities.webp');
   assert.equal(atlas.status,200);
   assert.equal(atlas.headers.get('content-type'),'image/webp');

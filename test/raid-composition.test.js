@@ -65,10 +65,13 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(ui.model.snapshot().players[0].group,null);
   const intellect=()=>find(root,e=>e.className==='comp-buff'&&find(e,n=>n.textContent==='Arcane Intellect'));
   assert.equal(intellect().dataset.state,'missing','unassigned Mage does not cover raid intellect');
+  const intellectCategory=()=>find(root,e=>e.className==='comp-category-toggle'&&find(e,n=>n.textContent==='Intellect'));
+  assert.equal(intellectCategory().dataset.coverage,'missing','missing category uses red status');
   find(root,e=>e.dataset.playerSelect==='1').listeners.click();
   find(root,e=>e.attributes['aria-label']==='Group 1, empty slot 1, place selected placeholder').listeners.click();
   assert.equal(ui.model.snapshot().players[0].group,1);
   assert.equal(intellect().dataset.state,'covered','placing a Mage updates the bottom buff panel');
+  assert.equal(intellectCategory().dataset.coverage,'covered','covered category uses green status');
   let group=all(root).filter(e=>e.className==='comp-group')[1];
   group.listeners.drop({preventDefault(){},stopPropagation(){},dataTransfer:{getData:()=> '1'}});
   assert.equal(ui.model.snapshot().players[0].group,2);
@@ -77,5 +80,9 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(intellect().dataset.state,'missing','moving back to Unassigned removes raid coverage');
   const restored=render(new Element('main'),{specs:armorySpecs,storageKey:'test'});
   assert.deepEqual(restored.model.snapshot(),ui.model.snapshot());
+  intellectCategory().listeners.click();
+  const spellRow=find(root,e=>e.className==='comp-buff comp-category-detail');
+  assert.ok(find(spellRow,e=>e.className==='comp-spell-icon'),'expanded categories use spell artwork');
+  assert.ok(find(spellRow,e=>e.className==='comp-scope'),'expanded categories show raid or group scope');
   find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
 });

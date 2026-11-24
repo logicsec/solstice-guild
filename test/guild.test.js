@@ -128,8 +128,10 @@ test('Discord membership, invite-link return, SPA, raid RSVP and sign-out', asyn
   for (const [,symbol] of plannerHtml.matchAll(/tabler-icons\.svg(?:\?[^#"]+)?#([a-z0-9-]+)/g)) assert.ok(tablerSprite.includes('id="'+symbol+'"'),'missing Tabler symbol '+symbol);
 
   assert.doesNotMatch(plannerHtml,/<div class="raid-nav-group">/);
-  assert.equal((plannerHtml.match(/<details class="guild-menu-group">/g) ?? []).length,1);
-  assert.match(plannerHtml,/<button data-raid-view="raiding">/);
+  assert.equal((plannerHtml.match(/<details class="guild-menu-group">/g) ?? []).length,2);
+  const raidingMenu=plannerHtml.match(/<details class="guild-menu-group">[\s\S]*?<\/details>/g)[1];
+  assert.match(raidingMenu,/<span>Raiding<\/span>/);
+  assert.match(raidingMenu,/<div class="guild-menu-items"><button data-raid-view="raiding">[\s\S]*?Group Planner<\/button>/);
   const guildMenu=plannerHtml.match(/<details class="guild-menu-group">[\s\S]*?<\/details>/)[0];
   assert.match(guildMenu,/guild-planner-link/);
   const menu=plannerHtml.match(/<nav id="raidMenu"[\s\S]*?<\/nav>/)[0];

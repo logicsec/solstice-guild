@@ -462,7 +462,8 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 .comp-analysis { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-top:16px; align-items:start; }
 .comp-category { margin-bottom:8px; }
 .guild-app #raidList .comp-category-toggle { display:flex; align-items:center; gap:12px; width:100%; min-height:40px; padding:8px 10px; background:var(--theme-body-bg); border:1px solid var(--theme-border-color); color:var(--theme-body-color); font-weight:400; text-align:left; }
-.comp-category-toggle strong { margin-inline-start:auto; font-size:12px; font-weight:500; color:var(--theme-primary-text-emphasis); }
+.comp-category-toggle strong { margin-inline-start:auto; font-size:12px; font-weight:500; color:var(--theme-danger); }
+.comp-category-toggle[data-coverage="covered"] strong { color:var(--theme-success); }
 .comp-category-toggle svg { width:14px; height:14px; }
 .comp-category-detail { display:block; margin:0; padding:8px 10px; background:var(--theme-tertiary-bg); color:var(--theme-secondary-color); }
 .comp-buff-list { display:grid; gap:5px; }
@@ -480,3 +481,7 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 @media(max-width:900px) { .comp-layout { grid-template-columns:minmax(0,1fr) 270px; gap:12px; } }
 @media(max-width:720px) { .comp-layout { display:flex; flex-direction:column; } .comp-sidebar { width:100%; order:-1; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; } .comp-main { width:100%; } .comp-settings { grid-column:1/-1; } .comp-analysis { grid-template-columns:1fr; } .comp-controls > button { margin-inline-start:0; } .comp-save-status { flex-basis:100%; order:1; } }
 @media(max-width:460px) { .comp-sidebar { grid-template-columns:1fr; } .comp-groups { gap:8px; } .comp-group { padding:7px; } .comp-player-select > .tabler-icon { display:none; } .comp-buff { grid-template-columns:22px minmax(0,1fr) auto; } .comp-buff-state { grid-column:2; text-align:left; } .comp-scope { grid-column:3; grid-row:1/3; } }
+
+.comp-spell-icon { display:inline-block; width:22px; height:22px; flex-shrink:0; border-radius:3px; background:url('/assets/forever-buffs.webp?v=1') no-repeat; background-size:500% 500%; }
+.comp-category-detail.comp-buff { padding:9px 10px; margin:0; background:transparent; color:var(--theme-body-color); }
+.comp-category-detail.comp-buff strong { font-size:12px; }
