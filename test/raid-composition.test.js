@@ -80,6 +80,17 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(intellect().dataset.state,'missing','moving back to Unassigned removes raid coverage');
   const restored=render(new Element('main'),{specs:armorySpecs,storageKey:'test'});
   assert.deepEqual(restored.model.snapshot(),ui.model.snapshot());
+  find(root,e=>e.dataset.playerSelect==='1').listeners.click();
+  find(root,e=>e.attributes['aria-label']==='Group 1, empty slot 1, place selected placeholder').listeners.click();
+  find(root,e=>e.attributes['aria-label']==='Move Arcane Mage to Unassigned').listeners.click({stopPropagation(){}});
+  assert.equal(ui.model.snapshot().players.length,1,'group X retains the placeholder');
+  assert.equal(ui.model.snapshot().players[0].group,null,'group X returns it to Unassigned');
+  assert.equal(intellect().dataset.state,'missing','group X updates buff coverage');
+  assert.equal(JSON.parse(storage.get('test')).players[0].group,null,'return to Unassigned is saved');
+  find(root,e=>e.attributes['aria-label']==='Remove Arcane Mage').listeners.click({stopPropagation(){}});
+  assert.equal(ui.model.snapshot().players.length,0,'Unassigned X removes the placeholder');
+  assert.equal(JSON.parse(storage.get('test')).players.length,0,'deletion is saved');
+
   intellectCategory().listeners.click();
   const spellRow=find(root,e=>e.className==='comp-buff comp-category-detail');
   assert.ok(find(spellRow,e=>e.className==='comp-spell-icon'),'expanded categories use spell artwork');

@@ -140,7 +140,14 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     select.dataset.playerSelect=player.id;select.setAttribute('aria-pressed',String(selected===player.id));select.setAttribute('aria-label','Select '+player.spec+' '+player.className+' to move');
     const identity=make('span');identity.append(make('strong',player.spec==='Feral Combat'?(player.role==='Tank'?'Feral (Bear)':'Feral (Cat)'):player.spec),make('small',player.className));
     select.append(guildIcon('spec',player.spec,'',player.className),identity,tablerIcon(roleIcons[player.role]));
-    const remove=button('',event=>{event.stopPropagation();model.remove(player.id);if(selected===player.id)selected=null;commit(player.spec+' '+player.className+' removed.');},'comp-remove');remove.append(tablerIcon('x'));remove.setAttribute('aria-label','Remove '+player.spec+' '+player.className);
+    const remove=button('',event=>{
+      event.stopPropagation();
+      if(player.group!==null){move(player.id,null);return;}
+      model.remove(player.id);if(selected===player.id)selected=null;
+      commit(player.spec+' '+player.className+' removed.');
+    },'comp-remove');
+    const removeLabel=player.group===null?'Remove '+player.spec+' '+player.className:'Move '+player.spec+' '+player.className+' to Unassigned';
+    remove.append(tablerIcon('x'));remove.setAttribute('aria-label',removeLabel);remove.title=removeLabel;
     row.append(select,remove);return row;
   }
   function draw(){
