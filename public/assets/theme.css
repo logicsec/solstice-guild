@@ -399,3 +399,84 @@ body :is(button,input[type="submit"],input[type="button"],input[type="reset"],.b
 
 /* Original class and spec artwork from hastecraft/forever-icons. */
 .guild-symbol.forever-icon { display:inline-block; flex-shrink:0; width:24px; height:24px; background-image:url('/assets/forever-identities.webp?v=1'); background-size:600% 600%; background-repeat:no-repeat; border-radius:3px; vertical-align:middle; }
+/* Raid composition: placeholder groups, picker and live buff coverage. */
+.comp-controls { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 8px; }
+.comp-controls label { display:flex; align-items:center; gap:10px; margin:0; }
+.comp-controls select { width:140px; margin:0; }
+.comp-controls > button { margin-inline-start:auto; }
+.comp-save-status { color:var(--theme-secondary-color); }
+.comp-status { min-height:20px; margin:6px 0 12px; font-size:13px; }
+.comp-layout { display:grid; grid-template-columns:minmax(0,3fr) minmax(280px,1fr); gap:20px; align-items:start; }
+.comp-main,.comp-sidebar { min-width:0; display:grid; gap:16px; }
+.guild-app #raidList :is(.comp-layout,.comp-analysis,.comp-issues) .raid-card,.guild-app #raidList .comp-issues { margin:0; padding:16px; }
+.comp-layout h3,.comp-analysis h3,.comp-issues h3 { display:flex; align-items:center; gap:8px; font-size:15px; margin:0 0 16px; }
+.comp-layout h3 > svg,.comp-analysis h3 > svg,.comp-issues h3 > svg { color:var(--theme-warning-text-emphasis); flex-shrink:0; }
+.comp-groups { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
+.comp-group { min-width:0; padding:10px; border:1px solid var(--theme-border-color); border-radius:8px; background:var(--theme-body-bg); }
+.comp-group h4 { display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:13px; margin:0 0 12px; }
+.comp-group h4 small { color:var(--theme-secondary-color); font-weight:400; }
+.guild-app #raidList .comp-empty { display:block; width:100%; height:48px; min-height:48px; margin:0 0 6px; padding:6px; background:transparent; border:1px dashed var(--theme-border-color); color:var(--theme-secondary-color); font-size:12px; font-weight:400; }
+.guild-app #raidList .comp-empty:hover { border-color:var(--theme-link-color); color:var(--theme-link-color); background:var(--theme-primary-bg-subtle); }
+.comp-group-hint { display:block; min-height:30px; margin-top:10px; color:var(--theme-warning-text-emphasis); font-size:11px; line-height:1.5; }
+.comp-player { display:flex; align-items:center; gap:2px; min-width:0; min-height:48px; margin-bottom:6px; border:1px solid color-mix(in srgb,var(--class-color,var(--theme-border-color)) 25%,transparent); border-radius:3px; background:color-mix(in srgb,var(--class-color,var(--theme-secondary-bg)) 10%,var(--theme-secondary-bg)); cursor:grab; }
+.guild-app #raidList .comp-player-select { display:flex; flex:1; align-items:center; justify-content:flex-start; gap:6px; min-width:0; min-height:46px; padding:6px; margin:0; color:var(--class-color,var(--theme-body-color)); background:transparent; border:0; text-align:left; }
+.comp-player-select > span:not(.forever-icon) { flex:1; min-width:0; }
+.comp-player-select strong,.comp-player-select small { display:block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.comp-player-select strong { font-size:12px; }
+.comp-player-select small { color:var(--theme-secondary-color); font-size:11px; font-weight:400; }
+.comp-player-select > .tabler-icon { width:14px; height:14px; flex-shrink:0; }
+.comp-player .forever-icon { width:22px; height:22px; }
+.guild-app #raidList .comp-remove { display:flex; align-items:center; justify-content:center; width:22px; height:30px; min-height:30px; margin:0 3px 0 0; padding:2px; border:0; background:transparent; color:var(--theme-secondary-color); }
+.comp-remove svg { width:13px; height:13px; }
+.guild-app #raidList .comp-remove:hover { color:var(--theme-danger-text-emphasis); background:var(--theme-danger-bg-subtle); }
+.comp-player:has([aria-pressed="true"]) { outline:2px solid var(--theme-primary-text-emphasis); outline-offset:1px; }
+.is-dragging { opacity:.4; }
+.comp-group.is-drop-target,.comp-pool.is-drop-target { outline:2px dashed var(--theme-primary-text-emphasis); outline-offset:3px; background:var(--theme-primary-bg-subtle); }
+.comp-pool { display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); align-content:start; gap:8px; min-height:130px; padding:4px; }
+.comp-pool .comp-player { margin:0; }
+.comp-empty-message { grid-column:1/-1; align-self:center; text-align:center; padding:26px 12px; font-size:13px; }
+.comp-return { margin-top:12px; }
+.comp-picker label { display:block; color:var(--theme-secondary-color); font-size:12px; margin:14px 0 8px; }
+.comp-classes { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:5px; }
+.guild-app #raidList .comp-class { display:flex; align-items:center; justify-content:center; flex-direction:column; gap:4px; min-width:0; padding:7px 2px; min-height:54px; background:var(--theme-tertiary-bg); color:var(--class-color,var(--theme-body-color)); border:1px solid transparent; font-size:11px; }
+.comp-class .forever-icon { width:20px; height:20px; }
+.guild-app #raidList .comp-class[aria-pressed="true"] { border-color:var(--class-color,var(--theme-link-color)); background:var(--theme-body-bg); }
+.guild-app #raidList .comp-add-spec { display:flex; align-items:center; justify-content:flex-start; gap:9px; width:100%; min-height:40px; margin:5px 0; padding:8px; border:1px solid var(--theme-border-color); color:var(--theme-body-color); background:var(--theme-tertiary-bg); text-align:left; font-size:13px; }
+.comp-add-spec > span:not(.forever-icon) { flex:1; }
+.comp-add-spec > svg { width:16px; height:16px; }
+.comp-add-spec > svg:last-child { color:var(--theme-secondary-color); }
+.comp-count { display:flex; align-items:center; gap:9px; margin:10px 0; font-size:13px; }
+.comp-count strong { margin-inline-start:auto; padding:3px 7px; border:1px solid var(--theme-border-color); border-radius:3px; font-weight:500; }
+.comp-count > svg { color:var(--row-accent,var(--theme-primary-text-emphasis)); }
+.comp-total { border-top:1px solid var(--theme-border-color); padding-top:12px; }
+.comp-composition > small { color:var(--theme-secondary-color); }
+.comp-settings label { display:block; margin:12px 0 0; font-size:12px; color:var(--theme-secondary-color); }
+.comp-settings select { display:block; width:100%; margin-top:5px; }
+.guild-app #raidList .comp-issues { margin-top:20px; }
+.comp-issue { display:flex; align-items:flex-start; gap:9px; padding:11px; margin-top:8px; border:1px solid var(--theme-warning-border-subtle); border-radius:3px; background:var(--theme-warning-bg-subtle); color:var(--theme-warning-text-emphasis); }
+.comp-issue[data-tone="info"] { border-color:var(--theme-primary-border-subtle); background:var(--theme-primary-bg-subtle); color:var(--theme-primary-text-emphasis); }
+.comp-issue strong { display:block; font-weight:500; font-size:13px; }
+.comp-issue small { display:block; color:var(--theme-secondary-color); margin-top:4px; font-size:12px; }
+.comp-issue > svg { width:16px; height:16px; flex-shrink:0; }
+.comp-success { color:var(--theme-success-text-emphasis); }
+.comp-analysis { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:16px; margin-top:16px; align-items:start; }
+.comp-category { margin-bottom:8px; }
+.guild-app #raidList .comp-category-toggle { display:flex; align-items:center; gap:12px; width:100%; min-height:40px; padding:8px 10px; background:var(--theme-body-bg); border:1px solid var(--theme-border-color); color:var(--theme-body-color); font-weight:400; text-align:left; }
+.comp-category-toggle strong { margin-inline-start:auto; font-size:12px; font-weight:500; color:var(--theme-primary-text-emphasis); }
+.comp-category-toggle svg { width:14px; height:14px; }
+.comp-category-detail { display:block; margin:0; padding:8px 10px; background:var(--theme-tertiary-bg); color:var(--theme-secondary-color); }
+.comp-buff-list { display:grid; gap:5px; }
+.comp-buff { display:grid; grid-template-columns:24px minmax(0,1fr) auto auto; align-items:center; gap:9px; padding:9px 0; border-bottom:1px solid var(--theme-border-color); }
+.comp-buff strong { display:block; font-size:13px; font-weight:500; }
+.comp-buff > div > small { display:block; font-size:11px; line-height:1.45; color:var(--theme-secondary-color); margin-top:3px; }
+.comp-buff-state { font-size:11px; color:var(--theme-danger-text-emphasis); text-align:right; }
+.comp-buff[data-state="covered"] .comp-buff-state { color:var(--theme-success-text-emphasis); }
+.comp-buff:is([data-state="partial"],[data-state="alternative"]) .comp-buff-state { color:var(--theme-warning-text-emphasis); }
+.comp-scope { font-size:10px; padding:3px 5px; border-radius:3px; background:var(--theme-purple-bg-subtle); color:var(--theme-purple-text-emphasis); }
+.comp-scope[data-scope="Group"] { background:var(--theme-info-bg-subtle); color:var(--theme-info-text-emphasis); }
+.comp-buff-note { font-size:12px; line-height:1.6; margin:14px 0 0; }
+.comp-player-select:focus-visible,.comp-empty:focus-visible,.comp-category-toggle:focus-visible { outline:2px solid var(--theme-link-color); outline-offset:2px; }
+@media(max-width:1350px) { .comp-groups { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media(max-width:900px) { .comp-layout { grid-template-columns:minmax(0,1fr) 270px; gap:12px; } }
+@media(max-width:720px) { .comp-layout { display:flex; flex-direction:column; } .comp-sidebar { width:100%; order:-1; grid-template-columns:repeat(2,minmax(0,1fr)); align-items:start; } .comp-main { width:100%; } .comp-settings { grid-column:1/-1; } .comp-analysis { grid-template-columns:1fr; } .comp-controls > button { margin-inline-start:0; } .comp-save-status { flex-basis:100%; order:1; } }
+@media(max-width:460px) { .comp-sidebar { grid-template-columns:1fr; } .comp-groups { gap:8px; } .comp-group { padding:7px; } .comp-player-select > .tabler-icon { display:none; } .comp-buff { grid-template-columns:22px minmax(0,1fr) auto; } .comp-buff-state { grid-column:2; text-align:left; } .comp-scope { grid-column:3; grid-row:1/3; } }

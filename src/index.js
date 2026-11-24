@@ -1,3 +1,4 @@
+import { createCompositionPlan, compositionBuffs, renderRaidComposition } from './raid-composition.js';
 import { tablerIcon, guildIcon } from '../public/assets/icons.js';
 import { createSchedulePicker } from './schedule-picker.js';
 import { eventSchedule, eventTypes, guildEventsApi } from './guild-events.js';
@@ -407,7 +408,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-18" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-18&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-google-sans"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-19" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-19&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1691,7 +1692,12 @@ async function openRaidView(view, id, navigate = true) {
   raidReset(view, id);
   const revision = ++raidRevision;
   try {
-    if (view === 'raiding') return;
+    if (view === 'raiding') {
+      byId('raidTitle').textContent = 'Group Planner';
+      byId('raidSubtitle').textContent = 'Build a raid composition before sign-ups.';
+      renderRaidComposition(byId('raidList'),{specs:armorySpecs});
+      return;
+    }
     if (view === 'craftingDirectory') {
       await renderCraftingDirectory(byId('raidList'), () => revision === raidRevision, professionTiles.map(([name])=>name));
       return;
@@ -1953,6 +1959,9 @@ ${renderCharacterTalents.toString()}
 ${renderCharacterAchievements.toString()}
 ${renderCharacterLifetime.toString()}
 ${renderCharacterReputations.toString()}
+${createCompositionPlan.toString()}
+${compositionBuffs.toString()}
+${renderRaidComposition.toString()}
 ${tablerIcon.toString()}
 ${guildIcon.toString()}
 // Keep card headers consistent as views and asynchronously loaded cards change.
