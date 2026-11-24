@@ -113,11 +113,9 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   function drawWorkspace(){
     if(!isCurrent())return;content.replaceChildren();const team=data.team;content.style.setProperty('--team-accent',team.accent);
     const teamContext=contextLabel(team)+' · WoW Forever';
-    const canEditBanner=(team.canManage??team.canEdit)&&section!=='settings';
     content.append(banner(
       section==='planner'?'Group Planner':team.name,
       section==='planner'?team.name+' · '+teamContext:teamContext,
-      'Edit banner',canEditBanner?()=>navigate('settings'):null,
     ));
     drawNavigation();const layout=el('div',null,'team-workspace');
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
