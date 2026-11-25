@@ -27,6 +27,7 @@ const assets = new Map([
   ['/assets/icons.js', ['icons.js', 'text/javascript; charset=utf-8']],
   ['/assets/tabler-icons.svg', ['tabler-icons.svg', 'image/svg+xml']],
   ['/assets/tabler-LICENSE.txt', ['tabler-LICENSE.txt', 'text/plain; charset=utf-8']],
+  ['/assets/solstice-dialog.js', ['solstice-dialog.js', 'text/javascript; charset=utf-8']],
   ['/assets/gear-planner.js', ['gear-planner.js', 'text/javascript; charset=utf-8']],
   ['/assets/gear-items.js', ['gear-items.js', 'text/javascript; charset=utf-8']],
   ['/assets/mobile-tables.js', ['mobile-tables.js', 'text/javascript; charset=utf-8']],

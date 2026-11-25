@@ -230,8 +230,8 @@ test('only creators see team deletion and confirmed deletion returns to the team
  const history={pushState(a,b,url){location.href=String(url);location.search=new URL(url).search;}};
  const stored=new Map([['solstice-working-raid-team','team-a']]);const localStorage={getItem:key=>stored.get(key),setItem:(key,value)=>stored.set(key,value),removeItem:key=>stored.delete(key)};
  let approved=false,deleted=false,deletions=0;
- const window={confirm:message=>{assert.match(message,/Existing raid events will remain/);return approved;}};
- const render=new Function('document','Option','location','history','localStorage','window','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,localStorage,window,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
+ const showSolsticeDialog=async({message})=>{assert.match(message,/Existing raid events will remain/);return approved?{}:null;};
+ const render=new Function('document','Option','location','history','localStorage','showSolsticeDialog','tablerIcon','guildIcon','raidTeamSummary','matchesGuildRosterFilter','return ('+renderRaidTeams.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},location,history,localStorage,showSolsticeDialog,()=>new Element('svg'),()=>new Element('span'),raidTeamSummary,matchesGuildRosterFilter);
  const team={id:'team-a',name:'Team A',description:'',size:20,accent:'#56789a',canEdit:true,canManage:true,isOwner:false};
  const request=async(path='',input)=>{if(input?.action==='delete'){assert.equal(input.confirmName,'Team A');deleted=true;deletions++;return{ok:true};}return path.startsWith('?team=')?{team,roster:{characters:[]},members:[]}:{teams:deleted?[]:[team]};};
  const root=new Element('main');await render(root,{request,specs:{}});

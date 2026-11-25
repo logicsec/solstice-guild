@@ -326,7 +326,10 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         }
         if (!agendaOnly && event.organizer) {
           const remove = button('Delete event',async () => {
-            if (!window.confirm('Delete “'+event.title+'” and its sign-ups for this occurrence?')) return;
+            if (!await showSolsticeDialog({
+              title:'Delete event?', message:'“'+event.title+'” and its sign-ups will be deleted for this occurrence.',
+              confirmLabel:'Delete event', danger:true,
+            }) || !remove.isConnected) return;
             remove.disabled = true;
             if (action) action.disabled = true;
             status.textContent = '';

@@ -1,3 +1,4 @@
+import { showSolsticeDialog } from './solstice-dialog.js?v=1';
 import { tablerIcon } from './icons.js?v=theme-3';
 import { gearItems, itemFitsSlot } from './gear-items.js';
 const slots=['Head','Neck','Shoulder','Back','Chest','Wrist','Hands','Waist','Legs','Feet','Finger 1','Finger 2','Trinket 1','Trinket 2','Main Hand','Off Hand','Ranged'];
@@ -81,7 +82,16 @@ $('save').addEventListener('click',async()=>{
  $('save').disabled=true;
  try{const wasNew=!current;const result=await api({action:'save',id:current?.id,character:$('character').value,title:$('title').value,spec:$('spec').value,items:[...draft.values()]});if(wasNew)await api({action:'activate',id:result.id});await load();$('build').value=result.id;choose();message(wasNew?'Build saved and set active.':'Build saved.')}catch(e){message(e.message)}finally{$('save').disabled=!$('character').value}
 });
-for(const action of ['activate','delete'])$(action).addEventListener('click',async()=>{if(!current)return message('Select a saved build first.');if(action==='delete'&&!confirm('Delete this build?'))return;try{await api({action,id:current.id});await load();message(action==='activate'?'Active build updated.':'Build deleted.')}catch(e){message(e.message)}});
+for(const action of ['activate','delete'])$(action).addEventListener('click',async()=>{
+ if(!current)return message('Select a saved build first.');
+ const build=current;
+ if(action==='delete'&&!await showSolsticeDialog({
+  title:'Delete build?', message:'“'+build.title+'” will be removed from your saved gear builds.',
+  confirmLabel:'Delete build', danger:true,
+ }))return;
+ try{await api({action,id:build.id});await load();message(action==='activate'?'Active build updated.':'Build deleted.')}
+ catch(error){message(error.message);}
+});
 async function refreshCatalog(){try{const data=await api(null,'?catalog=1');if(!Array.isArray(data.items)||!data.items.length)throw Error('Empty catalog');catalog=data.items;$('catalogStatus').textContent=data.fresh?'WoWSims Forever · '+catalog.length.toLocaleString()+' items · Checked just now':data.source+' · Live refresh unavailable; using saved item data.';draw();if($('itemPicker').open)renderPicker()}catch{$('catalogStatus').textContent='WoWSims refresh unavailable · Using bundled item data.'}}
 refreshCatalog();
 (async()=>{try{draw();const r=await fetch('/api/raid-characters');if(!r.ok)throw Error('Could not load your characters');const data=await r.json();plannerCharacters=[...(data.signupCharacters||[]),...(data.characters||[])];const names=new Set(plannerCharacters.map(x=>x.name).filter(Boolean));$('character').replaceChildren(new Option('Select character',''));for(const name of [...names].sort())$('character').add(new Option(name,name));if(names.size){const requested=new URLSearchParams(location.search).get('character')||document.getElementById('guildCharacter')?.value||(()=>{try{return localStorage.getItem('solstice-active-character')}catch{return null}})();$('character').value=[...names].find(n=>n.toLowerCase()===requested?.toLowerCase())||[...names].sort()[0];await load()}else{message('Add or link a character in Guild Hall first.');$('save').disabled=true}}catch(e){message(e.message)}})();
