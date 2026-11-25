@@ -195,7 +195,10 @@ async function raidApi(request, env, url, { discord_id: user, display_name: disp
   if (typeof input.action === 'string' && input.action.startsWith('reserve-')) return changeReserves(db,raid,user,input,reply);
   if (input.action === 'delete') {
     if (!organizer) return reply({ error: 'Only the raid organizer can delete this raid.' },403);
-    const result = await db.prepare('DELETE FROM raids WHERE id = ? AND owner = ?').bind(id,user).run();
+    const sql = settings.teamSchedule?.id
+      ? "UPDATE raids SET state='Cancelled', settings=json_remove(settings,'$.teamSchedule.removed') WHERE id=? AND owner=?"
+      : 'DELETE FROM raids WHERE id = ? AND owner = ?';
+    const result = await db.prepare(sql).bind(id,user).run();
     return result.meta.changes ? reply({ ok:true }) : reply({ error:'Raid not found.' },404);
   }
   if (typeof input.action === 'string' && input.action.startsWith('prep-')) {
@@ -415,7 +418,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-9bfab8f02e6a" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-9bfab8f02e6a&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-1f4f8c8249c0" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-1f4f8c8249c0&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -2373,17 +2376,21 @@ function renderRaid(data) {
       });
       actions.append(button);
     }
-    const remove = raidElement('button','Delete raid','raid-control-danger');
+    const scheduled = Boolean(config.teamSchedule?.id);
+    const remove = raidElement('button',scheduled?'Remove occurrence':'Delete raid','raid-control-danger');
     remove.type = 'button';
     remove.addEventListener('click',async()=>{
-      if (!window.confirm('Permanently delete “'+event.title+'”? This removes all sign-ups, preparation tasks, and loot reserves for this occurrence and disables its invite link.')) return;
+      const prompt = scheduled
+        ? 'Remove this occurrence of “'+event.title+'” from Events? The recurring schedule and sign-up history are kept.'
+        : 'Permanently delete “'+event.title+'”? This removes all sign-ups, preparation tasks, and loot reserves for this occurrence and disables its invite link.';
+      if (!window.confirm(prompt)) return;
       remove.disabled = true;
       try {
         await raidRequest('/'+event.id,{action:'delete'});
         if (workspaceGoal === event.id) setWorkingRaid('');
         if (activeRaid === event.id) {
           await openRaidView('manage');
-          byId('raidMessage').textContent = 'Raid deleted.';
+          byId('raidMessage').textContent = scheduled?'Occurrence removed.':'Raid deleted.';
         }
       } catch (error) {
         if (activeRaid === event.id) raidError(error);

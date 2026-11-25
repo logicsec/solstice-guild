@@ -1,4 +1,4 @@
-import {ensureTeamRaidSchedule,validateTeamSchedule,scheduledTeamDates} from './team-schedules.js';
+import {ensureTeamRaidSchedule,validateTeamSchedule,scheduledTeamDates,changeTeamSchedule} from './team-schedules.js';
 import {sameOriginWrite} from './auth.js';
 import {armorySpecs,fetchGuildRoster,fetchForeverGuild,publicRosterProfile,guildProfessionSummary} from './armory.js';
 const roles=['Tank','Healer','Melee DPS','Ranged DPS'];
@@ -86,7 +86,7 @@ export async function raidTeamsApi(request,env,url,session){
         const profile=await publicRosterProfile(env,member.slug,team.region);if(profile){member.level=profile.level??member.level;member.itemLevel=profile.itemLevel??null;}
       }));
     }
-    const schedules=(await db.prepare('SELECT id,kind,instance,timezone,days FROM raid_team_schedules WHERE team_id=? ORDER BY created_at').bind(teamId).all()).results.map(row=>({...row,days:JSON.parse(row.days)}));
+    const schedules=(await db.prepare('SELECT id,kind,instance,timezone,days,revision FROM raid_team_schedules WHERE team_id=? ORDER BY created_at,id').bind(teamId).all()).results.map(row=>({...row,days:JSON.parse(row.days)}));
     return reply({setup:{joined:!!person,permissionConfirmed:!!team.permissions_confirmed,schedules},team:{id:team.id,name:team.name,description:team.description,size:team.size,accent:team.accent,region:team.region,ruleset:team.ruleset,guildSlug:team.guild_slug,guildName:team.guild_name,defaultRole:team.default_role,isOwner:team.owner===user,canManage,canEdit},roster,members});
   }
   if(request.method!=='POST')return reply({error:'Method not allowed.'},405);
@@ -123,11 +123,9 @@ export async function raidTeamsApi(request,env,url,session){
     await db.prepare('UPDATE raid_teams SET default_role=?,permissions_confirmed=1,updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(input.defaultRole,teamId).run();return reply({ok:true});
   }
   if(input.action==='previewSchedule'){const schedule=validateTeamSchedule(input);if(!schedule)return reply({error:'Choose valid raid nights and times.'},400);return reply({dates:schedule.kind==='Off night'?[]:scheduledTeamDates(schedule)});}
-  if(input.action==='schedule'){
-    const schedule=validateTeamSchedule(input);if(!schedule)return reply({error:'Choose raid days, valid times, a time zone and a raid instance.'},400);
-    const existing=await db.prepare('SELECT id FROM raid_team_schedules WHERE team_id=? AND kind=?').bind(teamId,schedule.kind).first();if(existing)return reply({error:'This team already has a '+schedule.kind.toLowerCase()+' schedule.'},409);
-    await db.prepare('INSERT INTO raid_team_schedules(id,team_id,kind,instance,timezone,days,owner,creator_name) VALUES(?,?,?,?,?,?,?,?)').bind(crypto.randomUUID(),teamId,schedule.kind,schedule.instance,schedule.timezone,JSON.stringify(schedule.days),user,session.display_name||'Team leader').run();
-    await ensureTeamRaidSchedule(db,teamId);return reply({ok:true});
+  if(['schedule','editSchedule','deleteSchedule'].includes(input.action)){
+    const result=await changeTeamSchedule(db,team,session,input);
+    return result.error?reply({error:result.error},result.status):reply({ok:true,id:result.id});
   }
   if(input.action==='linkGuild'){
     if(!canManage)return reply({error:'Only team leaders and officers can link a guild.'},403);

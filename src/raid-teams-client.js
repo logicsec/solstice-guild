@@ -29,7 +29,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   if(!teamId&&!['all','new'].includes(new URLSearchParams(location.search).get('teams')))try{teamId=localStorage.getItem('solstice-working-raid-team')||null;}catch{}
   let section=new URLSearchParams(location.search).get('section')||'roster';
   let creating=new URLSearchParams(location.search).get('teams')==='new';
-  if(!['roster','planner','professions','settings','setup'].includes(section))section='roster';
+  if(!['roster','planner','schedule','professions','settings','setup'].includes(section))section='roster';
   let data=null,teams=[],tab='team',query='',mode='role',mainsOnly=true,selected=new Set(),revision=0,professions=null,saving=false;
   let filtersOpen=false;const rosterFilters={race:'',className:'',spec:'',minLevel:'',maxLevel:''};
   const status=el('p','','teams-status');status.setAttribute('role','status');
@@ -105,7 +105,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const select=el('select');select.id='workingRaidTeam';select.setAttribute('aria-label','Working raid team');select.add(new Option('Select a team',''));for(const team of teams)select.add(new Option(team.name,team.id));select.value=teamId||'';
     select.addEventListener('change',()=>{creating=false;teamId=select.value||null;section='roster';tab='team';query='';selected.clear();for(const key of Object.keys(rosterFilters))rosterFilters[key]='';filtersOpen=false;path();load();});
     picker.append(avatar,select);navigationRoot.append(label,picker);
-    if(teamId&&data)for(const [key,label,symbol] of [['roster','Roster','users'],['planner','Group Planner','layout-dashboard'],['professions','Team Professions','hammer'],['settings','Team Settings','settings'],['setup','Team Setup','clipboard-list']]){
+    if(teamId&&data)for(const [key,label,symbol] of [['roster','Roster','users'],['planner','Group Planner','layout-dashboard'],['schedule','Team Schedule','calendar-event'],['professions','Team Professions','hammer'],['settings','Team Settings','settings'],['setup','Team Setup','clipboard-list']]){
       const item=btn('',()=>navigate(key),'team-menu-item');item.append(icon(symbol),el('span',label));item.setAttribute('aria-current',String(section===key));navigationRoot.append(item);
     }
     const all=btn('',()=>{creating=false;teamId=null;section='roster';selected.clear();path();load();},'team-menu-all');all.append(icon('layout-dashboard'),el('span','All raid teams'));navigationRoot.append(all);
@@ -121,6 +121,7 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     const panel=el('section',null,'team-panel');layout.append(panel);content.append(layout);
     if(section==='planner'){renderPlanner?.(panel,teamId,data.members);return;}
     if(section==='roster'){drawRoster(panel);return;}
+    if(section==='schedule'){drawSchedules(panel);return;}
     const heading=el('header',null,'team-section-heading');const sectionTitle=el('h3');sectionTitle.append(icon({professions:'hammer',settings:'settings',setup:'clipboard-list'}[section]||'users'),el('span',{professions:'Professions',settings:'Settings',setup:'Set up your raid team'}[section]||'Roster'));heading.append(sectionTitle);panel.append(heading);
     if(section==='setup'){drawSetup(panel);}
     else if(section==='professions')drawProfessions(panel);
@@ -191,24 +192,64 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
     if(data.members.length&&!members.length)target.append(el('p','No team characters match your filters.','teams-empty'));
     if(!data.members.length)target.append(el('p','Open Guild Roster and assign characters to build this raid team.','teams-empty'));
   }
-  function openSchedule(){
-    scheduleDialog.replaceChildren();const form=el('form');const header=el('header');header.append(el('h3','When does your team raid?'),btn('Close',()=>scheduleDialog.close()));form.append(header,el('p','Choose your weekly nights. Preview the next eight weeks before creating events.'));
-    let kind='Progress',previewRevision=0;const selectedDays=new Map();
+  function openSchedule(existing=null){
+    scheduleDialog.replaceChildren();const form=el('form');const header=el('header');header.append(el('h3',existing?'Edit schedule':'Add schedule'),btn('Close',()=>scheduleDialog.close()));form.append(header,el('p','Choose your weekly nights. Preview the next eight weeks before creating events.'));
+    let kind=existing?.kind??'Progress',previewRevision=0;const selectedDays=new Map((existing?.days??[]).map(day=>[day.day,{...day}]));
     const kinds=el('div',null,'team-schedule-kinds');kinds.setAttribute('role','group');kinds.setAttribute('aria-label','Raid night type');for(const value of ['Progress','Farm','Optional','Off night']){const item=btn(value,()=>{kind=value;for(const choice of kinds.children)choice.setAttribute('aria-pressed',String(choice.textContent===kind));instanceField.hidden=kind==='Off night';instance.required=kind!=='Off night';preview();});item.setAttribute('aria-pressed',String(value===kind));kinds.append(item);}form.append(kinds);
-    const instance=el('select');instance.required=true;instance.setAttribute('aria-label','Scheduled raid instance');for(const [key,value] of Object.entries(raidInstances))instance.add(new Option(value.name+' · '+value.size+' players',key));instance.value=Object.entries(raidInstances).find(([,value])=>value.size===data.team.size)?.[0]||Object.keys(raidInstances)[0]||'';
-    const instanceField=el('label','Raid instance');instanceField.append(instance);form.append(instanceField);instance.addEventListener('change',()=>preview());
+    const instance=el('select');instance.required=true;instance.setAttribute('aria-label','Scheduled raid instance');for(const [key,value] of Object.entries(raidInstances))instance.add(new Option(value.name+' · '+value.size+' players',key));instance.value=existing?.instance||Object.entries(raidInstances).find(([,value])=>value.size===data.team.size)?.[0]||Object.keys(raidInstances)[0]||'';
+    const instanceField=el('label','Raid instance');instanceField.append(instance);instanceField.hidden=kind==='Off night';instance.required=kind!=='Off night';form.append(instanceField);instance.addEventListener('change',()=>preview());
     const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];const days=el('div',null,'team-schedule-days');days.setAttribute('aria-label','Raid days');days.setAttribute('role','group');
-    const globalStart=el('input'),globalEnd=el('input');globalStart.type=globalEnd.type='time';globalStart.value='20:00';globalEnd.value='23:00';globalStart.setAttribute('aria-label','Default raid start time');globalEnd.setAttribute('aria-label','Default raid end time');
-    const zone=el('select');zone.setAttribute('aria-label','Raid time zone');const currentZone=Intl.DateTimeFormat().resolvedOptions().timeZone;for(const value of [...new Set([currentZone,'America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/London','Europe/Berlin','Asia/Seoul','Asia/Taipei','UTC'])])zone.add(new Option(value,value));zone.value=currentZone;
+    const globalStart=el('input'),globalEnd=el('input');globalStart.type=globalEnd.type='time';globalStart.value=existing?.days[0]?.start??'20:00';globalEnd.value=existing?.days[0]?.end??'23:00';globalStart.setAttribute('aria-label','Default raid start time');globalEnd.setAttribute('aria-label','Default raid end time');
+    const zone=el('select');zone.setAttribute('aria-label','Raid time zone');const currentZone=Intl.DateTimeFormat().resolvedOptions().timeZone;for(const value of [...new Set([existing?.timezone??currentZone,currentZone,'America/New_York','America/Chicago','America/Denver','America/Los_Angeles','Europe/London','Europe/Berlin','Asia/Seoul','Asia/Taipei','UTC'])])zone.add(new Option(value,value));zone.value=existing?.timezone??currentZone;
     const times=el('div',null,'team-schedule-times');for(const [caption,input] of [['Start',globalStart],['End',globalEnd],['Time zone',zone]]){const label=el('label',caption);label.append(input);times.append(label);}
     const perDay=el('div',null,'team-schedule-per-day');
     function drawDays(){perDay.replaceChildren();for(const [day,selection] of [...selectedDays].sort(([a],[b])=>a-b)){const row=el('div');row.append(el('strong',weekdays[day]));for(const key of ['start','end']){const input=el('input');input.type='time';input.value=selection[key];input.required=true;input.setAttribute('aria-label',weekdays[day]+' '+key+' time');input.addEventListener('change',()=>{selection[key]=input.value;preview();});row.append(input);}perDay.append(row);}}
-    for(let day=0;day<7;day++){const item=btn(weekdays[day],()=>{if(selectedDays.has(day))selectedDays.delete(day);else selectedDays.set(day,{day,start:globalStart.value,end:globalEnd.value});item.setAttribute('aria-pressed',String(selectedDays.has(day)));drawDays();preview();});item.setAttribute('aria-pressed','false');days.append(item);}form.append(days,times,el('small','Each selected night can have its own start and end time.'),perDay);
+    for(let day=0;day<7;day++){const item=btn(weekdays[day],()=>{if(selectedDays.has(day))selectedDays.delete(day);else selectedDays.set(day,{day,start:globalStart.value,end:globalEnd.value});item.setAttribute('aria-pressed',String(selectedDays.has(day)));drawDays();preview();});item.setAttribute('aria-pressed',String(selectedDays.has(day)));days.append(item);}form.append(days,times,el('small','Each selected night can have its own start and end time.'),perDay);
     for(const [input,key] of [[globalStart,'start'],[globalEnd,'end']])input.addEventListener('change',()=>{for(const selection of selectedDays.values())selection[key]=input.value;drawDays();preview();});zone.addEventListener('change',()=>preview());
-    const feedback=el('p','Select your raid days to preview the schedule.');feedback.setAttribute('role','status');const dates=el('details');dates.append(el('summary','See dates'));const list=el('div');dates.append(list);const save=btn('Start raiding',()=>{});save.type='submit';save.disabled=true;const actions=el('div',null,'team-create-actions');actions.append(save,btn('Cancel',()=>scheduleDialog.close()));form.append(feedback,dates,actions);
+    const feedback=el('p','Select your raid days to preview the schedule.');feedback.setAttribute('role','status');const dates=el('details');dates.append(el('summary','See dates'));const list=el('div');dates.append(list);const save=btn('Save schedule',()=>{});save.type='submit';save.disabled=true;const actions=el('div',null,'team-create-actions');actions.append(save,btn('Cancel',()=>scheduleDialog.close()));form.append(feedback,dates,actions);
     function input(){return{kind,instance:instance.value,timezone:zone.value,days:[...selectedDays.values()]};}
     async function preview(){const token=++previewRevision;save.disabled=true;list.replaceChildren();if(!selectedDays.size){feedback.textContent='Select your raid days to preview the schedule.';return;}feedback.textContent='Checking dates…';try{const result=await request('?team='+teamId,{action:'previewSchedule',...input()});if(token!==previewRevision)return;feedback.textContent=kind==='Off night'?'These are non-raiding nights. No raid events will be created.':result.dates.length+' raids over the next 8 weeks. Future dates top up when the calendar opens.';for(const date of result.dates)list.append(el('p',new Intl.DateTimeFormat(undefined,{dateStyle:'medium',timeStyle:'short',timeZone:zone.value}).format(new Date(date.startsAt))+' – '+new Intl.DateTimeFormat(undefined,{timeStyle:'short',timeZone:zone.value}).format(new Date(date.endsAt))));save.disabled=kind!=='Off night'&&!result.dates.length;}catch(error){if(token===previewRevision)feedback.textContent=error.message;}}
-    form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;feedback.textContent='Saving raid nights…';const result=await change({action:'schedule',...input()});if(result)scheduleDialog.close();else{feedback.textContent=status.textContent;save.disabled=false;}});scheduleDialog.append(form);scheduleDialog.showModal();
+    form.addEventListener('submit',async event=>{event.preventDefault();save.disabled=true;feedback.textContent='Saving raid nights…';const payload=existing?{action:'editSchedule',scheduleId:existing.id,revision:existing.revision}:{action:'schedule'};
+      const result=await change({...payload,...input()});if(result)scheduleDialog.close();else{feedback.textContent=status.textContent;save.disabled=false;}});scheduleDialog.append(form);scheduleDialog.showModal();
+    drawDays();
+    if(existing)preview();
+  }
+  function drawSchedules(panel){
+    const schedules=data.setup?.schedules??[];
+    const heading=el('header',null,'team-schedules-header');
+    heading.append(el('h3','Recurring raid schedules'));
+    if(data.team.canEdit)heading.append(btn('Add schedule',()=>openSchedule(),'raid-primary'));
+    panel.append(heading);
+    if(!schedules.length){panel.append(el('p','This team has no recurring schedules.'));return;}
+    const list=el('div',null,'team-schedules-list');
+    const weekdays=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    const timeFormat=new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',timeZone:'UTC'});
+    const time=value=>timeFormat.format(new Date('2000-01-01T'+value+':00Z'));
+    for(const schedule of schedules){
+      const card=el('article',null,'raid-card team-schedule-card');
+      const name=[schedule.kind,raidInstances[schedule.instance]?.name].filter(Boolean).join(' · ');
+      const copy=el('div');
+      copy.append(el('h4',name),el('small',schedule.timezone));
+      const times=el('ul');
+      for(const day of schedule.days)times.append(el('li',weekdays[day.day]+' · '+time(day.start)+' – '+time(day.end)));
+      copy.append(times);
+      card.append(copy);
+      if(data.team.canEdit){
+        const actions=el('div',null,'team-schedule-actions');
+        const edit=btn('Edit',()=>openSchedule(schedule));
+        edit.setAttribute('aria-label','Edit '+name+' schedule');
+        const remove=btn('Delete',()=>{
+          const message=schedule.kind==='Off night'?'Delete this off-night schedule?':
+            'Delete this schedule and cancel its upcoming raids? Past raids and sign-up history will be kept.';
+          if(window.confirm(message))change({action:'deleteSchedule',scheduleId:schedule.id,revision:schedule.revision});
+        },'raid-control-danger');
+        remove.setAttribute('aria-label','Delete '+name+' schedule');
+        actions.append(edit,remove);
+        card.append(actions);
+      }
+      list.append(card);
+    }
+    panel.append(list);
   }
   function drawSetup(panel){
     const team=data.team,setup=data.setup||{joined:false,schedules:[],permissionConfirmed:false};
@@ -228,7 +269,8 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
         const invite=el('input');invite.readOnly=true;const url=new URL(location.href);url.searchParams.set('section','setup');invite.value=url.href;invite.setAttribute('aria-label','Team link');step.append(invite,el('small','Share this link with Solstice Discord members. They sign in and choose Join this team.'));
       }else if(index===3){
         for(const schedule of setup.schedules)step.append(el('p',schedule.kind+' · '+schedule.days.length+' nights a week · '+schedule.timezone));
-        if(team.canEdit)step.append(btn('Set raid times',openSchedule));
+        step.append(btn('Team schedule',()=>navigate('schedule')));
+        if(team.canEdit)step.append(btn('Add schedule',()=>openSchedule()));
       }else{
         const permission=el('select');permission.setAttribute('aria-label','Default team member role');for(const value of ['Viewer','Raider','Editor','Officer'])permission.add(new Option(value,value));permission.value=team.defaultRole||'Raider';permission.disabled=!(team.canManage??team.canEdit);
         step.append(permission,el('p','Viewer and Raider can view the team. Editor can manage its roster and raid times. Officer can also change team settings, guild links and permissions.'));

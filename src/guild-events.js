@@ -45,6 +45,7 @@ export async function guildEventsApi(request, env, url, { discord_id: user, disp
     const raids = db.prepare(`SELECT id, title, starts_at, state, notes AS description,
       json_extract(settings, '$.endsAt') AS ends_at, 'Raid' AS type, ${creator},
       json_extract(settings, '$.team.id') AS team_id, json_extract(settings, '$.team.name') AS team_name,
+      json_extract(settings, '$.teamSchedule.id') IS NOT NULL AS is_recurring,
       (SELECT COUNT(*) FROM raid_signups WHERE raid_id = event.id AND status = 'Going') AS signups
       FROM raids AS event WHERE starts_at >= ? AND starts_at < ? AND state <> 'Cancelled'
       AND (state = 'Open' OR owner = ? OR EXISTS (SELECT 1 FROM raid_signups WHERE raid_id = event.id AND member = ?))`).bind(start,end,user,user);

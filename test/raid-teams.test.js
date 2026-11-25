@@ -216,9 +216,9 @@ test('creation wizard selects region and ruleset, links a guild and previews and
  find(root,e=>e.attributes['aria-label']==='Guild name').value='Solstice RP';find(root,e=>e.className==='team-link-guild').listeners.submit({preventDefault(){}});await new Promise(resolve=>setImmediate(resolve));
  assert.ok(find(root,e=>e.textContent==='Solstice RP linked · 0 guild characters'));
  await find(root,e=>e.textContent==='Join this team').listeners.click();assert.ok(find(root,e=>e.textContent==='You are on this team.'));
- find(root,e=>e.textContent==='Set raid times').listeners.click();const dialog=find(root,e=>e.className==='team-schedule-dialog');assert.equal(dialog.open,true);
+ find(root,e=>e.textContent==='Add schedule').listeners.click();const dialog=find(root,e=>e.className==='team-schedule-dialog');assert.equal(dialog.open,true);
  const days=find(dialog,e=>e.className==='team-schedule-days');days.children[2].listeners.click();days.children[4].listeners.click();await new Promise(resolve=>setImmediate(resolve));
- assert.equal(find(dialog,e=>e.textContent==='Start raiding').disabled,false);
+ assert.equal(find(dialog,e=>e.textContent==='Save schedule').disabled,false);
  await find(dialog,e=>e.tagName==='form').listeners.submit({preventDefault(){}});
  assert.equal(dialog.open,false);assert.deepEqual(savedSchedule.days.map(day=>day.day),[2,4]);assert.equal(savedSchedule.instance,'onyxias-lair');
  const permission=find(root,e=>e.attributes['aria-label']==='Default team member role');permission.value='Editor';await find(root,e=>e.textContent==='Save permissions').listeners.click();assert.equal(team.defaultRole,'Editor');assert.equal(setup.permissionConfirmed,true);

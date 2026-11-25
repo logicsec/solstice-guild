@@ -319,6 +319,11 @@ export function renderGuildEvents(root, { eventTypes, raidInstances, request, cr
         row.append(main,footer);
         const actions = make('div',undefined,'guild-event-actions');
         if (action) actions.append(action);
+        if (!agendaOnly && event.is_recurring && event.team_id) {
+          const schedule = make('a','Team schedule');
+          schedule.href = '/?'+new URLSearchParams({tool:'raid',view:'raiding',team:event.team_id,section:'schedule'});
+          actions.append(schedule);
+        }
         if (!agendaOnly && event.organizer) {
           const remove = button('Delete event',async () => {
             if (!window.confirm('Delete “'+event.title+'” and its sign-ups for this occurrence?')) return;
