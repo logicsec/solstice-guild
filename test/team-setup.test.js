@@ -60,6 +60,29 @@ test('team setup isolates regional guilds, verifies rulesets, enforces roles and
   assert.equal((await send(id,{action:'schedule',...schedule},'editor')).status,409);
   assert.equal((await send(id,{action:'schedule',...schedule,kind:'Off night'},'editor')).status,200);
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raids').get().n,count,'off nights do not create raid events');
+  const extra={...schedule,days:[{day:6,start:'19:00',end:'22:00'}]};
+  const added=await send(id,{action:'schedule',...extra},'editor');
+  assert.equal(added.status,200,'multiple Progress schedules are supported');
+  const {id:extraId}=await added.json();
+  const upcoming=()=>sqlite.prepare("SELECT * FROM raids WHERE json_extract(settings,'$.teamSchedule.id')=? AND state<>'Cancelled' ORDER BY starts_at").all(extraId);
+  const [original,past]=upcoming();
+  sqlite.prepare("INSERT INTO raid_signups(raid_id,member,character,class_name,role,status) VALUES (?, 'raider', 'Europe Mage', 'Mage', 'Ranged DPS', 'Going')").run(original.id);
+  sqlite.prepare('UPDATE raids SET starts_at=? WHERE id=?').run('2000-01-01T00:00:00.000Z',past.id);
+  const revised={...extra,days:[{day:6,start:'20:00',end:'23:00'}],scheduleId:extraId,revision:0};
+  assert.equal((await send(id,{action:'editSchedule',...revised},'raider')).status,403);
+  assert.equal((await send(id,{action:'editSchedule',...revised},'editor')).status,200);
+  const changed=sqlite.prepare('SELECT * FROM raids WHERE id=?').get(original.id);
+  assert.equal(Date.parse(changed.starts_at)-Date.parse(original.starts_at),3600000);
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raid_signups WHERE raid_id=?').get(original.id).n,1);
+  assert.equal((await send(id,{action:'deleteSchedule',scheduleId:extraId,revision:0},'editor')).status,409);
+  assert.equal((await send(id,{action:'deleteSchedule',scheduleId:extraId,revision:1},'raider')).status,403);
+  assert.equal((await send(id,{action:'deleteSchedule',scheduleId:extraId,revision:1},'editor')).status,200);
+  await ensureTeamRaidSchedule(db,id);
+  assert.deepEqual(upcoming().map(event=>event.id),[past.id],'deleted schedules do not refill and past dates stay visible');
+  assert.equal(sqlite.prepare('SELECT state FROM raids WHERE id=?').get(original.id).state,'Cancelled');
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raid_signups WHERE raid_id=?').get(original.id).n,1);
+  const totalBeforeTeamDeletion=sqlite.prepare('SELECT COUNT(*) AS n FROM raids').get().n;
+
   assert.equal((await send(id,{action:'permissions',defaultRole:'Officer'})).status,200);
   assert.equal((await send(id,{action:'join'},'officer')).status,200);
   assert.equal((await send(id,{action:'settings',name:'Updated by officer',description:'',size:20,accent:'#56789a'},'officer')).status,200);
@@ -72,7 +95,7 @@ test('team setup isolates regional guilds, verifies rulesets, enforces roles and
   assert.equal((await send(id,{action:'delete',confirmName:'Updated by officer'})).status,200);
   assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raid_teams WHERE id=?').get(id).n,0);
   for(const table of ['raid_team_members','raid_team_people','raid_team_schedules'])assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM '+table+' WHERE team_id=?').get(id).n,0,'deletion cascades to '+table);
-  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raids').get().n,count,'existing raid events are preserved');
+  assert.equal(sqlite.prepare('SELECT COUNT(*) AS n FROM raids').get().n,totalBeforeTeamDeletion,'existing raid events are preserved');
   assert.equal((await send(id)).status,404);
 
  }finally{sqlite.close();}
