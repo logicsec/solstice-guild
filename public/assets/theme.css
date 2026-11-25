@@ -811,3 +811,31 @@ body.raid-teams-active #raidMessage:empty { display:none; }
 @media(max-width:600px) { .guild-app #raidList .team-size-card { flex-direction:column; } .team-size-art { width:100%; aspect-ratio:16/9; } .team-create-form { padding:16px; } }
 
 .team-create-next { display:flex; justify-content:flex-end; margin-top:20px; }
+
+/* Shared confirmation and input dialogs. */
+.solstice-dialog {
+ width:min(440px,calc(100% - 32px)); max-height:calc(100dvh - 32px); box-sizing:border-box;
+ overflow:auto; padding:24px; border:1px solid var(--theme-border-color); border-radius:10px;
+ background:var(--theme-secondary-bg); color:var(--theme-body-color); font-family:var(--site-font);
+ box-shadow:0 18px 60px #0009;
+}
+.solstice-dialog::backdrop { background:#08090dc7; }
+.solstice-dialog form { float:none; width:100%; margin:0; }
+.solstice-dialog h2 { margin:0 0 8px; color:var(--theme-light-text-emphasis); font-size:19px; }
+.solstice-dialog p { margin:0 0 16px; font-size:14px; line-height:1.5; overflow-wrap:anywhere; }
+.solstice-dialog label { display:grid; gap:6px; margin:14px 0; font-size:13px; }
+.solstice-dialog input {
+ width:100%; box-sizing:border-box; padding:8px 10px; border:1px solid var(--theme-border-color);
+ border-radius:6px; background:var(--theme-tertiary-bg); color:var(--theme-body-color);
+}
+.solstice-dialog .solstice-dialog-error { color:var(--theme-danger-text-emphasis); }
+.solstice-dialog-error:empty { display:none; }
+.solstice-dialog-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; gap:8px; margin-top:18px; }
+.solstice-dialog .solstice-dialog-actions button {
+ min-height:36px; margin:0; padding:6px 12px; border:1px solid transparent; border-radius:6px;
+ background:var(--theme-menu-selected-bg); color:var(--theme-menu-selected-color); font:600 13px var(--site-font); cursor:pointer;
+}
+.solstice-dialog .solstice-dialog-actions .solstice-dialog-confirm { background:var(--theme-primary-action-bg); color:var(--theme-primary-text-emphasis); }
+.solstice-dialog .solstice-dialog-actions .solstice-dialog-danger { background:var(--theme-danger-bg-subtle); color:var(--theme-danger-text-emphasis); }
+.solstice-dialog .solstice-dialog-actions button:hover { border-color:currentColor; }
+.solstice-dialog :is(input,button):focus-visible { outline:2px solid var(--theme-primary-text-emphasis); outline-offset:2px; }

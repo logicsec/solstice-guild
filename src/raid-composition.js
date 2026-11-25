@@ -261,7 +261,17 @@ export function renderRaidComposition(root, {specs, storageKey = 'solstice-compo
     nameInput.value=plan.size+'-player composition';lockStatus.textContent='';dialog.showModal();nameInput.focus();
   },'comp-lock');
   const draftButton=button('Edit as draft',()=>{locked=null;savedSelect.value='';persist();draw();status.textContent='Editing a draft copy. The locked composition is unchanged.';});
-  const clear=button('Clear all',()=>{if(locked)return;if(model.snapshot().players.length&&!window.confirm('Clear all placeholders from this composition?'))return;model.clear();selected=null;commit('Composition cleared.');});
+  const clear=button('Clear all',async()=>{
+    if(locked)return;
+    if(model.snapshot().players.length && !await showSolsticeDialog({
+      title:'Clear composition?',message:'All planned seats will be removed from this draft.',
+      confirmLabel:'Clear composition',danger:true,
+    }))return;
+    if(locked||clear.isConnected===false)return;
+    model.clear();
+    selected=null;
+    commit('Composition cleared.');
+  });
   function savedOptions(){savedSelect.replaceChildren(new Option('Choose a locked composition',''));for(const entry of savedCompositions)savedSelect.add(new Option(entry.title+' · '+entry.plan.players.length+'/'+entry.plan.size,entry.id));savedSelect.value=locked?.id??'';}
   function openSaved(entry){model=createCompositionPlan(specs,entry.plan);locked=entry;selected=null;persist();draw();status.textContent='Locked composition: '+entry.title+'. Choose Edit as draft to make changes.';}
   savedSelect.addEventListener('change',()=>{const entry=savedCompositions.find(entry=>entry.id===savedSelect.value);if(entry)openSaved(entry);});

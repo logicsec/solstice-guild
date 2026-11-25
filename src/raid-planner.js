@@ -167,8 +167,13 @@ export function createGroupPlanner(root, initialRoster = []) {
     const title = make('div');
     title.append(make('h3', 'Group Planner'), make('p', 'Forever · '+size+' players'));
     const optimizeButton = button('Auto-Optimize', optimize);
-    const clear = button('Clear All', () => {
-      if (window.confirm('Clear all planned characters?')) { players = []; selected = null; draw(); }
+    const clear = button('Clear All', async () => {
+      if (await showSolsticeDialog({
+        title:'Clear planned characters?', message:'All characters will be removed from this group plan.',
+        confirmLabel:'Clear plan', danger:true,
+      }) && clear.isConnected) {
+        players = []; selected = null; draw();
+      }
     });
     optimizeButton.disabled = clear.disabled = !players.length;
     heading.append(title, optimizeButton, clear);

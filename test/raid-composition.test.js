@@ -56,11 +56,11 @@ class Element {
 const all=root=>[root,...root.children.flatMap(all)];
 const find=(root,fn)=>all(root).find(fn);
 
-test('picker, click placement, drag/drop, full groups and reload all update the rendered draft',()=>{
+test('picker, click placement, drag/drop, full groups and reload all update the rendered draft',async()=>{
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();
   const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','showSolsticeDialog','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,async()=>({}),createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,storageKey:'test'});
   const raidSize=find(root,e=>e.attributes['aria-label']==='10 players');
   raidSize.listeners.click();
@@ -109,7 +109,7 @@ test('picker, click placement, drag/drop, full groups and reload all update the 
   assert.equal(ui.model.snapshot().players.length,0,'Unassigned X removes the placeholder');
   assert.equal(JSON.parse(storage.get('test')).players.length,0,'deletion is saved');
 
-  find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
+  await find(root,e=>e.textContent==='Clear all').listeners.click();assert.equal(ui.model.snapshot().players.length,0);
   const teamRoot=new Element('main');
   const team=render(teamRoot,{specs:armorySpecs,storageKey:'team',roster:[
     {key:'astra',name:'Astra Mortis',className:'Mage',spec:'Arcane',role:'Ranged DPS'},
@@ -163,7 +163,7 @@ test('auto-optimize evenly assigns every placeholder and preserves identity, rol
 test('Lock In saves an immutable account copy, freezes placements, and allows a separate editable draft',async()=>{
   const document={createElement:tag=>new Element(tag),createTextNode:text=>new Element('text',text)};
   const storage=new Map();const localStorage={getItem:k=>storage.get(k),setItem:(k,v)=>storage.set(k,v)};
-  const render=new Function('document','Option','localStorage','window','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,{confirm:()=>true},createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
+  const render=new Function('document','Option','localStorage','showSolsticeDialog','createCompositionPlan','compositionBuffs','compositionCapabilities','guildIcon','tablerIcon','return ('+renderRaidComposition.toString()+')')(document,class extends Element{constructor(text,value){super('option',text);this.value=String(value);}},localStorage,async()=>({}),createCompositionPlan,compositionBuffs,compositionCapabilities,()=>new Element('span'),()=>new Element('svg'));
   let saved;
   const request=async data=>data?{composition:saved={id:'saved-1',title:data.title,plan:structuredClone(data.plan)}}:{compositions:[]};
   const root=new Element('main');const ui=render(root,{specs:armorySpecs,request,storageKey:'locked-test'});

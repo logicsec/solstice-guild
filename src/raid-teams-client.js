@@ -238,10 +238,13 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
         const actions=el('div',null,'team-schedule-actions');
         const edit=btn('Edit',()=>openSchedule(schedule));
         edit.setAttribute('aria-label','Edit '+name+' schedule');
-        const remove=btn('Delete',()=>{
+        const remove=btn('Delete',async()=>{
           const message=schedule.kind==='Off night'?'Delete this off-night schedule?':
             'Delete this schedule and cancel its upcoming raids? Past raids and sign-up history will be kept.';
-          if(window.confirm(message))change({action:'deleteSchedule',scheduleId:schedule.id,revision:schedule.revision});
+          if(await showSolsticeDialog({title:'Delete schedule?',message,confirmLabel:'Delete schedule',danger:true})
+            && remove.isConnected && isCurrent()){
+            await change({action:'deleteSchedule',scheduleId:schedule.id,revision:schedule.revision});
+          }
         },'raid-control-danger');
         remove.setAttribute('aria-label','Delete '+name+' schedule');
         actions.append(edit,remove);
@@ -283,7 +286,10 @@ export async function renderRaidTeams(root,{request,specs,isCurrent=()=>true,ren
   async function deleteTeam(){
     if(saving||!data?.team.isOwner)return;
     const team=data.team;
-    if(!window.confirm('Delete “'+team.name+'”? This permanently removes its roster, team memberships and recurring schedules. Existing raid events will remain on the calendar.'))return;
+    if(!await showSolsticeDialog({
+      title:'Delete team?', message:'Deleting “'+team.name+'” permanently removes its roster, memberships and recurring schedules. Existing raid events will remain on the calendar.',
+      confirmLabel:'Delete team', danger:true,
+    })||saving||!isCurrent()||data?.team.id!==team.id)return;
     saving=true;content.inert=true;if(navigationRoot)navigationRoot.inert=true;status.textContent='Deleting team…';
     try{
       await request('?team='+teamId,{action:'delete',confirmName:team.name});

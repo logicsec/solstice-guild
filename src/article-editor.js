@@ -27,7 +27,7 @@ export function articleMarkup(body, format, escape) {
   return output + escape(body.slice(offset));
 }
 
-export function startArticleEditor() {
+export function startArticleEditor(showSolsticeDialog) {
   const deleteDialog = document.getElementById('articleDelete');
   if (deleteDialog) {
     document.getElementById('openArticleDelete').addEventListener('click', () => deleteDialog.showModal());
@@ -49,25 +49,28 @@ export function startArticleEditor() {
       selection = current.getRangeAt(0).cloneRange();
     }
   });
-  toolbar.addEventListener('click', event => {
+  toolbar.addEventListener('click', async event => {
     const button = event.target.closest('button[data-command]');
     if (!button) return;
     const command = button.dataset.command;
     let value = button.dataset.value;
     if (command === 'image') {
-      const url = window.prompt('Image URL (HTTPS)');
-      if (!url) return;
-      let source;
-      try { source = new URL(url); } catch {}
-      if (source?.protocol !== 'https:' || source.username || source.password) {
-        window.alert('Enter a valid HTTPS image URL.');
-        return;
-      }
-      const alt = window.prompt('Describe the image for readers using screen readers.');
-      if (alt === null) return;
+      const fields = await showSolsticeDialog({
+        title:'Insert image', confirmLabel:'Insert image',
+        fields:[{name:'url',label:'Image URL (HTTPS)',type:'url'},{name:'alt',label:'Image description'}],
+        validate:({url})=>{
+          try {
+            const parsed = new URL(url);
+            if (parsed.protocol==='https:' && !parsed.username && !parsed.password) return;
+          } catch {}
+          return 'Enter a valid HTTPS image URL.';
+        },
+      });
+      if (!fields || !editor.isConnected) return;
+      const source = new URL(fields.url);
       const image = document.createElement('img');
       image.setAttribute('src', source.href);
-      image.setAttribute('alt', alt);
+      image.setAttribute('alt', fields.alt);
       value = image.outerHTML;
     }
     editor.focus();
@@ -134,7 +137,10 @@ export function startArticleEditor() {
     const markup = copy.innerHTML;
     if (markup.length > body.maxLength) {
       event.preventDefault();
-      window.alert('This article exceeds the editor length limit.');
+      showSolsticeDialog({
+        title:'Article is too long', message:'Shorten the article before saving it.',
+        confirmLabel:'Back to editor', cancelLabel:null,
+      });
       return;
     }
     body.value = markup;

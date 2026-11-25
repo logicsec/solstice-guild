@@ -1,3 +1,4 @@
+import { showSolsticeDialog } from '../public/assets/solstice-dialog.js';
 import { matchesGuildRosterFilter } from './guild-roster-filters.js';
 import { raidTeamsApi, guildRoster, guildRosterProfessions } from './raid-teams-api.js';
 import { raidTeamSummary, renderRaidTeams } from './raid-teams-client.js';
@@ -418,7 +419,7 @@ dialog::backdrop{background:#000b}dialog form{float:right}.history{display:grid;
 </style>
 <script>const whTooltips = { colorLinks: false, iconizeLinks: false, renameLinks: false };</script>
 <script src="https://wow.zamimg.com/js/tooltips.js" defer></script>
-<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-1f4f8c8249c0" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-1f4f8c8249c0&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
+<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-7b2e53a482df" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-7b2e53a482df&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body class="guild-app"><main>
 <div class="guild-topbar">
 <nav class="guild-nav" aria-label="Guild tools"><div class="guild-nav-items" hidden><button id="raidTab" aria-pressed="false" hidden>Guild Hall</button></div></nav></div>
 <section id="marketHero" class="hero guild-page-heading" aria-labelledby="marketTitle">
@@ -1461,6 +1462,7 @@ function resetRoleSlots() {
   roleSlotFields[2].value = Math.floor(dps / 2);
   roleSlotFields[3].value = Math.ceil(dps / 2);
 }
+${showSolsticeDialog.toString()}
 ${createGroupPlanner.toString()}
 const groupPlanner = createGroupPlanner(byId('raidGroupPlanner'), savedCharacters);
 raidForm.elements.repeatWeekly.addEventListener('change', () => {
@@ -2370,8 +2372,11 @@ function renderRaid(data) {
       const button = raidElement('button',{ Open:'Reopen sign-ups', Locked:'Lock sign-ups', Cancelled:'Cancel raid' }[state],
         state === 'Cancelled' ? 'raid-control-danger' : undefined);
       button.type = 'button';
-      button.addEventListener('click', () => {
-        if (state === 'Cancelled' && !window.confirm('Cancel this raid and close sign-ups?')) return;
+      button.addEventListener('click', async () => {
+        if (state === 'Cancelled' && !await showSolsticeDialog({
+          title:'Cancel raid?', message:'Sign-ups will close for this raid.', confirmLabel:'Cancel raid', cancelLabel:'Keep raid', danger:true,
+        })) return;
+        if (!button.isConnected || activeRaid !== event.id) return;
         changeRaid(event.id, { action:'state', state });
       });
       actions.append(button);
@@ -2380,10 +2385,13 @@ function renderRaid(data) {
     const remove = raidElement('button',scheduled?'Remove occurrence':'Delete raid','raid-control-danger');
     remove.type = 'button';
     remove.addEventListener('click',async()=>{
-      const prompt = scheduled
+      const message = scheduled
         ? 'Remove this occurrence of “'+event.title+'” from Events? The recurring schedule and sign-up history are kept.'
         : 'Permanently delete “'+event.title+'”? This removes all sign-ups, preparation tasks, and loot reserves for this occurrence and disables its invite link.';
-      if (!window.confirm(prompt)) return;
+      if (!await showSolsticeDialog({
+        title:scheduled?'Remove occurrence?':'Delete raid?', message,
+        confirmLabel:scheduled?'Remove occurrence':'Delete raid', danger:true,
+      }) || !remove.isConnected || activeRaid !== event.id) return;
       remove.disabled = true;
       try {
         await raidRequest('/'+event.id,{action:'delete'});

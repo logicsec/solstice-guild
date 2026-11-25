@@ -52,7 +52,10 @@ export async function renderLootHistory(root, data) {
         const remove = raidElement('button','Remove award');
         remove.type = 'button';
         remove.addEventListener('click',async () => {
-          if (!confirm('Remove this recorded award?')) return;
+          if (!await showSolsticeDialog({
+            title:'Remove award?', message:award.item+' will be removed from '+award.recipient+'’s loot history.',
+            confirmLabel:'Remove award', danger:true,
+          }) || !remove.isConnected) return;
           remove.disabled = true;
           try { await recordRequest(path,{ action:'remove', raid, id:award.id }); await draw(); }
           catch (error) { status.textContent = error.message; remove.disabled = false; }

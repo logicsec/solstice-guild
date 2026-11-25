@@ -1,3 +1,4 @@
+import { showSolsticeDialog } from '../public/assets/solstice-dialog.js';
 import { armorySpecs, linkedRosterProfiles, publicRosterProfile } from './armory.js';
 import { articleMarkup, startArticleEditor } from './article-editor.js';
 import { raidReserves } from './reserves.js';
@@ -21,7 +22,7 @@ export function canEditArticles(env, session) {
 }
 
 function shell(title, body, { session, editor, next = '/?tool=raid', raidView = false, hall = '/?tool=raid' } = {}) {
-  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-1f4f8c8249c0" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-1f4f8c8249c0&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
+  return `<!doctype html><html lang="en" data-bs-theme="dark"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta name="description" content="Solstice, an Alliance guild in World of Warcraft: Forever."><title>${escape(title)} · Solstice Guild</title>${solsticeFavicon}<link rel="stylesheet" href="/assets/home.css?v=solstice-gold"><link rel="stylesheet" href="/assets/theme.css?v=solstice-theme-7b2e53a482df" onerror="this.onerror=null;this.href='/assets/theme.css?v=solstice-theme-7b2e53a482df&amp;retry='+Date.now()"><script src="/assets/mobile-tables.js?v=1" defer></script></head><body>
   <header class="site-header"><a class="brand" href="/">${solsticeLockup}</a>
   <button class="site-menu-toggle" type="button" aria-expanded="false" aria-controls="site-navigation" hidden>
     <svg class="tabler-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="/assets/tabler-icons.svg?v=theme-2#menu-2"></use></svg>
@@ -317,5 +318,5 @@ export async function cmsPage(request, env, url, session) {
       <button class="button editor-delete" name="action" value="delete">Delete article</button>
     </form>
   </dialog>` : ''}
-  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New Article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})();</script></main>`, { session, editor: true }));
+  <aside><h2>Articles</h2><a class="text-link" href="/cms">+ New Article</a><ul>${results.map(row => '<li><a href="/cms?edit=' + escape(row.id) + '">' + escape(row.title) + '</a><small>' + (row.published_at ? 'Published' : 'Draft') + '</small></li>').join('') || '<li>No articles yet.</li>'}</ul></aside></div><script>(${startArticleEditor.toString()})(${showSolsticeDialog.toString()});</script></main>`, { session, editor: true }));
 }
